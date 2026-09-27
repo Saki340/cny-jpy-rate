@@ -1,6 +1,6 @@
 name = "cny-jpy-rate"
 main = "worker.js"
-compatibility_date = "2026-09-28"
+compatibility_date = "2026-09-27"
 
 [assets]
 directory = "./public"
