@@ -1,0 +1,292 @@
+:root {
+  --bg: #14171c;
+  --panel: #1b1f26;
+  --rule: #333a46;
+  --ink: #f2ece1;
+  --muted: #8b93a1;
+  --cny: #c1391f;
+  --jpy: #5f85a8;
+  --gold: #d9a441;
+  --grid-line: #242833;
+}
+
+/* Day mode: same family, read as a paper ledger instead of a night board. */
+:root[data-theme="light"] {
+  --bg: #ede7d9;
+  --panel: #e4ddcb;
+  --rule: #c9c0a3;
+  --ink: #211d17;
+  --muted: #6b6354;
+  --cny: #a52f1c;
+  --jpy: #2e4c66;
+  --gold: #93691a;
+  --grid-line: #d8d0b8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-padding-top: env(safe-area-inset-top, 0px);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Source Serif 4", Georgia, "Noto Serif SC", serif;
+  line-height: 1.5;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.wrap {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 48px 20px 80px;
+}
+
+header.page-head {
+  margin-bottom: 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+header.page-head h1 {
+  font-size: 28px;
+  font-weight: 600;
+  margin: 0 0 6px;
+  letter-spacing: 0.01em;
+}
+
+header.page-head p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+button.theme-toggle {
+  flex-shrink: 0;
+  background: none;
+  border: 1px solid var(--rule);
+  color: var(--muted);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 12px;
+  padding: 7px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+button.theme-toggle:hover,
+button.theme-toggle:focus-visible {
+  border-color: var(--gold);
+  color: var(--ink);
+}
+
+section {
+  border-top: 1px solid var(--rule);
+  padding: 28px 0;
+}
+
+section:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+h2 {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 16px;
+  color: var(--muted);
+}
+
+/* --- rate board --- */
+
+.board {
+  border: 1px solid var(--rule);
+  padding: 24px 20px;
+  position: relative;
+}
+
+.board .updated {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0 0 14px;
+}
+
+.rate-line {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: clamp(28px, 7vw, 40px);
+  letter-spacing: 0.01em;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  border-bottom: 2px solid var(--gold);
+  padding-bottom: 14px;
+  margin-bottom: 14px;
+}
+
+.rate-line .eq {
+  color: var(--muted);
+  font-size: 0.6em;
+}
+
+.rate-line .cur-from {
+  color: var(--cny);
+}
+
+.rate-line .cur-to {
+  color: var(--jpy);
+}
+
+.board-note {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0;
+}
+
+.swap-row {
+  margin-top: 18px;
+  display: flex;
+  justify-content: flex-start;
+}
+
+button.swap-btn {
+  background: none;
+  border: 1px solid var(--rule);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 14px;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+button.swap-btn:hover,
+button.swap-btn:focus-visible {
+  border-color: var(--gold);
+}
+
+/* --- calculator --- */
+
+.calc-row {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 20px;
+}
+
+.calc-row label {
+  font-family: "Source Serif 4", serif;
+  font-size: 14px;
+  color: var(--muted);
+  display: block;
+  margin-bottom: 6px;
+}
+
+.calc-field {
+  display: flex;
+  flex-direction: column;
+}
+
+input#amount {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--rule);
+  color: var(--ink);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 20px;
+  width: 160px;
+  padding: 4px 2px;
+}
+
+input#amount:focus {
+  outline: none;
+  border-bottom-color: var(--gold);
+}
+
+.calc-result {
+  color: var(--gold);
+}
+
+/* --- chart --- */
+
+.chart-panel {
+  border: 1px solid var(--rule);
+  padding: 16px;
+}
+
+.chart-panel canvas {
+  width: 100% !important;
+  height: 220px !important;
+}
+
+.range-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.range-tabs button {
+  background: none;
+  border: 1px solid var(--rule);
+  color: var(--muted);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 13px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.range-tabs button[aria-pressed="true"] {
+  color: var(--ink);
+  border-color: var(--gold);
+}
+
+/* --- mastercard --- */
+
+.mc-panel {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.mc-panel .mc-value {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  color: var(--ink);
+  font-size: 18px;
+  display: block;
+  margin: 8px 0;
+}
+
+.mc-panel button {
+  background: none;
+  border: 1px solid var(--rule);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 13px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+footer {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+footer a {
+  color: var(--muted);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .board {
+    transition: border-color 0.2s ease;
+  }
+}

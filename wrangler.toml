@@ -1,0 +1,8 @@
+name = "cny-jpy-rate"
+main = "worker.js"
+compatibility_date = "2026-09-28"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = ["/api/*"]
