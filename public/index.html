@@ -58,26 +58,30 @@
         <button data-days="90" aria-pressed="true" type="button">90 天</button>
         <button data-days="180" aria-pressed="false" type="button">180 天</button>
       </div>
-      <canvas id="history-chart"></canvas>
+      <p class="chart-readout" id="chart-readout">加载中…</p>
+      <div class="chart" id="history-chart"></div>
     </div>
   </section>
 
   <section aria-labelledby="mc-heading">
     <h2 id="mc-heading">Mastercard 参考汇率（实验性）</h2>
     <div class="mc-panel">
-      <p>Mastercard 没有公开的官方汇率接口，这里尝试读取其官网换算工具使用的内部接口，可能会失效或被限制访问，仅供参考，不代表你实际刷卡的入账汇率。</p>
-      <span class="mc-value" id="mc-result">尚未查询</span>
-      <button id="mc-fetch-btn" type="button">查询 Mastercard 汇率</button>
+      <span class="mc-value" id="mc-result">查询中…</span>
+      <p class="mc-detail" id="mc-detail"></p>
+      <div class="mc-actions">
+        <button id="mc-fetch-btn" type="button">重新查询</button>
+        <a href="https://www.mastercard.com/us/en/personal/get-support/currency-exchange-rate-converter.html" target="_blank" rel="noopener noreferrer">打开万事达官方换算器</a>
+      </div>
+      <p class="mc-note">万事达没有公开的免费接口，这里读取的是它官网换算器背后的内部接口。官网带有机器人防护，服务器读取可能被拒绝，读不到时请以官方换算器为准。结算汇率含点差，不等于中间价，也不代表发卡行最终入账汇率。</p>
     </div>
   </section>
 
   <footer>
-    实时汇率数据来自 currency-api（社区维护的免费公开数据）；历史走势数据来自欧洲央行参考汇率（经 Frankfurter 提供）。这些均为中间汇率，不含任何机构的实际买卖点差。
+    实时汇率数据来自 <a href="https://github.com/fawazahmed0/exchange-api" target="_blank" rel="noopener noreferrer">currency-api</a>（社区维护的免费公开数据）；历史走势数据来自欧洲央行参考汇率（经 <a href="https://frankfurter.dev" target="_blank" rel="noopener noreferrer">Frankfurter</a> 提供）。这些均为中间汇率，不含任何机构的实际买卖点差。
   </footer>
 
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

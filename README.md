@@ -37,13 +37,13 @@ npx wrangler dev
 ## API 路由
 
 - `GET /api/rate`：当前 CNY/JPY 汇率，主源失败时使用镜像源。
-- `GET /api/history?days=90`：历史走势，最多 365 天。
-- `GET /api/mastercard?direction=cny2jpy&amount=100`：尝试获取 Mastercard 参考汇率。该接口为官网页面使用的未公开接口，可能随时失效。
+- `GET /api/history?days=90`：历史走势（CNY→JPY 日线），最多 365 天；返回 `{ points: [{ date, rate }] }`。
+- `GET /api/mastercard?direction=cny2jpy|jpy2cny`：尝试读取 Mastercard 官网换算器使用的内部接口，成功返回 `{ ok: true, rate, fx_date }`，失败返回 `{ ok: false, reason, status }`（`blocked` / `http` / `unexpected` / `network`）。
 
 ## 数据源与缓存
 
-- 当前汇率：currency-api 主源及镜像，响应缓存建议 1 小时。
-- 历史走势：Frankfurter（欧洲央行参考汇率），响应缓存建议 6 小时。
-- Mastercard：非公开接口，仅尽力获取。
+- 当前汇率：[currency-api](https://github.com/fawazahmed0/exchange-api) 主源及镜像，响应缓存 1 小时。
+- 历史走势：[Frankfurter](https://frankfurter.dev)（欧洲央行参考汇率，`api.frankfurter.dev/v1`），响应缓存 6 小时；会校验返回的基准货币是 CNY，避免参数被忽略时画出错误曲线。走势图是纯 SVG 绘制，前端没有任何第三方库依赖。
+- Mastercard：官网换算器的内部接口，仅尽力获取。该站点启用了 Akamai 机器人防护，来自服务器的请求可能被拒绝（HTTP 403），此时页面会显示原因并提供官方换算器链接；请求成功时页面会显示 `1 JPY = x CNY`、按当前金额折算的结果和相对中间价的差异。
 
 Workers Builds 部署的是 Worker，不再使用 Pages 专属的 `functions/` 自动路由目录。

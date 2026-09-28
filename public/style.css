@@ -224,9 +224,63 @@ input#amount:focus {
   padding: 16px;
 }
 
-.chart-panel canvas {
-  width: 100% !important;
-  height: 220px !important;
+.chart-readout {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0 0 8px;
+  min-height: 20px;
+}
+
+.chart {
+  min-height: 220px;
+}
+
+.chart svg {
+  display: block;
+  width: 100%;
+  height: 220px;
+  touch-action: pan-y;
+}
+
+.chart-grid {
+  stroke: var(--grid-line);
+  stroke-width: 1;
+}
+
+.chart-text {
+  fill: var(--muted);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 11px;
+}
+
+.chart-line {
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+.chart-area {
+  fill: var(--gold);
+  opacity: 0.08;
+}
+
+.chart-cursor {
+  stroke: var(--muted);
+  stroke-dasharray: 3 3;
+}
+
+.chart-dot {
+  fill: var(--gold);
+}
+
+.chart-msg {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 0;
+  padding: 90px 0;
+  text-align: center;
 }
 
 .range-tabs {
@@ -265,6 +319,25 @@ input#amount:focus {
   margin: 8px 0;
 }
 
+.mc-detail {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 13px;
+  margin: 0 0 14px;
+  min-height: 20px;
+}
+
+.mc-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.mc-note {
+  font-size: 12px;
+  margin: 14px 0 0;
+}
+
 .mc-panel button {
   background: none;
   border: 1px solid var(--rule);
@@ -281,8 +354,20 @@ footer {
   color: var(--muted);
 }
 
-footer a {
-  color: var(--muted);
+a {
+  color: var(--ink);
+  text-decoration-color: var(--rule);
+  text-underline-offset: 3px;
+}
+
+a:hover,
+a:focus-visible {
+  text-decoration-color: var(--gold);
+}
+
+footer a,
+.board .updated a {
+  color: inherit;
 }
 
 @media (prefers-reduced-motion: no-preference) {
