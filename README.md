@@ -2,6 +2,8 @@
 
 静态前端由 Cloudflare Workers Static Assets 提供，`worker.js` 统一处理 `/api/*` 接口，适用于 Cloudflare Workers Builds（Git 集成构建部署）。
 
+在线预览：[rate.anontokyo.vip](https://rate.anontokyo.vip/)
+
 ## 项目结构
 
 ```text
