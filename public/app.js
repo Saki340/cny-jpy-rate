@@ -1,22 +1,41 @@
-let state = {
+const CURRENCY_API_URL = "https://github.com/fawazahmed0/exchange-api";
+
+const state = {
   cnyToJpy: null,
   jpyToCny: null,
   direction: "cny2jpy", // or jpy2cny
   historyDays: 90,
-  chart: null,
+  history: [], // [{ date, rate }] always stored as CNY -> JPY
+  historyReq: 0,
+  mc: {}, // Mastercard result per direction: { rate, date } or { error, status }
+  mcReq: 0,
 };
 
 const el = (id) => document.getElementById(id);
 
-function cssVar(name) {
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+function esc(text) {
+  return String(text).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
+
+function debounce(fn, ms) {
+  let timer = null;
+  return () => {
+    clearTimeout(timer);
+    timer = setTimeout(fn, ms);
+  };
+}
+
+function fmt(n, maxDigits = 4) {
+  if (!isFinite(n)) return "--";
+  return n.toLocaleString("zh-CN", { maximumFractionDigits: maxDigits });
+}
+
+/* ---------- theme ---------- */
 
 function applyTheme(theme) {
   document.documentElement.setAttribute("data-theme", theme);
   localStorage.setItem("theme", theme);
   el("theme-toggle").textContent = theme === "light" ? "切换到夜间模式" : "切换到日间模式";
-  if (state.chart) restyleChart();
 }
 
 function initTheme() {
@@ -29,24 +48,7 @@ function initTheme() {
   });
 }
 
-function restyleChart() {
-  const gold = cssVar("--gold");
-  const muted = cssVar("--muted");
-  const grid = cssVar("--grid-line");
-
-  state.chart.data.datasets[0].borderColor = gold;
-  state.chart.data.datasets[0].backgroundColor = gold + "14"; // ~8% alpha fill
-  state.chart.options.scales.x.ticks.color = muted;
-  state.chart.options.scales.y.ticks.color = muted;
-  state.chart.options.scales.x.grid.color = grid;
-  state.chart.options.scales.y.grid.color = grid;
-  state.chart.update();
-}
-
-function fmt(n, maxDigits = 4) {
-  if (!isFinite(n)) return "--";
-  return n.toLocaleString("zh-CN", { maximumFractionDigits: maxDigits });
-}
+/* ---------- rate board + calculator ---------- */
 
 async function loadRate() {
   const boardNote = el("board-note");
@@ -58,7 +60,16 @@ async function loadRate() {
     state.cnyToJpy = data.cny_to_jpy;
     state.jpyToCny = data.jpy_to_cny;
 
-    el("updated").textContent = `数据日期 ${data.date} · 来源 ${data.source}`;
+    const updated = el("updated");
+    updated.textContent = `数据日期 ${data.date} · 来源 `;
+    const link = document.createElement("a");
+    link.href = CURRENCY_API_URL;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = "currency-api";
+    updated.append(link);
+    if (String(data.source).includes("mirror")) updated.append("（备用镜像）");
+
     renderRateLine();
     runCalculator();
   } catch (err) {
@@ -66,10 +77,17 @@ async function loadRate() {
   }
 }
 
+function currentPair() {
+  return state.direction === "cny2jpy" ? ["CNY", "JPY"] : ["JPY", "CNY"];
+}
+
+function currentMidRate() {
+  return state.direction === "cny2jpy" ? state.cnyToJpy : state.jpyToCny;
+}
+
 function renderRateLine() {
-  const from = state.direction === "cny2jpy" ? "CNY" : "JPY";
-  const to = state.direction === "cny2jpy" ? "JPY" : "CNY";
-  const rate = state.direction === "cny2jpy" ? state.cnyToJpy : state.jpyToCny;
+  const [from, to] = currentPair();
+  const rate = currentMidRate();
 
   el("rate-line").innerHTML =
     `<span>1</span><span class="cur-from">${from}</span>` +
@@ -84,13 +102,27 @@ function toggleDirection() {
   state.direction = state.direction === "cny2jpy" ? "jpy2cny" : "cny2jpy";
   renderRateLine();
   runCalculator();
+  renderChart();
+  if (state.mc[state.direction]) renderMastercard();
+  else loadMastercard();
 }
 
 function runCalculator() {
+  renderMastercard(); // its converted amount follows the input too
   const amount = parseFloat(el("amount").value) || 0;
-  const rate = state.direction === "cny2jpy" ? state.cnyToJpy : state.jpyToCny;
+  const rate = currentMidRate();
   if (!rate) return;
-  el("calc-result").textContent = fmt(amount * rate, 2);
+  el("calc-result").textContent = fmt(amount * rate, 3);
+}
+
+/* ---------- history chart (plain SVG, no external library) ---------- */
+
+function axisFmt(v) {
+  return v >= 10 ? v.toFixed(2) : v >= 1 ? v.toFixed(3) : v.toFixed(5);
+}
+
+function pointFmt(v) {
+  return v >= 1 ? v.toFixed(4) : v.toFixed(6);
 }
 
 async function loadHistory(days) {
@@ -99,88 +131,163 @@ async function loadHistory(days) {
     b.setAttribute("aria-pressed", String(Number(b.dataset.days) === days));
   });
 
+  const token = ++state.historyReq;
   try {
     const res = await fetch(`/api/history?days=${days}`);
     const data = await res.json();
-    if (!data.points || !data.points.length) throw new Error("no points");
-    renderChart(data.points);
+    if (token !== state.historyReq) return; // a newer tab click is already in flight
+    if (!data.points || !data.points.length) throw new Error(data.error || "no points");
+    state.history = data.points;
+    renderChart();
   } catch (err) {
-    // leave prior chart in place if this refresh fails
+    if (token !== state.historyReq) return;
+    state.history = [];
+    el("chart-readout").textContent = "";
+    el("history-chart").innerHTML = '<p class="chart-msg">历史走势暂时加载失败，请稍后刷新重试。</p>';
   }
 }
 
-function renderChart(points) {
-  const ctx = el("history-chart").getContext("2d");
-  const labels = points.map((p) => p.date.slice(5)); // MM-DD
-  const values = points.map((p) => p.rate);
+function renderChart() {
+  const pts = state.history;
+  if (!pts.length) return;
 
-  if (state.chart) {
-    state.chart.data.labels = labels;
-    state.chart.data.datasets[0].data = values;
-    state.chart.update();
+  const wrap = el("history-chart");
+  const [from, to] = currentPair();
+  const inverse = state.direction === "jpy2cny";
+  const values = pts.map((p) => (inverse ? 1 / p.rate : p.rate));
+
+  const W = Math.max(wrap.clientWidth || 600, 260);
+  const H = 220;
+  const padL = 58, padR = 10, padT = 10, padB = 24;
+  const n = pts.length;
+
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = max - min || max * 0.01 || 1;
+  const yMin = min - span * 0.1;
+  const yMax = max + span * 0.1;
+
+  const step = n > 1 ? (W - padL - padR) / (n - 1) : 0;
+  const x = (i) => (n > 1 ? padL + i * step : padL + (W - padL - padR) / 2);
+  const y = (v) => padT + ((yMax - v) * (H - padT - padB)) / (yMax - yMin);
+
+  let grid = "";
+  let labels = "";
+  for (let k = 0; k < 4; k++) {
+    const v = yMin + ((yMax - yMin) * k) / 3;
+    const gy = y(v);
+    grid += `<line class="chart-grid" x1="${padL}" x2="${W - padR}" y1="${gy.toFixed(1)}" y2="${gy.toFixed(1)}"/>`;
+    labels += `<text class="chart-text" x="${padL - 6}" y="${(gy + 4).toFixed(1)}" text-anchor="end">${axisFmt(v)}</text>`;
+  }
+
+  const ticks = Math.min(5, n);
+  for (let k = 0; k < ticks; k++) {
+    const i = ticks === 1 ? 0 : Math.round((k * (n - 1)) / (ticks - 1));
+    const anchor = k === 0 ? "start" : k === ticks - 1 ? "end" : "middle";
+    labels += `<text class="chart-text" x="${x(i).toFixed(1)}" y="${H - 6}" text-anchor="${anchor}">${esc(pts[i].date.slice(5))}</text>`;
+  }
+
+  const line = values.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(" ");
+  const area = `${line} L${x(n - 1).toFixed(1)} ${H - padB} L${x(0).toFixed(1)} ${H - padB} Z`;
+
+  wrap.innerHTML =
+    `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="1 ${from} 兑 ${to} 的历史走势">` +
+    grid +
+    `<path class="chart-area" d="${area}"/>` +
+    `<path class="chart-line" d="${line}"/>` +
+    `<line class="chart-cursor" y1="${padT}" y2="${H - padB}" style="display:none"/>` +
+    `<circle class="chart-dot" r="3.5" style="display:none"/>` +
+    labels +
+    `</svg>`;
+
+  const svg = wrap.querySelector("svg");
+  const cursor = svg.querySelector(".chart-cursor");
+  const dot = svg.querySelector(".chart-dot");
+  const readout = el("chart-readout");
+
+  const describe = (i, latest) =>
+    `${latest ? "最新 " : ""}${pts[i].date} · 1 ${from} = ${pointFmt(values[i])} ${to}`;
+
+  readout.textContent = describe(n - 1, true);
+
+  const showPoint = (evt) => {
+    const rect = svg.getBoundingClientRect();
+    const px = (evt.clientX - rect.left) * (W / (rect.width || W));
+    const i = n > 1 ? Math.min(Math.max(Math.round((px - padL) / step), 0), n - 1) : 0;
+    cursor.setAttribute("x1", x(i).toFixed(1));
+    cursor.setAttribute("x2", x(i).toFixed(1));
+    dot.setAttribute("cx", x(i).toFixed(1));
+    dot.setAttribute("cy", y(values[i]).toFixed(1));
+    cursor.style.display = "";
+    dot.style.display = "";
+    readout.textContent = describe(i, false);
+  };
+  const hidePoint = () => {
+    cursor.style.display = "none";
+    dot.style.display = "none";
+    readout.textContent = describe(n - 1, true);
+  };
+
+  svg.addEventListener("pointermove", showPoint);
+  svg.addEventListener("pointerdown", showPoint);
+  svg.addEventListener("pointerleave", hidePoint);
+}
+
+/* ---------- Mastercard reference rate ---------- */
+
+const MC_MESSAGES = {
+  blocked: "万事达官网有机器人防护，拒绝了服务器的自动请求",
+  http: "万事达接口返回了异常状态",
+  unexpected: "万事达返回了无法识别的数据",
+  network: "连接万事达接口超时或失败",
+};
+
+async function loadMastercard() {
+  const dir = state.direction;
+  const token = ++state.mcReq;
+  el("mc-result").textContent = "查询中…";
+  el("mc-detail").textContent = "";
+
+  try {
+    const res = await fetch(`/api/mastercard?direction=${dir}`);
+    const data = await res.json();
+    if (token !== state.mcReq) return;
+    state.mc[dir] = data.ok
+      ? { rate: data.rate, date: data.fx_date }
+      : { error: MC_MESSAGES[data.reason] || "暂时无法读取", status: data.status };
+  } catch (err) {
+    if (token !== state.mcReq) return;
+    state.mc[dir] = { error: "暂时无法读取" };
+  }
+  renderMastercard();
+}
+
+function renderMastercard() {
+  const mc = state.mc[state.direction];
+  if (!mc) return;
+
+  if (mc.error) {
+    el("mc-result").textContent = "暂时无法读取";
+    el("mc-detail").textContent = mc.error + (mc.status ? `（HTTP ${mc.status}）` : "") + "。";
     return;
   }
 
-  const gold = cssVar("--gold");
-  const muted = cssVar("--muted");
-  const grid = cssVar("--grid-line");
+  const [from, to] = currentPair();
+  const amount = parseFloat(el("amount").value) || 0;
+  const mid = currentMidRate();
 
-  state.chart = new Chart(ctx, {
-    type: "line",
-    data: {
-      labels,
-      datasets: [
-        {
-          data: values,
-          borderColor: gold,
-          backgroundColor: gold + "14",
-          borderWidth: 1.5,
-          pointRadius: 0,
-          fill: true,
-          tension: 0.15,
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: {
-          ticks: { color: muted, maxTicksLimit: 6, font: { family: "IBM Plex Mono", size: 11 } },
-          grid: { color: grid },
-        },
-        y: {
-          ticks: { color: muted, font: { family: "IBM Plex Mono", size: 11 } },
-          grid: { color: grid },
-        },
-      },
-    },
-  });
-}
+  el("mc-result").textContent = `1 ${from} = ${fmt(mc.rate, 6)} ${to}`;
 
-async function loadMastercard() {
-  const box = el("mc-result");
-  box.textContent = "查询中…";
-  try {
-    const amount = parseFloat(el("amount").value) || 1;
-    const res = await fetch(`/api/mastercard?direction=${state.direction}&amount=${amount}`);
-    const data = await res.json();
-    if (!data.ok) {
-      box.textContent = data.error || "暂时无法获取。";
-      return;
-    }
-    // The undocumented endpoint's response shape isn't guaranteed; show
-    // whatever numeric conversion amount it returns, else the raw payload.
-    const converted =
-      data.data && (data.data.conversionAmount || data.data.transAmt || data.data.data);
-    box.textContent = converted
-      ? `约 ${fmt(Number(converted), 2)}（含 Mastercard 当日结算汇率）`
-      : "已获取响应，但格式与预期不同，暂不展示。";
-  } catch (err) {
-    box.textContent = "暂时无法获取。";
+  const parts = [`${fmt(amount, 6)} ${from} ≈ ${fmt(amount * mc.rate, 3)} ${to}`];
+  if (mid) {
+    const diff = (mc.rate / mid - 1) * 100;
+    parts.push(`较中间价 ${diff >= 0 ? "+" : ""}${diff.toFixed(2)}%`);
   }
+  if (mc.date) parts.push(`汇率日期 ${mc.date}`);
+  el("mc-detail").textContent = parts.join(" · ");
 }
+
+/* ---------- init ---------- */
 
 window.addEventListener("DOMContentLoaded", () => {
   initTheme();
@@ -190,7 +297,9 @@ window.addEventListener("DOMContentLoaded", () => {
     b.addEventListener("click", () => loadHistory(Number(b.dataset.days)));
   });
   el("mc-fetch-btn").addEventListener("click", loadMastercard);
+  window.addEventListener("resize", debounce(renderChart, 150));
 
   loadRate();
   loadHistory(90);
+  loadMastercard();
 });
