@@ -33,18 +33,19 @@ function fmt(n, maxDigits = 4) {
 /* ---------- theme ---------- */
 
 function applyTheme(theme) {
-  document.documentElement.setAttribute("data-theme", theme);
+  document.documentElement.classList.toggle("md-theme-dark", theme === "dark");
+  document.documentElement.classList.toggle("md-theme-light", theme === "light");
   localStorage.setItem("theme", theme);
-  el("theme-toggle").textContent = theme === "light" ? "切换到夜间模式" : "切换到日间模式";
+  el("theme-toggle").checked = theme === "dark";
+  el("theme-toggle-label").textContent = theme === "dark" ? "深色" : "浅色";
 }
 
 function initTheme() {
   const saved = localStorage.getItem("theme");
-  const preferred = saved || (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+  const preferred = saved || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
   applyTheme(preferred);
-  el("theme-toggle").addEventListener("click", () => {
-    const current = document.documentElement.getAttribute("data-theme");
-    applyTheme(current === "light" ? "dark" : "light");
+  el("theme-toggle").addEventListener("change", (e) => {
+    applyTheme(e.target.checked ? "dark" : "light");
   });
 }
 
@@ -127,8 +128,8 @@ function pointFmt(v) {
 
 async function loadHistory(days) {
   state.historyDays = days;
-  document.querySelectorAll(".range-tabs button").forEach((b) => {
-    b.setAttribute("aria-pressed", String(Number(b.dataset.days) === days));
+  document.querySelectorAll(".range-tabs .md-tab").forEach((b) => {
+    b.classList.toggle("md-tab-active", Number(b.dataset.days) === days);
   });
 
   const token = ++state.historyReq;
@@ -293,7 +294,7 @@ window.addEventListener("DOMContentLoaded", () => {
   initTheme();
   el("swap-btn").addEventListener("click", toggleDirection);
   el("amount").addEventListener("input", runCalculator);
-  document.querySelectorAll(".range-tabs button").forEach((b) => {
+  document.querySelectorAll(".range-tabs .md-tab").forEach((b) => {
     b.addEventListener("click", () => loadHistory(Number(b.dataset.days)));
   });
   el("mc-fetch-btn").addEventListener("click", loadMastercard);
