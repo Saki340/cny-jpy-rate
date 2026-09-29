@@ -2,8 +2,6 @@
 
 静态前端由 Cloudflare Workers Static Assets 提供，`worker.js` 统一处理 `/api/*` 接口，适用于 Cloudflare Workers Builds（Git 集成构建部署）。
 
-在线预览：[rate.anontokyo.vip](https://rate.anontokyo.vip/)
-
 ## 项目结构
 
 ```text
@@ -49,3 +47,11 @@ npx wrangler dev
 - Mastercard：官网换算器的内部接口，仅尽力获取。该站点启用了 Akamai 机器人防护，来自服务器的请求可能被拒绝（HTTP 403），此时页面会显示原因并提供官方换算器链接；请求成功时页面会显示 `1 JPY = x CNY`、按当前金额折算的结果和相对中间价的差异。
 
 Workers Builds 部署的是 Worker，不再使用 Pages 专属的 `functions/` 自动路由目录。
+
+## 界面
+
+样式基于 [hiratazx/material-you-css](https://github.com/hiratazx/material-you-css)（Material You / Material Design 3 的 CSS 实现，MIT License）。仓库里 `public/vendor/material-you.css` 是本地保存的一份，只保留了本站用到的组件（排版、按钮、卡片、tabs、switch、文本框、顶部应用栏、阴影、工具类），并非原仓库的完整文件；许可证原文见同目录下的 `material-you-css-LICENSE.txt`。primary/secondary 配色手工改成了人民币红／日元蓝，不是用官方 Material Theme Builder 生成的。"Material Design"／"Material You" 是 Google LLC 的商标，本项目及上游库均与 Google 无关联。
+
+## 免责声明
+
+本项目仅提供汇率查询与换算参考功能，不构成任何金融、投资或法律建议，也不对使用本站数据造成的任何损失承担责任；具体交易请以银行、支付机构或万事达官方渠道公布的汇率为准。
