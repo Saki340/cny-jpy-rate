@@ -1,0 +1,173 @@
+:root {
+  color-scheme: light dark;
+  --page-width: 760px;
+  --accent-cny: #a43b31;
+  --accent-jpy: #356b9a;
+  --chart-grid: color-mix(in srgb, var(--mdui-color-outline-variant) 55%, transparent);
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+html { scroll-padding-top: 72px; }
+/* Per mdui's own docs, <mdui-top-app-bar> does NOT add its usual
+ * compensating padding when placed inside <mdui-layout> -- <mdui-layout>
+ * takes over that job itself, by measuring the bar's rendered height
+ * (ResizeObserver-style) and applying the offset once its JS has run.
+ * Before <mdui-layout> is registered, none of that has happened yet, so
+ * the (position: fixed/absolute) bar can sit on top of the first thing
+ * in mdui-layout-main -- the .eyebrow title.
+ *
+ * `mdui-layout:not(:defined)` scopes this fallback to exactly that
+ * pre-registration window: it stops applying the instant mdui-layout is
+ * defined, so it can never linger and stack with mdui's own real
+ * (JS-applied) offset once that's in place. */
+mdui-layout:not(:defined) mdui-layout-main { display: block; padding-top: 64px; }
+@supports (padding-top: env(safe-area-inset-top)) {
+  mdui-layout:not(:defined) mdui-layout-main { padding-top: calc(64px + env(safe-area-inset-top, 0px)); }
+}
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: Roboto, "Noto Sans SC", system-ui, sans-serif;
+  background: var(--mdui-color-surface, Canvas);
+  color: var(--mdui-color-on-surface, CanvasText);
+}
+.app-bar {
+  padding: 0 max(8px, env(safe-area-inset-right)) 0 max(8px, env(safe-area-inset-left));
+  --mdui-top-app-bar-container-color: var(--mdui-color-surface);
+  --mdui-top-app-bar-title-text-color: var(--mdui-color-on-surface);
+}
+.app-bar-inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(100%, var(--page-width));
+  margin: 0 auto;
+  min-height: 64px;
+}
+.app-bar-inner mdui-top-app-bar-title {
+  padding-inline: 0;
+}
+.app-bar-spacer { flex: 1; }
+.theme-group {
+  flex: 0 0 auto;
+  max-width: 100%;
+}
+.page {
+  width: min(100% - 32px, var(--page-width));
+  margin: 0 auto;
+  padding: 4px 0 max(40px, env(safe-area-inset-bottom));
+}
+.eyebrow {
+  margin: 20px 0 28px;
+  font-size: clamp(22px, 4vw, 32px);
+  font-weight: 700;
+  letter-spacing: .06em;
+  line-height: 1.25;
+  color: var(--mdui-color-primary, currentColor);
+}
+section { margin-bottom: 24px; }
+.section-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 2px 12px;
+}
+.section-heading h2 {
+  font-size: var(--mdui-typescale-title-medium-size, 16px);
+  line-height: 1.4;
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: -.02em;
+}
+.section-kicker {
+  margin-left: auto;
+  white-space: nowrap;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  color: var(--mdui-color-on-surface-variant);
+  opacity: .8;
+}
+.surface-card {
+  display: block;
+  width: 100%;
+  padding: clamp(16px, 3.5vw, 24px);
+}
+.rate-card { --mdui-card-container-color: var(--mdui-color-surface-container); }
+.meta-text { margin: 0; color: var(--mdui-color-on-surface-variant); font-size: 12px; line-height: 1.65; }
+.rate-line {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: clamp(7px, 2vw, 14px);
+  margin: 18px 0 14px;
+  font: 500 clamp(28px, 6.8vw, 48px)/1.2 var(--mono);
+  letter-spacing: -.055em;
+  overflow-wrap: anywhere;
+}
+.rate-line .eq { color: var(--mdui-color-on-surface-variant); font-size: .62em; }
+.rate-line .cur-cny { color: var(--accent-cny); }
+.rate-line .cur-jpy { color: var(--accent-jpy); }
+.card-actions { display: flex; justify-content: flex-start; margin-top: 16px; }
+.calc-card { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 18px; }
+.calc-input { width: 100%; min-width: 0; }
+.calc-equals { font-size: 24px; color: var(--mdui-color-on-surface-variant); }
+.calc-field { min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.result-label { font-size: 13px; color: var(--mdui-color-on-surface-variant); }
+.calc-result { display: block; font: 500 clamp(23px, 4.5vw, 34px)/1.2 var(--mono); color: var(--mdui-color-primary); overflow-wrap: anywhere; }
+.range-tabs { display: flex; width: 100%; margin-bottom: 14px; }
+.chart-readout {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 3.6em;
+  margin: 0 0 10px;
+  font: 12px/1.55 var(--mono);
+  color: var(--mdui-color-on-surface-variant);
+}
+.chart-readout-line { display: block; }
+.chart-readout-hi { color: #c62828; }
+.chart-readout-lo { color: #1565c0; }
+.chart { min-height: 220px; width: 100%; }
+.chart svg { display: block; width: 100%; height: 220px; touch-action: pan-y; overflow: visible; }
+.chart-grid { stroke: var(--chart-grid); stroke-width: 1; }
+.chart-text { fill: var(--mdui-color-on-surface-variant); font: 11px var(--mono); }
+.chart-line { fill: none; stroke: var(--mdui-color-primary); stroke-width: 2.25; stroke-linejoin: round; stroke-linecap: round; }
+.chart-area { fill: var(--mdui-color-primary); opacity: .12; }
+.chart-cursor { stroke: var(--mdui-color-on-surface-variant); stroke-dasharray: 3 3; }
+.chart-dot { fill: var(--mdui-color-primary); stroke: var(--mdui-color-surface-container); stroke-width: 2; }
+.chart-extreme { stroke: var(--mdui-color-surface-container); stroke-width: 2; }
+.chart-high { fill: #c62828; }
+.chart-low { fill: #1565c0; }
+.chart-extreme-label { fill: var(--mdui-color-on-surface-variant); font: 10px/1 var(--mono); font-weight: 500; }
+.chart-msg { color: var(--mdui-color-on-surface-variant); font-size: 14px; margin: 0; padding: 70px 0; text-align: center; }
+.mc-panel { --mdui-card-container-color: var(--mdui-color-surface-container-low); }
+.mc-note { margin: 0 0 16px; color: var(--mdui-color-on-surface-variant); font-size: 12px; line-height: 1.75; }
+.mc-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.site-footer {
+  margin-top: 8px;
+  padding: 18px 4px 0;
+  color: var(--mdui-color-on-surface-variant);
+  font-size: 12px;
+  line-height: 1.8;
+}
+.site-footer p { margin: 0 0 12px; }
+.site-footer p:last-child { margin-bottom: 0; }
+.site-footer a { color: var(--mdui-color-primary); text-underline-offset: 3px; }
+.disclaimer { opacity: .85; }
+
+@media (max-width: 560px) {
+  .page { width: min(100% - 24px, var(--page-width)); padding-top: 2px; }
+  .eyebrow { margin: 16px 0 22px; font-size: 20px; letter-spacing: .05em; }
+  .section-kicker { font-size: 9px; letter-spacing: .08em; }
+  .surface-card { padding: 16px; }
+  .calc-card { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .calc-equals { display: none; }
+  .calc-field { order: -1; padding: 0 2px 4px; }
+  .calc-input { order: 0; }
+  .calc-result { font-size: 30px; }
+  .rate-line { gap: 7px; }
+  .chart svg { height: 205px; }
+  .theme-group { --mdui-segmented-button-label-padding: 0 8px; }
+}
