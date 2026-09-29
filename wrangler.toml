@@ -1,4 +1,4 @@
-name = "cny-jpy-rate"
+name = "test-cny-jpy-rate"
 main = "worker.js"
 compatibility_date = "2026-09-27"
 
