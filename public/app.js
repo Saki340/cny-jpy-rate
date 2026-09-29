@@ -3,18 +3,25 @@ const CURRENCY_API_URL = "https://github.com/fawazahmed0/exchange-api";
 const state = {
   cnyToJpy: null,
   jpyToCny: null,
-  direction: "jpy2cny", // default: JPY → CNY
+  direction: "jpy2cny",
   historyDays: 90,
-  history: [], // [{ date, rate }] always stored as CNY -> JPY
+  history: [], // [{ date, rate, label? }] always stored as CNY -> JPY
+  historyIntraday: false,
   historyReq: 0,
-  mc: {}, // Mastercard result per direction: { rate, date } or { error, status }
-  mcReq: 0,
 };
+
+const THEME_KEY = "theme-pref";
 
 const el = (id) => document.getElementById(id);
 
 function esc(text) {
-  return String(text).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  return String(text).replace(/[&<>"']/g, (c) => {
+    if (c === "&") return "&" + "amp;";
+    if (c === "<") return "&" + "lt;";
+    if (c === ">") return "&" + "gt;";
+    if (c === '"') return "&" + "quot;";
+    return "&#39;";
+  });
 }
 
 function debounce(fn, ms) {
@@ -32,25 +39,24 @@ function fmt(n, maxDigits = 4) {
 
 /* ---------- theme ---------- */
 
-function applyTheme(theme) {
-  const normalized = theme === "dark" ? "dark" : "light";
+function applyTheme(mode) {
+  const next = mode === "dark" || mode === "light" ? mode : "auto";
+  localStorage.setItem(THEME_KEY, next);
+  document.documentElement.classList.remove("mdui-theme-dark", "mdui-theme-light", "mdui-theme-auto");
+  document.documentElement.classList.add(`mdui-theme-${next}`);
   if (window.mdui && typeof window.mdui.setTheme === "function") {
-    window.mdui.setTheme(normalized);
-  } else {
-    document.documentElement.classList.toggle("mdui-theme-dark", normalized === "dark");
-    document.documentElement.classList.toggle("mdui-theme-light", normalized === "light");
+    window.mdui.setTheme(next);
   }
-  localStorage.setItem("theme", normalized);
-  el("theme-toggle").checked = normalized === "dark";
-  el("theme-toggle-label").textContent = normalized === "dark" ? "深色模式" : "浅色模式";
+  const group = el("theme-group");
+  if (group && String(group.value) !== next) group.value = next;
 }
 
 function initTheme() {
-  const saved = localStorage.getItem("theme");
-  const preferred = saved || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  const saved = localStorage.getItem(THEME_KEY);
+  const preferred = saved === "light" || saved === "dark" || saved === "auto" ? saved : "auto";
   applyTheme(preferred);
-  el("theme-toggle").addEventListener("change", (e) => {
-    applyTheme(e.target.checked ? "dark" : "light");
+  el("theme-group").addEventListener("change", (e) => {
+    applyTheme(e.target.value);
   });
 }
 
@@ -101,7 +107,6 @@ function renderRateLine() {
     `<span class="eq">=</span>` +
     `<span>${fmt(rate)}</span><span class="cur-${to.toLowerCase()}">${to}</span>`;
 
-  // Update calculator labels (amount field label + result "折合 XXX")
   const amountField = el("amount");
   if (amountField) amountField.label = `金额（${from}）`;
   el("calc-to-label").textContent = to;
@@ -112,19 +117,16 @@ function toggleDirection() {
   renderRateLine();
   runCalculator();
   renderChart();
-  if (state.mc[state.direction]) renderMastercard();
-  else loadMastercard();
 }
 
 function runCalculator() {
-  renderMastercard(); // its converted amount follows the input too
   const amount = parseFloat(el("amount").value) || 0;
   const rate = currentMidRate();
   if (!rate) return;
   el("calc-result").textContent = fmt(amount * rate, 3);
 }
 
-/* ---------- history chart (plain SVG, no external library) ---------- */
+/* ---------- history chart ---------- */
 
 function axisFmt(v) {
   return v >= 10 ? v.toFixed(2) : v >= 1 ? v.toFixed(3) : v.toFixed(5);
@@ -134,28 +136,38 @@ function pointFmt(v) {
   return v >= 1 ? v.toFixed(4) : v.toFixed(6);
 }
 
+function tickLabel(pt) {
+  return pt.label || (pt.date.length > 10 ? pt.date.slice(11, 16) : pt.date.slice(5));
+}
+
 async function loadHistory(days) {
   state.historyDays = days;
-  document.querySelectorAll(".range-tabs .md-tab").forEach((b) => {
-    const active = Number(b.dataset.days) === days;
-    b.classList.toggle("md-tab-active", active);
-    b.variant = active ? "tonal" : "outlined";
-  });
+  const group = el("range-group");
+  if (group && String(group.value) !== String(days)) group.value = String(days);
 
   const token = ++state.historyReq;
+  el("chart-readout").textContent = "加载中…";
   try {
     const res = await fetch(`/api/history?days=${days}`);
     const data = await res.json();
-    if (token !== state.historyReq) return; // a newer tab click is already in flight
+    if (token !== state.historyReq) return;
     if (!data.points || !data.points.length) throw new Error(data.error || "no points");
     state.history = data.points;
+    state.historyIntraday = Boolean(data.intraday) || days === 1;
     renderChart();
   } catch (err) {
     if (token !== state.historyReq) return;
     state.history = [];
     el("chart-readout").textContent = "";
-    el("history-chart").innerHTML = '<p class="chart-msg">历史走势暂时加载失败，请稍后刷新重试。</p>';
+    const msg = days === 1
+      ? "当天分时暂时无法加载（周末休市或接口受限），请稍后重试。"
+      : "历史走势暂时加载失败，请稍后刷新重试。";
+    el("history-chart").innerHTML = `<p class="chart-msg">${msg}</p>`;
   }
+}
+
+function setReadout(html) {
+  el("chart-readout").innerHTML = html;
 }
 
 function renderChart() {
@@ -169,16 +181,15 @@ function renderChart() {
 
   const W = Math.max(wrap.clientWidth || 600, 260);
   const H = 220;
-  const padL = 58, padR = 10, padT = 10, padB = 24;
+  const padL = 58, padR = 12, padT = 18, padB = 24;
   const n = pts.length;
 
   const min = Math.min(...values);
   const max = Math.max(...values);
   const span = max - min || max * 0.01 || 1;
-  const yMin = min - span * 0.1;
-  const yMax = max + span * 0.1;
+  const yMin = min - span * 0.12;
+  const yMax = max + span * 0.14;
 
-  // Indices of historical high / low (first occurrence if ties)
   let maxIdx = 0, minIdx = 0;
   for (let i = 1; i < n; i++) {
     if (values[i] > values[maxIdx]) maxIdx = i;
@@ -202,13 +213,12 @@ function renderChart() {
   for (let k = 0; k < ticks; k++) {
     const i = ticks === 1 ? 0 : Math.round((k * (n - 1)) / (ticks - 1));
     const anchor = k === 0 ? "start" : k === ticks - 1 ? "end" : "middle";
-    labels += `<text class="chart-text" x="${x(i).toFixed(1)}" y="${H - 6}" text-anchor="${anchor}">${esc(pts[i].date.slice(5))}</text>`;
+    labels += `<text class="chart-text" x="${x(i).toFixed(1)}" y="${H - 6}" text-anchor="${anchor}">${esc(tickLabel(pts[i]))}</text>`;
   }
 
   const line = values.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(" ");
   const area = `${line} L${x(n - 1).toFixed(1)} ${H - padB} L${x(0).toFixed(1)} ${H - padB} Z`;
 
-  // High / low markers
   const highMarker =
     `<circle class="chart-extreme chart-high" cx="${x(maxIdx).toFixed(1)}" cy="${y(values[maxIdx]).toFixed(1)}" r="4.5"/>` +
     `<text class="chart-extreme-label" x="${x(maxIdx).toFixed(1)}" y="${(y(values[maxIdx]) - 8).toFixed(1)}" text-anchor="middle">高</text>`;
@@ -217,7 +227,7 @@ function renderChart() {
     `<text class="chart-extreme-label" x="${x(minIdx).toFixed(1)}" y="${(y(values[minIdx]) + 16).toFixed(1)}" text-anchor="middle">低</text>`;
 
   wrap.innerHTML =
-    `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="1 ${from} 兑 ${to} 的历史走势">` +
+    `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="1 ${from} 兑 ${to} 的${state.historyIntraday ? "当天" : "历史"}走势">` +
     grid +
     `<path class="chart-area" d="${area}"/>` +
     `<path class="chart-line" d="${line}"/>` +
@@ -231,16 +241,16 @@ function renderChart() {
   const svg = wrap.querySelector("svg");
   const cursor = svg.querySelector(".chart-cursor");
   const dot = svg.querySelector(".chart-dot");
-  const readout = el("chart-readout");
 
-  const describe = (i, latest) =>
-    `${latest ? "最新 " : ""}${pts[i].date} · 1 ${from} = ${pointFmt(values[i])} ${to}`;
+  const describeLine = (i, latest) =>
+    `${latest ? (state.historyIntraday ? "当前 " : "最新 ") : ""}${esc(pts[i].date)} · 1 ${from} = ${pointFmt(values[i])} ${to}`;
 
-  const extremeSummary =
-    `最高 ${pts[maxIdx].date} ${pointFmt(values[maxIdx])} · 最低 ${pts[minIdx].date} ${pointFmt(values[minIdx])}`;
+  const defaultHtml =
+    `<span class="chart-readout-line">${describeLine(n - 1, true)}</span>` +
+    `<span class="chart-readout-line chart-readout-hi">最高 ${esc(pts[maxIdx].date)} · ${pointFmt(values[maxIdx])}</span>` +
+    `<span class="chart-readout-line chart-readout-lo">最低 ${esc(pts[minIdx].date)} · ${pointFmt(values[minIdx])}</span>`;
 
-  // Default: show latest + high/low summary
-  readout.textContent = `${describe(n - 1, true)} ｜ ${extremeSummary}`;
+  setReadout(defaultHtml);
 
   const showPoint = (evt) => {
     const rect = svg.getBoundingClientRect();
@@ -252,71 +262,17 @@ function renderChart() {
     dot.setAttribute("cy", y(values[i]).toFixed(1));
     cursor.style.display = "";
     dot.style.display = "";
-    readout.textContent = describe(i, false);
+    setReadout(`<span class="chart-readout-line">${describeLine(i, false)}</span>`);
   };
   const hidePoint = () => {
     cursor.style.display = "none";
     dot.style.display = "none";
-    readout.textContent = `${describe(n - 1, true)} ｜ ${extremeSummary}`;
+    setReadout(defaultHtml);
   };
 
   svg.addEventListener("pointermove", showPoint);
   svg.addEventListener("pointerdown", showPoint);
   svg.addEventListener("pointerleave", hidePoint);
-}
-
-/* ---------- Mastercard reference rate ---------- */
-
-const MC_MESSAGES = {
-  blocked: "万事达官网有机器人防护，拒绝了服务器的自动请求",
-  http: "万事达接口返回了异常状态",
-  unexpected: "万事达返回了无法识别的数据",
-  network: "连接万事达接口超时或失败",
-};
-
-async function loadMastercard() {
-  const dir = state.direction;
-  const token = ++state.mcReq;
-  el("mc-result").textContent = "查询中…";
-  el("mc-detail").textContent = "";
-
-  try {
-    const res = await fetch(`/api/mastercard?direction=${dir}`);
-    const data = await res.json();
-    if (token !== state.mcReq) return;
-    state.mc[dir] = data.ok
-      ? { rate: data.rate, date: data.fx_date }
-      : { error: MC_MESSAGES[data.reason] || "暂时无法读取", status: data.status };
-  } catch (err) {
-    if (token !== state.mcReq) return;
-    state.mc[dir] = { error: "暂时无法读取" };
-  }
-  renderMastercard();
-}
-
-function renderMastercard() {
-  const mc = state.mc[state.direction];
-  if (!mc) return;
-
-  if (mc.error) {
-    el("mc-result").textContent = "暂时无法读取";
-    el("mc-detail").textContent = mc.error + (mc.status ? `（HTTP ${mc.status}）` : "") + "。";
-    return;
-  }
-
-  const [from, to] = currentPair();
-  const amount = parseFloat(el("amount").value) || 0;
-  const mid = currentMidRate();
-
-  el("mc-result").textContent = `1 ${from} = ${fmt(mc.rate, 6)} ${to}`;
-
-  const parts = [`${fmt(amount, 6)} ${from} ≈ ${fmt(amount * mc.rate, 3)} ${to}`];
-  if (mid) {
-    const diff = (mc.rate / mid - 1) * 100;
-    parts.push(`较中间价 ${diff >= 0 ? "+" : ""}${diff.toFixed(2)}%`);
-  }
-  if (mc.date) parts.push(`汇率日期 ${mc.date}`);
-  el("mc-detail").textContent = parts.join(" · ");
 }
 
 /* ---------- init ---------- */
@@ -325,13 +281,11 @@ window.addEventListener("DOMContentLoaded", () => {
   initTheme();
   el("swap-btn").addEventListener("click", toggleDirection);
   el("amount").addEventListener("input", runCalculator);
-  document.querySelectorAll(".range-tabs .md-tab").forEach((b) => {
-    b.addEventListener("click", () => loadHistory(Number(b.dataset.days)));
+  el("range-group").addEventListener("change", (e) => {
+    loadHistory(Number(e.target.value));
   });
-  el("mc-fetch-btn").addEventListener("click", loadMastercard);
   window.addEventListener("resize", debounce(renderChart, 150));
 
   loadRate();
   loadHistory(90);
-  loadMastercard();
 });
