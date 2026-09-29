@@ -33,11 +33,16 @@ function fmt(n, maxDigits = 4) {
 /* ---------- theme ---------- */
 
 function applyTheme(theme) {
-  document.documentElement.classList.toggle("md-theme-dark", theme === "dark");
-  document.documentElement.classList.toggle("md-theme-light", theme === "light");
-  localStorage.setItem("theme", theme);
-  el("theme-toggle").checked = theme === "dark";
-  el("theme-toggle-label").textContent = theme === "dark" ? "深色" : "浅色";
+  const normalized = theme === "dark" ? "dark" : "light";
+  if (window.mdui && typeof window.mdui.setTheme === "function") {
+    window.mdui.setTheme(normalized);
+  } else {
+    document.documentElement.classList.toggle("mdui-theme-dark", normalized === "dark");
+    document.documentElement.classList.toggle("mdui-theme-light", normalized === "light");
+  }
+  localStorage.setItem("theme", normalized);
+  el("theme-toggle").checked = normalized === "dark";
+  el("theme-toggle-label").textContent = normalized === "dark" ? "深色模式" : "浅色模式";
 }
 
 function initTheme() {
@@ -129,7 +134,9 @@ function pointFmt(v) {
 async function loadHistory(days) {
   state.historyDays = days;
   document.querySelectorAll(".range-tabs .md-tab").forEach((b) => {
-    b.classList.toggle("md-tab-active", Number(b.dataset.days) === days);
+    const active = Number(b.dataset.days) === days;
+    b.classList.toggle("md-tab-active", active);
+    b.variant = active ? "tonal" : "outlined";
   });
 
   const token = ++state.historyReq;

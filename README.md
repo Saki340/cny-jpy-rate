@@ -50,7 +50,7 @@ Workers Builds 部署的是 Worker，不再使用 Pages 专属的 `functions/` �
 
 ## 界面
 
-样式基于 [hiratazx/material-you-css](https://github.com/hiratazx/material-you-css)（Material You / Material Design 3 的 CSS 实现，MIT License）。仓库里 `public/vendor/material-you.css` 是本地保存的一份，只保留了本站用到的组件（排版、按钮、卡片、tabs、switch、文本框、顶部应用栏、阴影、工具类），并非原仓库的完整文件；许可证原文见同目录下的 `material-you-css-LICENSE.txt`。primary/secondary 配色手工改成了人民币红／日元蓝，不是用官方 Material Theme Builder 生成的。"Material Design"／"Material You" 是 Google LLC 的商标，本项目及上游库均与 Google 无关联。
+界面使用 [mdui 2](https://www.mdui.org/zh-cn/docs/2/) 提供的 Material Design 3 Web Components，通过 CDN 引入 mdui CSS 和全局 JavaScript 构建版本；页面布局与汇率走势图样式由 `public/style.css` 定制。
 
 ## 免责声明
 
