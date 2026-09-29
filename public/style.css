@@ -9,12 +9,28 @@
 
 * { box-sizing: border-box; }
 html { scroll-padding-top: 72px; }
+/* Per mdui's own docs, <mdui-top-app-bar> does NOT add its usual
+ * compensating padding when placed inside <mdui-layout> -- <mdui-layout>
+ * takes over that job itself, by measuring the bar's rendered height
+ * (ResizeObserver-style) and applying the offset once its JS has run.
+ * Before <mdui-layout> is registered, none of that has happened yet, so
+ * the (position: fixed/absolute) bar can sit on top of the first thing
+ * in mdui-layout-main -- the .eyebrow title.
+ *
+ * `mdui-layout:not(:defined)` scopes this fallback to exactly that
+ * pre-registration window: it stops applying the instant mdui-layout is
+ * defined, so it can never linger and stack with mdui's own real
+ * (JS-applied) offset once that's in place. */
+mdui-layout:not(:defined) mdui-layout-main { display: block; padding-top: 64px; }
+@supports (padding-top: env(safe-area-inset-top)) {
+  mdui-layout:not(:defined) mdui-layout-main { padding-top: calc(64px + env(safe-area-inset-top, 0px)); }
+}
 body {
   margin: 0;
   min-height: 100vh;
   font-family: Roboto, "Noto Sans SC", system-ui, sans-serif;
-  background: var(--mdui-color-surface);
-  color: var(--mdui-color-on-surface);
+  background: var(--mdui-color-surface, Canvas);
+  color: var(--mdui-color-on-surface, CanvasText);
 }
 .app-bar {
   padding: 0 max(8px, env(safe-area-inset-right)) 0 max(8px, env(safe-area-inset-left));
@@ -48,7 +64,7 @@ body {
   font-weight: 700;
   letter-spacing: .06em;
   line-height: 1.25;
-  color: var(--mdui-color-primary);
+  color: var(--mdui-color-primary, currentColor);
 }
 section { margin-bottom: 24px; }
 .section-heading {
@@ -148,7 +164,8 @@ section { margin-bottom: 24px; }
   .surface-card { padding: 16px; }
   .calc-card { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .calc-equals { display: none; }
-  .calc-field { padding: 4px 2px 0; }
+  .calc-field { order: -1; padding: 0 2px 4px; }
+  .calc-input { order: 0; }
   .calc-result { font-size: 30px; }
   .rate-line { gap: 7px; }
   .chart svg { height: 205px; }
