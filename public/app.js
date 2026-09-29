@@ -3,7 +3,7 @@ const CURRENCY_API_URL = "https://github.com/fawazahmed0/exchange-api";
 const state = {
   cnyToJpy: null,
   jpyToCny: null,
-  direction: "cny2jpy", // or jpy2cny
+  direction: "jpy2cny", // default: JPY → CNY
   historyDays: 90,
   history: [], // [{ date, rate }] always stored as CNY -> JPY
   historyReq: 0,
@@ -76,6 +76,7 @@ async function loadRate() {
     updated.append(link);
     if (String(data.source).includes("mirror")) updated.append("（备用镜像）");
 
+    boardNote.textContent = "数据每次访问时实时获取，来源见页面底部。";
     renderRateLine();
     runCalculator();
   } catch (err) {
@@ -96,11 +97,13 @@ function renderRateLine() {
   const rate = currentMidRate();
 
   el("rate-line").innerHTML =
-    `<span>1</span><span class="cur-from">${from}</span>` +
+    `<span>1</span><span class="cur-${from.toLowerCase()}">${from}</span>` +
     `<span class="eq">=</span>` +
-    `<span>${fmt(rate)}</span><span class="cur-to">${to}</span>`;
+    `<span>${fmt(rate)}</span><span class="cur-${to.toLowerCase()}">${to}</span>`;
 
-  el("calc-from-label").textContent = from;
+  // Update calculator labels (amount field label + result "折合 XXX")
+  const amountField = el("amount");
+  if (amountField) amountField.label = `金额（${from}）`;
   el("calc-to-label").textContent = to;
 }
 
@@ -175,6 +178,13 @@ function renderChart() {
   const yMin = min - span * 0.1;
   const yMax = max + span * 0.1;
 
+  // Indices of historical high / low (first occurrence if ties)
+  let maxIdx = 0, minIdx = 0;
+  for (let i = 1; i < n; i++) {
+    if (values[i] > values[maxIdx]) maxIdx = i;
+    if (values[i] < values[minIdx]) minIdx = i;
+  }
+
   const step = n > 1 ? (W - padL - padR) / (n - 1) : 0;
   const x = (i) => (n > 1 ? padL + i * step : padL + (W - padL - padR) / 2);
   const y = (v) => padT + ((yMax - v) * (H - padT - padB)) / (yMax - yMin);
@@ -198,11 +208,21 @@ function renderChart() {
   const line = values.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(" ");
   const area = `${line} L${x(n - 1).toFixed(1)} ${H - padB} L${x(0).toFixed(1)} ${H - padB} Z`;
 
+  // High / low markers
+  const highMarker =
+    `<circle class="chart-extreme chart-high" cx="${x(maxIdx).toFixed(1)}" cy="${y(values[maxIdx]).toFixed(1)}" r="4.5"/>` +
+    `<text class="chart-extreme-label" x="${x(maxIdx).toFixed(1)}" y="${(y(values[maxIdx]) - 8).toFixed(1)}" text-anchor="middle">高</text>`;
+  const lowMarker =
+    `<circle class="chart-extreme chart-low" cx="${x(minIdx).toFixed(1)}" cy="${y(values[minIdx]).toFixed(1)}" r="4.5"/>` +
+    `<text class="chart-extreme-label" x="${x(minIdx).toFixed(1)}" y="${(y(values[minIdx]) + 16).toFixed(1)}" text-anchor="middle">低</text>`;
+
   wrap.innerHTML =
     `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="1 ${from} 兑 ${to} 的历史走势">` +
     grid +
     `<path class="chart-area" d="${area}"/>` +
     `<path class="chart-line" d="${line}"/>` +
+    highMarker +
+    lowMarker +
     `<line class="chart-cursor" y1="${padT}" y2="${H - padB}" style="display:none"/>` +
     `<circle class="chart-dot" r="3.5" style="display:none"/>` +
     labels +
@@ -216,7 +236,11 @@ function renderChart() {
   const describe = (i, latest) =>
     `${latest ? "最新 " : ""}${pts[i].date} · 1 ${from} = ${pointFmt(values[i])} ${to}`;
 
-  readout.textContent = describe(n - 1, true);
+  const extremeSummary =
+    `最高 ${pts[maxIdx].date} ${pointFmt(values[maxIdx])} · 最低 ${pts[minIdx].date} ${pointFmt(values[minIdx])}`;
+
+  // Default: show latest + high/low summary
+  readout.textContent = `${describe(n - 1, true)} ｜ ${extremeSummary}`;
 
   const showPoint = (evt) => {
     const rect = svg.getBoundingClientRect();
@@ -233,7 +257,7 @@ function renderChart() {
   const hidePoint = () => {
     cursor.style.display = "none";
     dot.style.display = "none";
-    readout.textContent = describe(n - 1, true);
+    readout.textContent = `${describe(n - 1, true)} ｜ ${extremeSummary}`;
   };
 
   svg.addEventListener("pointermove", showPoint);
