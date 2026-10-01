@@ -1,0 +1,5 @@
+# /api/* stays crawlable: Googlebot needs it to render the rates and charts.
+User-agent: *
+Allow: /
+
+Sitemap: https://rate.anontokyo.vip/sitemap.xml

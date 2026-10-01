@@ -16,6 +16,9 @@ cny-jpy-rate/
 │   ├── index.html
 │   ├── app.js           # 原生 JS，走势图为手写 SVG
 │   ├── style.css
+│   ├── favicon.svg
+│   ├── robots.txt       # 允许抓取（含 /api/*，Googlebot 渲染页面要用）
+│   ├── sitemap.xml
 │   └── vendor/          # 自托管的 mdui 与字体（见下文）
 ├── docs/llms-full.txt   # mdui 2 官方完整文档，开发参考，不部署
 ├── CLAUDE.md            # 给 Claude Code 的项目说明
@@ -48,6 +51,10 @@ npx wrangler dev
 - Mastercard：官方没有公开接口，官网又有机器人防护，因此不再自动查询，页面只提供官方换算器链接。
 
 以上都是中间价或市场报价，不含任何机构的买卖点差。
+
+## 搜索引擎
+
+站点已在 Google Search Console 验证，sitemap 为 `/sitemap.xml`。页面 `<head>` 里有 description、canonical、Open Graph 和 JSON-LD（`WebApplication`），这些都直接写在 HTML 里，不依赖 JS。
 
 ## 静态资源自托管
 
