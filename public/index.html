@@ -3,15 +3,16 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="theme-color" content="#f7f5fa" />
+<meta name="theme-color" content="#fef7ff" />
 <title>JPY ⇄ CNY 汇率板</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💴</text></svg>" />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
-<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
-<link rel="stylesheet" href="https://unpkg.com/mdui@2/mdui.css" />
-<script src="https://unpkg.com/mdui@2/mdui.global.js"></script>
+<!-- Apply the saved theme before first paint to avoid a light/dark flash. -->
+<script>try { var t = localStorage.getItem("theme-pref"); if (t === "light" || t === "dark") document.documentElement.className = "mdui-theme-" + t; } catch (e) {}</script>
+<!-- mdui and fonts are self-hosted (public/vendor) so the page does not depend on
+     unpkg / Google Fonts, which are slow or blocked in mainland China. -->
+<link rel="preload" href="vendor/fonts/material-icons.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="stylesheet" href="vendor/mdui/mdui.css" />
+<script src="vendor/mdui/mdui.global.js"></script>
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>

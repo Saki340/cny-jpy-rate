@@ -42,9 +42,47 @@ async function fetchHistory(endpoint) {
   return points;
 }
 
+// Intraday quotes come from Yahoo Finance's public chart endpoint (CNYJPY=X).
+// It is unofficial and answers 429 to requests without a browser-like UA.
+// FX trades around the clock on weekdays; on weekends range=1d can come back
+// nearly empty, so we fall back to 5 days and keep the last 24h of data.
+const YAHOO_HOSTS = ["query1.finance.yahoo.com", "query2.finance.yahoo.com"];
+const YAHOO_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36";
+
+async function fetchIntraday(host, range, interval) {
+  const res = await fetch(`https://${host}/v8/finance/chart/CNYJPY=X?range=${range}&interval=${interval}`, {
+    headers: { "user-agent": YAHOO_UA, accept: "application/json" },
+    signal: AbortSignal.timeout(8000),
+    cf: { cacheTtl: 300, cacheEverything: true },
+  });
+  if (!res.ok) throw new Error(`upstream responded ${res.status}`);
+  const result = (await res.json()).chart?.result?.[0];
+  const stamps = result?.timestamp || [];
+  const closes = result?.indicators?.quote?.[0]?.close || [];
+  const points = stamps
+    .map((t, i) => ({ t, rate: closes[i] }))
+    .filter(p => typeof p.rate === "number" && p.rate > 0);
+  if (!points.length) return [];
+  const last = points[points.length - 1].t;
+  return points.filter(p => p.t >= last - 86400).map(p => ({ date: new Date(p.t * 1000).toISOString(), rate: p.rate }));
+}
+
+async function intraday() {
+  for (const host of YAHOO_HOSTS) {
+    for (const [range, interval] of [["1d", "5m"], ["5d", "15m"]]) {
+      try {
+        const points = await fetchIntraday(host, range, interval);
+        if (points.length >= 2) return json({ points, intraday: true, source: "Yahoo Finance" }, 200, { "cache-control": "public, max-age=300" });
+      } catch { /* try the next option */ }
+    }
+  }
+  return json({ error: "当天分时数据获取失败", points: [] }, 502);
+}
+
 async function history(url) {
   const rawDays = Number.parseInt(url.searchParams.get("days") || "90", 10);
   const days = Math.min(Math.max(rawDays || 90, 1), 365);
+  if (days === 1) return intraday();
   const end = new Date();
   const start = new Date();
   start.setDate(end.getDate() - days);
@@ -62,37 +100,6 @@ async function history(url) {
   return json({ error: "历史数据获取失败", points: [] }, 502);
 }
 
-// Mastercard has no public free API. This calls the internal endpoint used by
-// the converter page on mastercard.com. The site sits behind Akamai Bot Manager,
-// so requests from a server may be answered with 403; in that case we report
-// why instead of pretending, and the page shows a link to the official tool.
-const MC_PAGE = "https://www.mastercard.com/us/en/personal/get-support/currency-exchange-rate-converter.html";
-
-async function mastercard(url) {
-  const direction = url.searchParams.get("direction") === "jpy2cny" ? "jpy2cny" : "cny2jpy";
-  const from = direction === "cny2jpy" ? "CNY" : "JPY"; // transaction currency
-  const to = direction === "cny2jpy" ? "JPY" : "CNY";   // cardholder billing currency
-  const endpoint = "https://www.mastercard.com/marketingservices/public/mccom-services/currency-conversions/conversion-rates" +
-    `?exchange_date=0000-00-00&transaction_currency=${from}&cardholder_billing_currency=${to}&bank_fee=0&transaction_amount=1`;
-  try {
-    const res = await fetch(endpoint, {
-      headers: { "user-agent": "Mozilla/5.0 (compatible; personal-rate-page/1.0)", accept: "application/json", referer: MC_PAGE },
-      signal: AbortSignal.timeout(8000),
-    });
-    const type = res.headers.get("content-type") || "";
-    if (!res.ok || !type.includes("json")) {
-      return json({ ok: false, reason: [401, 403, 429].includes(res.status) || !type.includes("json") ? "blocked" : "http", status: res.status });
-    }
-    const body = await res.json();
-    const d = body.data || body;
-    const rate = Number(d.conversionRate ?? d.conversion_rate);
-    if (!Number.isFinite(rate) || rate <= 0) return json({ ok: false, reason: "unexpected", status: res.status });
-    return json({ ok: true, from, to, rate, fx_date: d.fxDate || d.fx_date || null }, 200, { "cache-control": "public, max-age=1800" });
-  } catch {
-    return json({ ok: false, reason: "network" });
-  }
-}
-
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -101,7 +108,6 @@ export default {
       if (request.method !== "GET") return json({ error: "Method not allowed" }, 405, { allow: "GET, OPTIONS" });
       if (url.pathname === "/api/rate") return rate();
       if (url.pathname === "/api/history") return history(url);
-      if (url.pathname === "/api/mastercard") return mastercard(url);
       return json({ error: "Not found" }, 404);
     }
     return env.ASSETS.fetch(request);

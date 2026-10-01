@@ -1,6 +1,6 @@
-MIT License
+The MIT License (MIT)
 
-Copyright (c) 2026 I Putu Arya Sukanadi
+Copyright (c) 2016-present zdhxiong@gmail.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,21 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-THIRD-PARTY ATTRIBUTIONS (as stated by the material-you-css project)
-
-This project is an independent CSS implementation that references the
-Material Design 3 (Material You) design system specification.
-
-Material Design and Material You — Copyright (c) Google LLC. Trademark:
-"Material Design" and "Material You" are trademarks of Google LLC. Design
-guidelines and specifications are licensed under CC BY 4.0
-(https://creativecommons.org/licenses/by/4.0/). Source: https://m3.material.io/.
-This project is NOT affiliated with, endorsed by, or sponsored by Google LLC.
-
-Roboto Typeface / Material Symbols — Copyright (c) Google LLC, licensed under
-the Apache License, Version 2.0 (https://www.apache.org/licenses/LICENSE-2.0).
-
-Source of this file: https://github.com/hiratazx/material-you-css/blob/main/LICENSE

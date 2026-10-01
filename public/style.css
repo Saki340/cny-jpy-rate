@@ -1,26 +1,71 @@
-:root {
-  color-scheme: light dark;
+/* Self-hosted fonts (see public/vendor/fonts/README.txt). Chinese text falls
+ * back to the system font, which keeps the download small. */
+@font-face {
+  font-family: "Roboto";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url(vendor/fonts/roboto-latin.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(vendor/fonts/ibm-plex-mono-400-latin.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(vendor/fonts/ibm-plex-mono-500-latin.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* mdui-icon renders ligatures with this exact family name. */
+@font-face {
+  font-family: "Material Icons";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url(vendor/fonts/material-icons.woff2) format("woff2");
+}
+
+/* mdui colour tokens are "r, g, b" triplets and must be used as rgb(var(--x)).
+ * The app's own colours follow the same convention, with a light and a dark
+ * set picked the same way mdui picks its theme (class, or system for auto). */
+:root,
+.mdui-theme-light {
   --page-width: 760px;
-  --accent-cny: #a43b31;
-  --accent-jpy: #356b9a;
-  --chart-grid: color-mix(in srgb, var(--mdui-color-outline-variant) 55%, transparent);
   --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --app-color-cny: 164, 59, 49;
+  --app-color-jpy: 40, 96, 146;
+  --app-color-high: 186, 26, 26;
+  --app-color-low: 21, 94, 180;
+}
+.mdui-theme-dark {
+  --app-color-cny: 255, 180, 168;
+  --app-color-jpy: 158, 202, 255;
+  --app-color-high: 255, 180, 171;
+  --app-color-low: 160, 202, 253;
+}
+@media (prefers-color-scheme: dark) {
+  .mdui-theme-auto {
+    --app-color-cny: 255, 180, 168;
+    --app-color-jpy: 158, 202, 255;
+    --app-color-high: 255, 180, 171;
+    --app-color-low: 160, 202, 253;
+  }
 }
 
 * { box-sizing: border-box; }
 html { scroll-padding-top: 72px; }
-/* Per mdui's own docs, <mdui-top-app-bar> does NOT add its usual
- * compensating padding when placed inside <mdui-layout> -- <mdui-layout>
- * takes over that job itself, by measuring the bar's rendered height
- * (ResizeObserver-style) and applying the offset once its JS has run.
- * Before <mdui-layout> is registered, none of that has happened yet, so
- * the (position: fixed/absolute) bar can sit on top of the first thing
- * in mdui-layout-main -- the .eyebrow title.
- *
- * `mdui-layout:not(:defined)` scopes this fallback to exactly that
- * pre-registration window: it stops applying the instant mdui-layout is
- * defined, so it can never linger and stack with mdui's own real
- * (JS-applied) offset once that's in place. */
+/* Per mdui's docs, <mdui-top-app-bar> inside <mdui-layout> does not pad the
+ * page itself; <mdui-layout> measures the bar and offsets <mdui-layout-main>
+ * once its JS has run. Until mdui-layout is defined, reserve that space here
+ * so the fixed bar cannot cover the first heading. */
 mdui-layout:not(:defined) mdui-layout-main { display: block; padding-top: 64px; }
 @supports (padding-top: env(safe-area-inset-top)) {
   mdui-layout:not(:defined) mdui-layout-main { padding-top: calc(64px + env(safe-area-inset-top, 0px)); }
@@ -28,14 +73,13 @@ mdui-layout:not(:defined) mdui-layout-main { display: block; padding-top: 64px; 
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: Roboto, "Noto Sans SC", system-ui, sans-serif;
-  background: var(--mdui-color-surface, Canvas);
-  color: var(--mdui-color-on-surface, CanvasText);
+  font-family: Roboto, "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans", "Yu Gothic UI", system-ui, sans-serif;
+  background-color: rgb(var(--mdui-color-background));
+  color: rgb(var(--mdui-color-on-background));
 }
+a { color: rgb(var(--mdui-color-primary)); text-underline-offset: 3px; }
 .app-bar {
   padding: 0 max(8px, env(safe-area-inset-right)) 0 max(8px, env(safe-area-inset-left));
-  --mdui-top-app-bar-container-color: var(--mdui-color-surface);
-  --mdui-top-app-bar-title-text-color: var(--mdui-color-on-surface);
 }
 .app-bar-inner {
   display: flex;
@@ -64,7 +108,7 @@ body {
   font-weight: 700;
   letter-spacing: .06em;
   line-height: 1.25;
-  color: var(--mdui-color-primary, currentColor);
+  color: rgb(var(--mdui-color-primary));
 }
 section { margin-bottom: 24px; }
 .section-heading {
@@ -74,11 +118,12 @@ section { margin-bottom: 24px; }
   margin: 0 2px 12px;
 }
 .section-heading h2 {
-  font-size: var(--mdui-typescale-title-medium-size, 16px);
+  font-size: var(--mdui-typescale-title-medium-size);
   line-height: 1.4;
   font-weight: 600;
   margin: 0;
   letter-spacing: -.02em;
+  color: rgb(var(--mdui-color-on-surface));
 }
 .section-kicker {
   margin-left: auto;
@@ -86,16 +131,19 @@ section { margin-bottom: 24px; }
   font-size: 10px;
   font-weight: 700;
   letter-spacing: .12em;
-  color: var(--mdui-color-on-surface-variant);
-  opacity: .8;
+  color: rgb(var(--mdui-color-on-surface-variant));
 }
 .surface-card {
   display: block;
   width: 100%;
   padding: clamp(16px, 3.5vw, 24px);
+  color: rgb(var(--mdui-color-on-surface));
 }
-.rate-card { --mdui-card-container-color: var(--mdui-color-surface-container); }
-.meta-text { margin: 0; color: var(--mdui-color-on-surface-variant); font-size: 12px; line-height: 1.65; }
+/* Outlined text fields paint their floating label on --mdui-color-background;
+ * point it at the card surface so the label never shows as a mismatched box. */
+mdui-card[variant="outlined"] { --mdui-color-background: var(--mdui-color-surface); }
+.rate-card { background-color: rgb(var(--mdui-color-surface-container)); }
+.meta-text { margin: 0; color: rgb(var(--mdui-color-on-surface-variant)); font-size: 12px; line-height: 1.65; }
 .rate-line {
   display: flex;
   align-items: baseline;
@@ -105,17 +153,18 @@ section { margin-bottom: 24px; }
   font: 500 clamp(28px, 6.8vw, 48px)/1.2 var(--mono);
   letter-spacing: -.055em;
   overflow-wrap: anywhere;
+  color: rgb(var(--mdui-color-on-surface));
 }
-.rate-line .eq { color: var(--mdui-color-on-surface-variant); font-size: .62em; }
-.rate-line .cur-cny { color: var(--accent-cny); }
-.rate-line .cur-jpy { color: var(--accent-jpy); }
+.rate-line .eq { color: rgb(var(--mdui-color-on-surface-variant)); font-size: .62em; }
+.rate-line .cur-cny { color: rgb(var(--app-color-cny)); }
+.rate-line .cur-jpy { color: rgb(var(--app-color-jpy)); }
 .card-actions { display: flex; justify-content: flex-start; margin-top: 16px; }
 .calc-card { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 18px; }
 .calc-input { width: 100%; min-width: 0; }
-.calc-equals { font-size: 24px; color: var(--mdui-color-on-surface-variant); }
+.calc-equals { font-size: 24px; color: rgb(var(--mdui-color-on-surface-variant)); }
 .calc-field { min-width: 0; display: flex; flex-direction: column; gap: 10px; }
-.result-label { font-size: 13px; color: var(--mdui-color-on-surface-variant); }
-.calc-result { display: block; font: 500 clamp(23px, 4.5vw, 34px)/1.2 var(--mono); color: var(--mdui-color-primary); overflow-wrap: anywhere; }
+.result-label { font-size: 13px; color: rgb(var(--mdui-color-on-surface-variant)); }
+.calc-result { display: block; font: 500 clamp(23px, 4.5vw, 34px)/1.2 var(--mono); color: rgb(var(--mdui-color-primary)); overflow-wrap: anywhere; }
 .range-tabs { display: flex; width: 100%; margin-bottom: 14px; }
 .chart-readout {
   display: flex;
@@ -124,38 +173,36 @@ section { margin-bottom: 24px; }
   min-height: 3.6em;
   margin: 0 0 10px;
   font: 12px/1.55 var(--mono);
-  color: var(--mdui-color-on-surface-variant);
+  color: rgb(var(--mdui-color-on-surface-variant));
 }
 .chart-readout-line { display: block; }
-.chart-readout-hi { color: #c62828; }
-.chart-readout-lo { color: #1565c0; }
+.chart-readout-hi { color: rgb(var(--app-color-high)); }
+.chart-readout-lo { color: rgb(var(--app-color-low)); }
 .chart { min-height: 220px; width: 100%; }
 .chart svg { display: block; width: 100%; height: 220px; touch-action: pan-y; overflow: visible; }
-.chart-grid { stroke: var(--chart-grid); stroke-width: 1; }
-.chart-text { fill: var(--mdui-color-on-surface-variant); font: 11px var(--mono); }
-.chart-line { fill: none; stroke: var(--mdui-color-primary); stroke-width: 2.25; stroke-linejoin: round; stroke-linecap: round; }
-.chart-area { fill: var(--mdui-color-primary); opacity: .12; }
-.chart-cursor { stroke: var(--mdui-color-on-surface-variant); stroke-dasharray: 3 3; }
-.chart-dot { fill: var(--mdui-color-primary); stroke: var(--mdui-color-surface-container); stroke-width: 2; }
-.chart-extreme { stroke: var(--mdui-color-surface-container); stroke-width: 2; }
-.chart-high { fill: #c62828; }
-.chart-low { fill: #1565c0; }
-.chart-extreme-label { fill: var(--mdui-color-on-surface-variant); font: 10px/1 var(--mono); font-weight: 500; }
-.chart-msg { color: var(--mdui-color-on-surface-variant); font-size: 14px; margin: 0; padding: 70px 0; text-align: center; }
-.mc-panel { --mdui-card-container-color: var(--mdui-color-surface-container-low); }
-.mc-note { margin: 0 0 16px; color: var(--mdui-color-on-surface-variant); font-size: 12px; line-height: 1.75; }
+.chart-grid { stroke: rgb(var(--mdui-color-outline-variant)); stroke-width: 1; }
+.chart-text { fill: rgb(var(--mdui-color-on-surface-variant)); font: 11px var(--mono); }
+.chart-line { fill: none; stroke: rgb(var(--mdui-color-primary)); stroke-width: 2.25; stroke-linejoin: round; stroke-linecap: round; }
+.chart-area { fill: rgb(var(--mdui-color-primary)); opacity: .12; }
+.chart-cursor { stroke: rgb(var(--mdui-color-on-surface-variant)); stroke-dasharray: 3 3; }
+.chart-dot { fill: rgb(var(--mdui-color-primary)); stroke: rgb(var(--mdui-color-surface)); stroke-width: 2; }
+.chart-extreme { stroke: rgb(var(--mdui-color-surface)); stroke-width: 2; }
+.chart-high { fill: rgb(var(--app-color-high)); }
+.chart-low { fill: rgb(var(--app-color-low)); }
+.chart-extreme-label { fill: rgb(var(--mdui-color-on-surface-variant)); font: 10px/1 var(--mono); font-weight: 500; }
+.chart-msg { color: rgb(var(--mdui-color-on-surface-variant)); font-size: 14px; margin: 0; padding: 70px 0; text-align: center; }
+.mc-panel { background-color: rgb(var(--mdui-color-surface-container-low)); --mdui-color-background: var(--mdui-color-surface-container-low); }
+.mc-note { margin: 0 0 16px; color: rgb(var(--mdui-color-on-surface-variant)); font-size: 12px; line-height: 1.75; }
 .mc-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .site-footer {
   margin-top: 8px;
   padding: 18px 4px 0;
-  color: var(--mdui-color-on-surface-variant);
+  color: rgb(var(--mdui-color-on-surface-variant));
   font-size: 12px;
   line-height: 1.8;
 }
 .site-footer p { margin: 0 0 12px; }
 .site-footer p:last-child { margin-bottom: 0; }
-.site-footer a { color: var(--mdui-color-primary); text-underline-offset: 3px; }
-.disclaimer { opacity: .85; }
 
 @media (max-width: 560px) {
   .page { width: min(100% - 24px, var(--page-width)); padding-top: 2px; }
@@ -169,5 +216,5 @@ section { margin-bottom: 24px; }
   .calc-result { font-size: 30px; }
   .rate-line { gap: 7px; }
   .chart svg { height: 205px; }
-  .theme-group { --mdui-segmented-button-label-padding: 0 8px; }
+  .theme-group mdui-segmented-button::part(button) { padding: 0 10px; }
 }

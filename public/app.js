@@ -32,6 +32,13 @@ function debounce(fn, ms) {
   };
 }
 
+// In a single-select segmented group, clicking the selected segment deselects
+// it (value becomes ""). Put the selection back once the group has rendered;
+// setting it synchronously is coalesced away by the component's batched update.
+function keepSelection(group, value) {
+  group.updateComplete.then(() => { group.value = value; });
+}
+
 function fmt(n, maxDigits = 4) {
   if (!isFinite(n)) return "--";
   return n.toLocaleString("zh-CN", { maximumFractionDigits: maxDigits });
@@ -39,25 +46,45 @@ function fmt(n, maxDigits = 4) {
 
 /* ---------- theme ---------- */
 
+// localStorage can throw (private mode, blocked site data); theme choice is
+// only a convenience, so failures are ignored.
+function readThemePref() {
+  try { return localStorage.getItem(THEME_KEY); } catch { return null; }
+}
+
+function saveThemePref(mode) {
+  try { localStorage.setItem(THEME_KEY, mode); } catch { /* ignore */ }
+}
+
+// Keep the browser UI colour (mobile address bar) in sync with the page surface.
+function syncThemeColor() {
+  const meta = document.querySelector('meta[name="theme-color"]');
+  const surface = getComputedStyle(document.documentElement).getPropertyValue("--mdui-color-surface").trim();
+  if (meta && surface) meta.content = `rgb(${surface})`;
+}
+
 function applyTheme(mode) {
   const next = mode === "dark" || mode === "light" ? mode : "auto";
-  localStorage.setItem(THEME_KEY, next);
-  document.documentElement.classList.remove("mdui-theme-dark", "mdui-theme-light", "mdui-theme-auto");
-  document.documentElement.classList.add(`mdui-theme-${next}`);
+  saveThemePref(next);
   if (window.mdui && typeof window.mdui.setTheme === "function") {
     window.mdui.setTheme(next);
+  } else {
+    document.documentElement.classList.remove("mdui-theme-dark", "mdui-theme-light", "mdui-theme-auto");
+    document.documentElement.classList.add(`mdui-theme-${next}`);
   }
+  syncThemeColor();
   const group = el("theme-group");
   if (group && String(group.value) !== next) group.value = next;
 }
 
 function initTheme() {
-  const saved = localStorage.getItem(THEME_KEY);
-  const preferred = saved === "light" || saved === "dark" || saved === "auto" ? saved : "auto";
-  applyTheme(preferred);
+  const saved = readThemePref();
+  applyTheme(saved === "light" || saved === "dark" ? saved : "auto");
   el("theme-group").addEventListener("change", (e) => {
-    applyTheme(e.target.value);
+    if (e.target.value) applyTheme(e.target.value);
+    else keepSelection(e.target, readThemePref() || "auto");
   });
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", syncThemeColor);
 }
 
 /* ---------- rate board + calculator ---------- */
@@ -136,8 +163,17 @@ function pointFmt(v) {
   return v >= 1 ? v.toFixed(4) : v.toFixed(6);
 }
 
+// Intraday points carry full ISO timestamps; show them in the viewer's own
+// time zone (visitors are in both China and Japan). Daily points are plain dates.
+const timeFmt = new Intl.DateTimeFormat("zh-CN", { hour: "2-digit", minute: "2-digit", hour12: false });
+const dateTimeFmt = new Intl.DateTimeFormat("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
+
 function tickLabel(pt) {
-  return pt.label || (pt.date.length > 10 ? pt.date.slice(11, 16) : pt.date.slice(5));
+  return pt.date.length > 10 ? timeFmt.format(new Date(pt.date)) : pt.date.slice(5);
+}
+
+function pointLabel(pt) {
+  return pt.date.length > 10 ? dateTimeFmt.format(new Date(pt.date)) : pt.date;
 }
 
 async function loadHistory(days) {
@@ -153,7 +189,7 @@ async function loadHistory(days) {
     if (token !== state.historyReq) return;
     if (!data.points || !data.points.length) throw new Error(data.error || "no points");
     state.history = data.points;
-    state.historyIntraday = Boolean(data.intraday) || days === 1;
+    state.historyIntraday = Boolean(data.intraday);
     renderChart();
   } catch (err) {
     if (token !== state.historyReq) return;
@@ -243,12 +279,12 @@ function renderChart() {
   const dot = svg.querySelector(".chart-dot");
 
   const describeLine = (i, latest) =>
-    `${latest ? (state.historyIntraday ? "当前 " : "最新 ") : ""}${esc(pts[i].date)} · 1 ${from} = ${pointFmt(values[i])} ${to}`;
+    `${latest ? (state.historyIntraday ? "当前 " : "最新 ") : ""}${esc(pointLabel(pts[i]))} · 1 ${from} = ${pointFmt(values[i])} ${to}`;
 
   const defaultHtml =
     `<span class="chart-readout-line">${describeLine(n - 1, true)}</span>` +
-    `<span class="chart-readout-line chart-readout-hi">最高 ${esc(pts[maxIdx].date)} · ${pointFmt(values[maxIdx])}</span>` +
-    `<span class="chart-readout-line chart-readout-lo">最低 ${esc(pts[minIdx].date)} · ${pointFmt(values[minIdx])}</span>`;
+    `<span class="chart-readout-line chart-readout-hi">最高 ${esc(pointLabel(pts[maxIdx]))} · ${pointFmt(values[maxIdx])}</span>` +
+    `<span class="chart-readout-line chart-readout-lo">最低 ${esc(pointLabel(pts[minIdx]))} · ${pointFmt(values[minIdx])}</span>`;
 
   setReadout(defaultHtml);
 
@@ -282,7 +318,8 @@ window.addEventListener("DOMContentLoaded", () => {
   el("swap-btn").addEventListener("click", toggleDirection);
   el("amount").addEventListener("input", runCalculator);
   el("range-group").addEventListener("change", (e) => {
-    loadHistory(Number(e.target.value));
+    if (e.target.value) loadHistory(Number(e.target.value));
+    else keepSelection(e.target, String(state.historyDays));
   });
   window.addEventListener("resize", debounce(renderChart, 150));
 
