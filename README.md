@@ -17,10 +17,13 @@ cny-jpy-rate/
 │   ├── app.js           # 原生 JS，走势图为手写 SVG
 │   ├── style.css
 │   ├── favicon.svg
+│   ├── og-image.png     # 分享卡片预览图（1200×630），源文件 docs/og-image.html
 │   ├── robots.txt       # 允许抓取（含 /api/*，Googlebot 渲染页面要用）
 │   ├── sitemap.xml
 │   └── vendor/          # 自托管的 mdui 与字体（见下文）
-├── docs/llms-full.txt   # mdui 2 官方完整文档，开发参考，不部署
+├── docs/
+│   ├── llms-full.txt    # mdui 2 官方完整文档，开发参考，不部署
+│   └── og-image.html    # og-image.png 的源文件
 ├── CLAUDE.md            # 给 Claude Code 的项目说明
 └── README.md
 ```
@@ -55,6 +58,12 @@ npx wrangler dev
 ## 搜索引擎
 
 站点已在 Google Search Console 验证，sitemap 为 `/sitemap.xml`。页面 `<head>` 里有 description、canonical、Open Graph 和 JSON-LD（`WebApplication`），这些都直接写在 HTML 里，不依赖 JS。
+
+修改预览图：编辑 `docs/og-image.html`，然后用无头浏览器重新生成：
+
+```bash
+msedge --headless --hide-scrollbars --force-device-scale-factor=1 --window-size=1200,630 --screenshot=public/og-image.png docs/og-image.html
+```
 
 ## 静态资源自托管
 
