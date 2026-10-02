@@ -102,7 +102,6 @@ npx wrangler dev
 ## 作者
 
 - Saki（[@Saki340](https://github.com/Saki340)）
-- [Claude](https://claude.com/claude-code)（Anthropic）：参与开发与维护
 
 ## 特别感谢
 

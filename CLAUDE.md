@@ -32,3 +32,4 @@ JPY ⇄ CNY 汇率板。单个 Cloudflare Worker + 静态资源，无构建步�
 - 本机为 Windows / PowerShell 5.1；仓库设置了 `core.autocrlf=false`，文件保持 LF。
 - 目标用户在中国大陆和日本（及全球）：新增外部资源前考虑大陆的可达性，优先自托管。
 - 用户可见文案为简体中文；提交说明也用中文。
+- **提交说明不要加 `Co-Authored-By: Claude …` 之类的署名行**，PR 描述也不要加 Claude Code 署名；README 等文档中也不要把 Claude 列为作者或贡献者。
