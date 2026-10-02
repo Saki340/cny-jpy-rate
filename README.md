@@ -2,7 +2,7 @@
 
 在线访问：<https://rate.anontokyo.vip>
 
-查看 JPY / CNY 中间汇率、做金额换算、看当天分时和 30 / 90 / 180 天历史走势。界面基于 [mdui 2](https://www.mdui.org/zh-cn/docs/2/)（Material Design 3 Web Components），支持浅色 / 深色 / 跟随系统三种主题。
+查看 JPY / CNY 每日中间汇率、做金额换算、看 30 天至 1 年的历史走势。界面基于 [mdui 2](https://www.mdui.org/zh-cn/docs/2/)（Material Design 3 Web Components），支持浅色 / 深色 / 跟随系统三种主题。
 
 由 Cloudflare Workers 部署：静态前端由 Workers Static Assets 提供，`worker.js` 统一处理 `/api/*` 接口。无构建步骤，无 npm 依赖。
 
@@ -40,20 +40,21 @@ npx wrangler dev
 
 ## API 路由
 
-- `GET /api/rate`：当前 CNY/JPY 中间汇率，主源失败时使用镜像源；缓存 1 小时。
-- `GET /api/history?days=N`：
-  - `days=1`：当天分时（约 5 分钟一个点），返回 `{ points: [{ date: ISO 时间, rate }], intraday: true }`；缓存 5 分钟。周末休市时取最近 24 小时的数据。
-  - `days=2..365`：日线，返回 `{ points: [{ date: YYYY-MM-DD, rate }] }`；缓存 6 小时。
-  - `rate` 始终为 1 CNY 兑 JPY，前端按兑换方向自行取倒数。
+- `GET /api/rate`：当前 CNY/JPY 中间汇率，返回 `{ date, cny_to_jpy, jpy_to_cny, source }`；缓存 30 分钟。
+- `GET /api/history?days=N`（7～365，默认 90）：日线，返回 `{ points: [{ date: YYYY-MM-DD, rate }], source }`；缓存 6 小时。`rate` 始终为 1 CNY 兑 JPY，前端按兑换方向自行取倒数。
+
+`source` 为 `frankfurter` 或 `currency-api`（备用源），前端据此在页面上注明。
 
 ## 数据源
 
-- 当前汇率：[currency-api](https://github.com/fawazahmed0/exchange-api)（社区维护的免费数据）。
-- 历史日线：欧洲央行参考汇率，经 [Frankfurter](https://frankfurter.dev)（`api.frankfurter.dev/v1`，旧域名作备用）；会校验返回的基准货币是 CNY，避免参数被忽略时画出错误曲线。
-- 当天分时：Yahoo Finance 图表接口（`CNYJPY=X`）。非官方接口，没有浏览器 UA 会返回 429，可能随时变化；失败时页面会提示稍后重试。
-- Mastercard：官方没有公开接口，官网又有机器人防护，因此不再自动查询，页面只提供官方换算器链接。
+今日汇率、换算计算器和历史走势**共用同一个数据源**，保证同一天的数字在页面各处一致：
 
-以上都是中间价或市场报价，不含任何机构的买卖点差。
+- 主源：欧洲央行（ECB）参考汇率，经 [Frankfurter](https://frankfurter.dev)（`api.frankfurter.dev/v1`，旧域名 `api.frankfurter.app` 作第二次尝试）。每个工作日更新一次。会校验返回的基准货币是 CNY，避免参数被忽略时显示错误的数字。
+- 备用源：[currency-api](https://github.com/fawazahmed0/exchange-api)（jsDelivr，Cloudflare Pages 镜像作第二次尝试），仅在 Frankfurter 失败时使用。它每次只能查一天，所以历史走势在备用模式下最多取 20 个采样日，以控制在 Workers 免费版每次请求 50 个子请求的限制内。
+- 曾经使用的 Yahoo Finance 分时数据，因使用条款不允许在公开网站上展示，已移除。
+- Mastercard：官方没有公开接口，官网又有机器人防护，因此不自动查询，页面只提供官方换算器链接。
+
+以上都是中间价，不含任何机构的买卖点差。
 
 ## 搜索引擎
 

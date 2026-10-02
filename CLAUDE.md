@@ -8,7 +8,7 @@ JPY ⇄ CNY 汇率板。单个 Cloudflare Worker + 静态资源，无构建步�
 
 ## 结构
 
-- `worker.js` — Worker 入口，处理 `/api/rate`、`/api/history`（`days=1` 为 Yahoo 分时，其余为 Frankfurter 日线），其余请求交给 `env.ASSETS`。
+- `worker.js` — Worker 入口，处理 `/api/rate`、`/api/history`。两者共用同一数据源：主源 Frankfurter（欧洲央行参考汇率），失败时用 fawazahmed0 currency-api。**不要再接入 Yahoo 等条款不允许商用/公开展示的数据源。**其余请求交给 `env.ASSETS`。
 - `wrangler.toml` — `public/` 为静态资源目录，`/api/*` 先走 Worker；`[observability]` 开启 Workers Logs（不要删，否则部署会把日志关掉）。
 - `public/index.html` / `app.js` / `style.css` — 前端，原生 JS，无打包；走势图为手写 SVG。
 - `public/vendor/` — 自托管的 mdui 2.1.5 与字体。**不要改回 unpkg / Google Fonts 等外部 CDN**（大陆访问不稳定）。
