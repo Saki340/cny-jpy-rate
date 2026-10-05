@@ -7,6 +7,7 @@ const state = {
   cnyToJpy: null,
   jpyToCny: null,
   rateDate: null,
+  rateSource: "frankfurter",
   prevCnyToJpy: null, // previous publication day, for "较前一日"
   prevDate: null,
   direction: "jpy2cny",
@@ -397,6 +398,60 @@ async function copyResult() {
   copyResetTimer = setTimeout(() => { btn.icon = "content_copy"; }, 1600);
 }
 
+/* ---------- share ---------- */
+
+// Shared links look like /?amount=10000&from=JPY and open with that amount
+// and direction. The parameters are removed from the address bar once read,
+// so it does not keep showing an old amount after the visitor edits it.
+function readShareParams() {
+  const params = new URLSearchParams(location.search);
+  if (!params.has("amount") && !params.has("from")) return;
+  const from = (params.get("from") || "").toUpperCase();
+  if (from === "CNY" || from === "JPY") state.direction = from === "CNY" ? "cny2jpy" : "jpy2cny";
+  const amount = Number(params.get("amount"));
+  if (params.has("amount") && Number.isFinite(amount) && amount >= 0 && amount <= 1e12) el("amount").value = String(amount);
+  history.replaceState(null, "", location.pathname + location.hash);
+
+  // Put the currencies in the shared order right away (before rates load).
+  const [first, second] = currentPair();
+  const line = el("rate-line");
+  line.append(line.querySelector(".rate-one"), line.querySelector(`[data-cur="${first}"]`),
+    line.querySelector(".eq"), el("rate-value"), line.querySelector(`[data-cur="${second}"]`));
+  el("amount").label = `金额（${first}）`;
+  el("calc-to-label").textContent = second;
+}
+
+function shareLink() {
+  const [from] = currentPair();
+  const url = new URL("/", location.origin);
+  url.searchParams.set("amount", String(parseFloat(el("amount").value) || 0));
+  url.searchParams.set("from", from);
+  return url.href;
+}
+
+// System share sheet where available (phones, some desktop browsers);
+// otherwise the text and link are copied to the clipboard.
+async function shareResult() {
+  if (!currentMidRate()) return;
+  const [from, to] = currentPair();
+  const amount = parseFloat(el("amount").value) || 0;
+  const source = state.rateSource === "currency-api" ? "参考汇率" : "欧洲央行参考汇率";
+  const text = `${fmt(amount, 3)} ${from} ≈ ${fmt(state.calcShown, 3)} ${to}（${state.rateDate} ${source}）`;
+  const url = shareLink();
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: "日元人民币汇率", text, url });
+      return;
+    } catch (e) {
+      if (e.name === "AbortError") return; // the visitor closed the share sheet
+    }
+  }
+  const all = `${text}\n${url}`;
+  let ok = true;
+  try { await navigator.clipboard.writeText(all); } catch { ok = copyFallback(all); }
+  notify(ok ? "已复制分享文字和链接" : "分享失败，请手动复制地址栏中的链接");
+}
+
 /* ---------- add to home screen ---------- */
 
 const INSTALL_KEY = "install-dismissed";
@@ -469,6 +524,7 @@ async function loadRate({ refresh = false } = {}) {
     state.cnyToJpy = data.cny_to_jpy;
     state.jpyToCny = data.jpy_to_cny;
     state.rateDate = data.date;
+    state.rateSource = data.source;
     state.prevCnyToJpy = data.prev_cny_to_jpy;
     state.prevDate = data.prev_date;
 
@@ -909,7 +965,9 @@ window.addEventListener("DOMContentLoaded", () => {
   initReveal();
   initOffline();
   initInstall();
+  readShareParams();
   el("copy-btn").addEventListener("click", copyResult);
+  el("share-btn").addEventListener("click", shareResult);
   el("calc-result").addEventListener("click", copyResult);
   el("swap-btn").addEventListener("click", toggleDirection);
   el("amount").addEventListener("input", () => runCalculator(220, { fromInput: true }));

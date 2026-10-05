@@ -257,7 +257,9 @@ html.js .page > section:not(.in-view) { animation-play-state: paused; }
 /* ---------- odometer digits (rate value) ---------- */
 
 .rate-value { white-space: nowrap; }
-.odo { display: inline-block; }
+/* The columns hold all ten digits; keep them out of text selection so copying
+ * the rate yields the hidden plain copy (.sr-only) instead of "0 1 2 3 …". */
+.odo { display: inline-block; user-select: none; -webkit-user-select: none; }
 .odo-digit {
   position: relative;
   line-height: 1.2em;

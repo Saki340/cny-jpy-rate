@@ -15,6 +15,8 @@ JPY ⇄ CNY 汇率板。单个 Cloudflare Worker + 静态资源，无构建步�
 - `public/manifest.webmanifest` / `sw.js` / `icons/` — 可安装（添加到主屏幕）与离线；`sw.js` 全部网络优先，失败才用缓存，不要改成缓存优先。缓存返回的响应带 `X-From-Cache: 1`，页面据此显示离线提示（`noteCached()`）。
 - 安装卡片（`initInstall()`）：Chromium 用 `beforeinstallprompt` 显示「安装」按钮，iOS 显示「分享 → 添加到主屏幕」说明；已安装或 30 天内点过「不用了」则不显示。
 - 提示信息统一用 mdui 的 `snackbar` 函数（`app.js` 的 `notify()`）。
+- 分享链接参数 `?amount=…&from=JPY|CNY`（`readShareParams()`），读取后从地址栏移除。
+- 里程表数字的滚动列设了 `user-select: none`，复制时取 `.sr-only` 里的纯文本；不要去掉，否则复制出来是 0–9 一串。
 - `public/vendor/` — 自托管的 mdui 2.1.5 与字体（Google Sans Flex ASCII 子集、Material Icons）。**不要改回 unpkg / Google Fonts 等外部 CDN**（大陆访问不稳定）。
 - `docs/llms-full.txt` — mdui 2 官方完整文档（本地参考，不部署）。
 
