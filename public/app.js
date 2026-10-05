@@ -6,6 +6,9 @@ const SOURCES = {
 const state = {
   cnyToJpy: null,
   jpyToCny: null,
+  rateDate: null,
+  prevCnyToJpy: null, // previous publication day, for "较前一日"
+  prevDate: null,
   direction: "jpy2cny",
   historyDays: 90,
   history: [], // [{ date, rate }] always stored as CNY -> JPY
@@ -18,9 +21,10 @@ const THEME_KEY = "theme-pref";
 
 // mdui motion tokens (see "设计令牌" in docs/llms-full.txt), for Web Animations
 // called from JS. CSS uses the --mdui-motion-* variables directly.
-const EASE_EMPHASIZED_DECELERATE = "cubic-bezier(0.05, 0.7, 0.1, 1)";
 const EASE_STANDARD = "cubic-bezier(0.2, 0, 0, 1)";
+const EASE_EMPHASIZED_ACCELERATE = "cubic-bezier(0.3, 0, 0.8, 0.15)";
 // M3 Expressive springs converted to curves (m3.material.io, motion specs).
+const SPRING_FAST_SPATIAL = { easing: "cubic-bezier(0.42, 1.67, 0.21, 0.90)", duration: 350 };
 const SPRING_DEFAULT_SPATIAL = { easing: "cubic-bezier(0.38, 1.21, 0.22, 1.00)", duration: 500 };
 const SPRING_SLOW_SPATIAL = { easing: "cubic-bezier(0.39, 1.29, 0.35, 0.98)", duration: 650 };
 
@@ -71,24 +75,39 @@ function sourceLink(key) {
 
 /* ---------- small animation helpers ---------- */
 
-// Replace the text of `node` so that changed characters slide up one by one,
-// like an odometer. Unchanged characters stay put.
-function rollText(node, text, animate = true) {
-  const old = node.dataset.text || "";
+// Odometer: every digit is a column 0–9 that rolls to its value. When only
+// some digits change (a new daily fix), just those columns roll, passing
+// through the digits in between. When the format changes (direction swap),
+// the columns are rebuilt and roll up from 0, left to right.
+function odometer(node, text, animate = true) {
   node.dataset.text = text;
   node.setAttribute("aria-label", text);
   if (!animate || !motionOK()) {
     node.textContent = text;
     return;
   }
-  // Align from the right so "0.0427" -> "0.0428" only rolls the last digit.
-  const shift = text.length - old.length;
-  node.innerHTML = [...text]
-    .map((ch, i) => {
-      const changed = old[i - shift] !== ch;
-      return `<span class="digit${changed ? " roll" : ""}" style="--i:${i}" aria-hidden="true">${esc(ch)}</span>`;
-    })
-    .join("");
+  const chars = [...text];
+  const isDigit = (c) => c >= "0" && c <= "9";
+  let cols = [...node.children].filter((c) => c.classList.contains("odo"));
+  const sameShape = cols.length === chars.length &&
+    chars.every((c, i) => isDigit(c) === cols[i].classList.contains("odo-digit"));
+  if (!sameShape) {
+    const strip = [...Array(10).keys()].map((d) => `<span>${d}</span>`).join("");
+    node.innerHTML = chars.map((c, i) => isDigit(c)
+      ? `<span class="odo odo-digit" style="--i:${i}" aria-hidden="true"><span class="odo-ghost">${c}</span><span class="odo-strip" style="--d:0">${strip}</span></span>`
+      : `<span class="odo odo-sym" style="--i:${i}" aria-hidden="true">${esc(c)}</span>`).join("");
+    cols = [...node.children];
+    void node.offsetWidth; // start every column at 0 before rolling
+  }
+  chars.forEach((c, i) => {
+    const col = cols[i];
+    if (isDigit(c)) {
+      col.querySelector(".odo-ghost").textContent = c;
+      col.querySelector(".odo-strip").style.setProperty("--d", c);
+    } else {
+      col.textContent = c;
+    }
+  });
 }
 
 // Count a number from its previous value to `to` (used by the calculator).
@@ -111,6 +130,54 @@ function tweenNumber(node, from, to, format, duration) {
 function fadeIn(node, duration = 250) {
   if (!motionOK() || !node.animate) return;
   node.animate([{ opacity: 0 }, { opacity: 1 }], { duration, easing: EASE_STANDARD });
+}
+
+// A short, subtle "pop" (used when a value the user is watching changes).
+function pop(node, amount = 1.04) {
+  if (!motionOK() || !node.animate) return;
+  node.animate([{ transform: "scale(1)" }, { transform: `scale(${amount})` }, { transform: "scale(1)" }], SPRING_FAST_SPATIAL);
+}
+
+// Loading indicators leave before the content arrives (shrink + fade), so the
+// hand-over reads as one motion instead of a jump.
+async function exitLoading(container) {
+  const indicator = container.querySelector(".loading-indicator");
+  if (!indicator || !motionOK() || !indicator.animate) return;
+  const exit = indicator.animate(
+    [{ transform: "scale(1)", opacity: 1 }, { transform: "scale(0.2)", opacity: 0 }],
+    { duration: 180, easing: EASE_EMPHASIZED_ACCELERATE, fill: "forwards" },
+  ).finished.catch(() => {});
+  // Animations do not run in background tabs; never let them hold back data.
+  await Promise.race([exit, new Promise((resolve) => setTimeout(resolve, 250))]);
+}
+
+/* ---------- scroll-triggered entrance ---------- */
+
+// Sections (and the chart drawing) play their entrance when they scroll into
+// view, not while still off-screen below the fold.
+let chartInView = false;
+
+function initReveal() {
+  const sections = document.querySelectorAll(".page > section");
+  if (!("IntersectionObserver" in window)) {
+    sections.forEach((s) => s.classList.add("in-view"));
+    chartInView = true;
+    return;
+  }
+  const reveal = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      entry.target.classList.add("in-view");
+      reveal.unobserve(entry.target);
+    }
+  }, { rootMargin: "0px 0px -8% 0px" });
+  sections.forEach((s) => reveal.observe(s));
+
+  const chartWatch = new IntersectionObserver((entries) => {
+    chartInView = entries.some((e) => e.isIntersecting);
+    if (chartInView) chart?.svg.classList.remove("is-waiting");
+  }, { threshold: 0.35 });
+  chartWatch.observe(el("history-chart"));
 }
 
 /* ---------- theme ---------- */
@@ -151,6 +218,7 @@ function applyTheme(mode) {
 let themeOrigin = null;
 
 function switchTheme(mode) {
+  if (typeof morphDecoShape === "function" && motionOK()) morphDecoShape();
   if (!document.startViewTransition || !motionOK()) {
     applyTheme(mode);
     return;
@@ -212,17 +280,64 @@ function describeLocalTime(at, now = new Date()) {
   return `${day} ${time}`;
 }
 
+/* ---------- live refresh ---------- */
+
+// While the page stays open, fetch again shortly after the next ECB fix and
+// animate whatever changed. Retries every 15 minutes if the fix is late.
+let refreshTimer = null;
+let refreshDue = 0;
+let refreshRetries = 0;
+
+function scheduleRefresh(delayMs) {
+  clearTimeout(refreshTimer);
+  let delay = delayMs;
+  if (delay == null) {
+    const next = nextEcbUpdate();
+    if (!next) return;
+    delay = next.getTime() - Date.now() + 5 * 60000;
+  }
+  delay = Math.min(Math.max(delay, 30000), 2 ** 31 - 1);
+  refreshDue = Date.now() + delay;
+  refreshTimer = setTimeout(refreshNow, delay);
+}
+
+async function refreshNow() {
+  const before = state.rateDate;
+  await loadRate({ refresh: true });
+  if (state.rateDate && state.rateDate !== before) {
+    refreshRetries = 0;
+    loadHistory(state.historyDays, { refresh: true });
+    scheduleRefresh();
+  } else if (refreshRetries++ < 8) {
+    scheduleRefresh(15 * 60000);
+  } else {
+    refreshRetries = 0;
+    scheduleRefresh();
+  }
+}
+
+// Background tabs throttle timers; catch up as soon as the page is visible.
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && refreshDue && Date.now() > refreshDue) refreshNow();
+});
+
 /* ---------- rate board + calculator ---------- */
 
-async function loadRate() {
+async function loadRate({ refresh = false } = {}) {
   const boardNote = el("board-note");
   try {
-    const res = await fetch("/api/rate");
+    const res = await fetch("/api/rate", refresh ? { cache: "no-cache" } : undefined);
     const data = await res.json();
     if (data.error) throw new Error(data.error);
 
+    const changed = data.date !== state.rateDate;
+    if (refresh && !changed) return;
+
     state.cnyToJpy = data.cny_to_jpy;
     state.jpyToCny = data.jpy_to_cny;
+    state.rateDate = data.date;
+    state.prevCnyToJpy = data.prev_cny_to_jpy;
+    state.prevDate = data.prev_date;
 
     const updated = el("updated");
     const fallback = data.source === "currency-api";
@@ -234,9 +349,18 @@ async function loadRate() {
     const next = nextEcbUpdate();
     if (next) boardNote.textContent = `欧洲央行在工作日公布参考汇率，下次更新约在${describeLocalTime(next)}（当地时间）。`;
 
+    if (!refresh) await exitLoading(el("rate-value"));
     renderRateLine(false);
-    runCalculator(700);
+    renderChange({ flash: refresh });
+    runCalculator(refresh ? 600 : 700);
+    if (!refresh) scheduleRefresh();
+    // The chart may still end a day earlier (it is cached longer); keep the
+    // two in step by letting the chart pick up the newer rate.
+    if (chart && state.history.length && state.history[state.history.length - 1].date < state.rateDate) {
+      renderChart({ morph: true });
+    }
   } catch (err) {
+    if (refresh) return; // keep showing the last good numbers
     el("updated").textContent = "";
     el("rate-value").textContent = "--";
     el("calc-result").textContent = "--";
@@ -263,7 +387,7 @@ function renderRateLine(swapping) {
   const before = moving.map((n) => n.getBoundingClientRect());
 
   line.append(line.querySelector(".rate-one"), curFrom, line.querySelector(".eq"), el("rate-value"), curTo);
-  rollText(el("rate-value"), fmt(currentMidRate()), true);
+  odometer(el("rate-value"), fmt(currentMidRate()), true);
 
   if (swapping && motionOK()) {
     moving.forEach((node, k) => {
@@ -282,22 +406,50 @@ function renderRateLine(swapping) {
   el("calc-to-label").textContent = to;
 }
 
+// "▲ 0.12% 较前一日 (10-01)", in the direction currently shown.
+function renderChange({ flash = false } = {}) {
+  const box = el("rate-change");
+  if (!state.prevCnyToJpy || !state.cnyToJpy) {
+    box.textContent = "";
+    return;
+  }
+  const now = state.direction === "cny2jpy" ? state.cnyToJpy : state.jpyToCny;
+  const prev = state.direction === "cny2jpy" ? state.prevCnyToJpy : 1 / state.prevCnyToJpy;
+  const change = (now - prev) / prev;
+  const dir = change > 0 ? "up" : change < 0 ? "down" : "flat";
+  const icon = { up: "arrow_upward", down: "arrow_downward", flat: "remove" }[dir];
+  const wasEmpty = !box.firstElementChild;
+  box.innerHTML =
+    `<span class="change-chip is-${dir}"><mdui-icon name="${icon}"></mdui-icon>${pctFmt(change).replace(/^[+−±]/, "")}</span>` +
+    `<span class="change-label">较前一日（${esc((state.prevDate || "").slice(5))}）</span>`;
+  const chip = box.querySelector(".change-chip");
+  if (flash) {
+    chip.classList.add("is-flash");
+    pop(chip, 1.12);
+  } else if (wasEmpty) {
+    fadeIn(box, 300);
+  }
+}
+
 function toggleDirection() {
   state.direction = state.direction === "cny2jpy" ? "jpy2cny" : "cny2jpy";
   el("swap-btn").classList.toggle("is-flipped");
   if (typeof morphDecoShape === "function" && motionOK()) morphDecoShape();
   if (!state.cnyToJpy) return;
   renderRateLine(true);
+  renderChange();
   runCalculator(450);
-  renderChart({ animate: true });
+  renderChart({ morph: true });
 }
 
-function runCalculator(duration = 220) {
+function runCalculator(duration = 220, { fromInput = false } = {}) {
   const amount = parseFloat(el("amount").value) || 0;
   const rate = currentMidRate();
   if (!rate) return;
   const value = amount * rate;
-  tweenNumber(el("calc-result"), state.calcShown, value, (v) => fmt(v, 3), duration);
+  const node = el("calc-result");
+  tweenNumber(node, state.calcShown, value, (v) => fmt(v, 3), duration);
+  if (fromInput && value !== state.calcShown) pop(node, 1.03);
   state.calcShown = value;
 }
 
@@ -321,26 +473,30 @@ function setChartLoading(loading) {
   el("history-chart").closest(".chart-wrap").classList.toggle("is-loading", loading);
 }
 
-async function loadHistory(days) {
+async function loadHistory(days, { refresh = false } = {}) {
   state.historyDays = days;
   const group = el("range-group");
   if (group && String(group.value) !== String(days)) group.value = String(days);
 
   const token = ++state.historyReq;
-  setChartLoading(true);
+  if (!refresh) setChartLoading(true);
   try {
-    const res = await fetch(`/api/history?days=${days}`);
+    const res = await fetch(`/api/history?days=${days}`, refresh ? { cache: "no-cache" } : undefined);
     const data = await res.json();
     if (token !== state.historyReq) return;
     if (!data.points || data.points.length < 2) throw new Error(data.error || "no points");
     state.history = data.points;
     state.historySource = data.source || "frankfurter";
     setChartLoading(false);
-    renderChart({ animate: true });
+    if (!chart) await exitLoading(el("history-chart"));
+    if (token !== state.historyReq) return;
+    renderChart(chart ? { morph: true } : { draw: true });
   } catch (err) {
     if (token !== state.historyReq) return;
     setChartLoading(false);
+    if (refresh) return;
     state.history = [];
+    chart = null;
     hideTooltip();
     ["readout-latest", "readout-high", "readout-low"].forEach((id) => { el(id).textContent = ""; });
     const wrap = el("history-chart");
@@ -349,11 +505,44 @@ async function loadHistory(days) {
   }
 }
 
+// History points, with today's board rate appended if the (longer cached)
+// history has not caught up with it yet, so board and chart always agree.
+function chartPoints() {
+  const pts = state.history.slice();
+  const last = pts[pts.length - 1];
+  if (last && state.rateDate && state.cnyToJpy && last.date < state.rateDate) {
+    pts.push({ date: state.rateDate, rate: state.cnyToJpy });
+  }
+  return pts;
+}
+
+// Resample a polyline (screen space, x ascending) at `count` evenly spaced x
+// positions between x0 and x1, so two lines with different numbers of points
+// can be interpolated into each other.
+function resample(points, count, x0, x1) {
+  const out = [];
+  let j = 0;
+  for (let k = 0; k < count; k++) {
+    const x = x0 + ((x1 - x0) * k) / (count - 1);
+    while (j < points.length - 2 && points[j + 1][0] < x) j++;
+    const [ax, ay] = points[j];
+    const [bx, by] = points[Math.min(j + 1, points.length - 1)];
+    const t = bx === ax ? 0 : Math.min(Math.max((x - ax) / (bx - ax), 0), 1);
+    out.push([x, ay + (by - ay) * t]);
+  }
+  return out;
+}
+
+const pathOf = (points) => points.map(([px, py], i) => `${i ? "L" : "M"}${px.toFixed(1)} ${py.toFixed(1)}`).join(" ");
+
 // Chart geometry and the hover handlers live here between renders.
 let chart = null;
+let morphRaf = 0;
 
-function renderChart({ animate = false } = {}) {
-  const pts = state.history;
+// draw: first appearance (line draws itself); morph: the previous line
+// reshapes into the new one (range / direction change, new data).
+function renderChart({ draw = false, morph = false } = {}) {
+  const pts = chartPoints();
   if (pts.length < 2) return;
 
   const wrap = el("history-chart");
@@ -384,43 +573,58 @@ function renderChart({ animate = false } = {}) {
   const step = (W - padL - padR) / (n - 1);
   const x = (i) => padL + i * step;
   const y = (v) => padT + ((yMax - v) * (H - padT - padB)) / (yMax - yMin);
+  const linePts = values.map((v, i) => [x(i), y(v)]);
+  const base = H - padB;
 
-  let grid = "";
-  let labels = "";
+  let axes = "";
   for (let k = 0; k < 4; k++) {
     const v = yMin + ((yMax - yMin) * k) / 3;
     const gy = y(v);
-    grid += `<line class="chart-grid" x1="${padL}" x2="${W - padR}" y1="${gy.toFixed(1)}" y2="${gy.toFixed(1)}"/>`;
-    labels += `<text class="chart-text" x="${padL - 6}" y="${(gy + 4).toFixed(1)}" text-anchor="end">${axisFmt(v)}</text>`;
+    axes += `<line class="chart-grid" x1="${padL}" x2="${W - padR}" y1="${gy.toFixed(1)}" y2="${gy.toFixed(1)}"/>`;
+    axes += `<text class="chart-text" x="${padL - 6}" y="${(gy + 4).toFixed(1)}" text-anchor="end">${axisFmt(v)}</text>`;
   }
   const ticks = Math.min(5, n);
   for (let k = 0; k < ticks; k++) {
     const i = Math.round((k * (n - 1)) / (ticks - 1));
     const anchor = k === 0 ? "start" : k === ticks - 1 ? "end" : "middle";
-    labels += `<text class="chart-text" x="${x(i).toFixed(1)}" y="${H - 6}" text-anchor="${anchor}">${esc(pts[i].date.slice(5))}</text>`;
+    axes += `<text class="chart-text" x="${x(i).toFixed(1)}" y="${H - 6}" text-anchor="${anchor}">${esc(pts[i].date.slice(5))}</text>`;
   }
 
-  const line = values.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(" ");
-  const area = `${line} L${x(n - 1).toFixed(1)} ${H - padB} L${x(0).toFixed(1)} ${H - padB} Z`;
+  const line = pathOf(linePts);
+  const areaOf = (p) => `${pathOf(p)} L${p[p.length - 1][0].toFixed(1)} ${base} L${p[0][0].toFixed(1)} ${base} Z`;
 
   const marker = (i, cls, label, dy) =>
     `<g class="chart-extreme-g ${cls}" style="transform-origin:${x(i).toFixed(1)}px ${y(values[i]).toFixed(1)}px">` +
     `<circle class="chart-extreme" cx="${x(i).toFixed(1)}" cy="${y(values[i]).toFixed(1)}" r="4.5"/>` +
     `<text class="chart-extreme-label" x="${x(i).toFixed(1)}" y="${(y(values[i]) + dy).toFixed(1)}" text-anchor="middle">${label}</text>` +
     `</g>`;
+  const [lx, ly] = linePts[n - 1];
+  // Latest point: a solid dot with a slowly "breathing" ring around it.
+  const latestMark =
+    `<g class="chart-latest-g" style="transform-origin:${lx.toFixed(1)}px ${ly.toFixed(1)}px">` +
+    `<circle class="chart-pulse" cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="5"/>` +
+    `<circle class="chart-latest" cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="4"/>` +
+    `</g>`;
 
-  const anim = animate && motionOK() ? " is-drawing" : "";
+  const prev = chart;
+  const canMorph = morph && motionOK() && chartInView && prev && prev.W === W && prev.H === H;
+  const classes = ["chart-svg"];
+  if (draw && motionOK()) classes.push("is-drawing");
+  if (draw && motionOK() && !chartInView) classes.push("is-waiting");
+  if (canMorph) classes.push("is-morphing");
+
+  cancelAnimationFrame(morphRaf);
   wrap.innerHTML =
-    `<svg class="chart-svg${anim}" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" tabindex="0" role="img"` +
+    `<svg class="${classes.join(" ")}" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" tabindex="0" role="img"` +
     ` aria-label="1 ${from} 兑 ${to} 的历史走势。可用左右方向键查看每一天的汇率。">` +
-    grid +
-    `<path class="chart-area" d="${area}"/>` +
+    `<g class="chart-axes">${axes}</g>` +
+    `<path class="chart-area" d="${areaOf(linePts)}"/>` +
     `<path class="chart-line" d="${line}" pathLength="1"/>` +
     marker(maxIdx, "chart-high", "高", -9) +
     marker(minIdx, "chart-low", "低", 17) +
-    `<line class="chart-cursor" x1="0" x2="0" y1="${padT - 6}" y2="${H - padB}"/>` +
+    latestMark +
+    `<line class="chart-cursor" x1="0" x2="0" y1="${padT - 6}" y2="${base}"/>` +
     `<circle class="chart-dot" cx="0" cy="0" r="5"/>` +
-    labels +
     `</svg>`;
 
   const latest = values[n - 1];
@@ -431,11 +635,13 @@ function renderChart({ animate = false } = {}) {
     ` · <span class="${change >= 0 ? "is-up" : "is-down"}">区间 ${pctFmt(change)}</span>${fallbackNote}`;
   el("readout-high").textContent = `最高 ${pts[maxIdx].date} · ${pointFmt(values[maxIdx])}`;
   el("readout-low").textContent = `最低 ${pts[minIdx].date} · ${pointFmt(values[minIdx])}`;
-  if (animate) el("chart-readout").querySelectorAll(".chart-readout-line").forEach((node) => fadeIn(node, 300));
+  if (draw || canMorph) el("chart-readout").querySelectorAll(".chart-readout-line").forEach((node) => fadeIn(node, 300));
 
   const svg = wrap.querySelector("svg");
-  chart = { svg, pts, values, x, y, W, H, n, from, to, step, padL, active: -1 };
+  chart = { svg, pts, values, x, y, W, H, n, from, to, step, padL, linePts, active: -1 };
   hideTooltip(true);
+
+  if (canMorph) morphChart(svg, prev, linePts, areaOf, padL, W - padR);
 
   const indexAt = (clientX) => {
     const rect = svg.getBoundingClientRect();
@@ -451,9 +657,50 @@ function renderChart({ animate = false } = {}) {
     const moves = { ArrowLeft: -1, ArrowRight: 1, Home: -n, End: n };
     if (!(e.key in moves)) return;
     e.preventDefault();
-    const base = chart.active >= 0 ? chart.active : n - 1;
-    showPoint(Math.min(Math.max(base + moves[e.key], 0), n - 1));
+    const at = chart.active >= 0 ? chart.active : n - 1;
+    showPoint(Math.min(Math.max(at + moves[e.key], 0), n - 1));
   });
+}
+
+// Reshape the previous line into the new one on a spring, while the old axis
+// labels fade out over the new ones. Markers pop in once the line settles.
+function morphChart(svg, prev, linePts, areaOf, x0, x1) {
+  const SAMPLES = 120;
+  const a = resample(prev.linePts, SAMPLES, x0, x1);
+  const b = resample(linePts, SAMPLES, x0, x1);
+  const lineEl = svg.querySelector(".chart-line");
+  const areaEl = svg.querySelector(".chart-area");
+  const finalLine = lineEl.getAttribute("d");
+  const finalArea = areaEl.getAttribute("d");
+
+  const oldAxes = prev.svg.querySelector(".chart-axes");
+  if (oldAxes) {
+    const ghost = oldAxes.cloneNode(true);
+    ghost.classList.add("chart-axes-old");
+    svg.insertBefore(ghost, svg.firstChild);
+    ghost.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, easing: EASE_STANDARD, fill: "forwards" })
+      .finished.then(() => ghost.remove()).catch(() => ghost.remove());
+  }
+
+  const ease = cubicBezier(0.38, 1.21, 0.22, 1.0); // expressive default spatial
+  const duration = 550;
+  const start = performance.now();
+  const frame = (now) => {
+    const t = Math.min((now - start) / duration, 1);
+    const e = ease(t);
+    const mid = a.map(([px, ay], k) => [px, ay + (b[k][1] - ay) * e]);
+    lineEl.setAttribute("d", pathOf(mid));
+    areaEl.setAttribute("d", areaOf(mid));
+    if (t < 1) {
+      morphRaf = requestAnimationFrame(frame);
+    } else {
+      lineEl.setAttribute("d", finalLine);
+      areaEl.setAttribute("d", finalArea);
+      svg.classList.remove("is-morphing");
+      svg.classList.add("is-settled");
+    }
+  };
+  morphRaf = requestAnimationFrame(frame);
 }
 
 // Tooltip and cursor follow the pointer; they are moved with CSS transforms
@@ -514,8 +761,9 @@ function hideTooltip(instant = false) {
 
 window.addEventListener("DOMContentLoaded", () => {
   initTheme();
+  initReveal();
   el("swap-btn").addEventListener("click", toggleDirection);
-  el("amount").addEventListener("input", () => runCalculator());
+  el("amount").addEventListener("input", () => runCalculator(220, { fromInput: true }));
   el("range-group").addEventListener("change", (e) => {
     if (e.target.value) loadHistory(Number(e.target.value));
     else keepSelection(e.target, String(state.historyDays));

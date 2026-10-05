@@ -69,14 +69,37 @@ const ExpressiveShapes = (() => {
   return { polygon, installLoadingKeyframes };
 })();
 
-// Decorative shape in the rate card: alternate between two library shapes.
-const decoShapes = [["cookie12", 0], ["sunny", 22.5]];
+// Decorative shape in the rate card: each call (direction swap, theme change)
+// morphs it into the next shape of the library.
+const decoShapes = [
+  ["cookie12", 0], ["sunny", 22.5], ["cookie9", 10], ["softBurst", 0],
+  ["cookie7", 25], ["pentagon", 0], ["cookie4", 45], ["oval", 30],
+];
 let decoIndex = 0;
 function morphDecoShape() {
   const node = document.querySelector(".deco-shape");
   if (!node) return;
   decoIndex = (decoIndex + 1) % decoShapes.length;
   node.style.setProperty("--shape", ExpressiveShapes.polygon(...decoShapes[decoIndex]));
+}
+
+// Spring curves for JS-driven animation (chart morph), evaluated like CSS
+// cubic-bezier(): solve x(t) = progress for t, return y(t).
+function cubicBezier(x1, y1, x2, y2) {
+  const coord = (t, a, b) => 3 * a * t * (1 - t) ** 2 + 3 * b * t * t * (1 - t) + t ** 3;
+  const slope = (t, a, b) => 3 * a * (1 - t) ** 2 + 6 * (b - a) * t * (1 - t) + 3 * (1 - b) * t * t;
+  return (p) => {
+    if (p <= 0) return 0;
+    if (p >= 1) return 1;
+    let t = p;
+    for (let i = 0; i < 8; i++) {
+      const err = coord(t, x1, x2) - p;
+      const d = slope(t, x1, x2);
+      if (Math.abs(err) < 1e-5 || Math.abs(d) < 1e-6) break;
+      t -= err / d;
+    }
+    return coord(Math.min(Math.max(t, 0), 1), y1, y2);
+  };
 }
 
 (function initExpressive() {

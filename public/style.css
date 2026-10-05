@@ -121,8 +121,14 @@ section { margin-bottom: 24px; }
 }
 /* Outlined text fields paint their floating label on --mdui-color-background;
  * point it at the card surface so the label never shows as a mismatched box. */
-mdui-card[variant="outlined"] { --mdui-color-background: var(--mdui-color-surface); }
-.rate-card { background-color: rgb(var(--mdui-color-surface-container)); }
+/* Card colours ("--card-bg" / "--card-on", r,g,b triplets) are set per card in
+ * expressive.css. Outlined text fields paint their floating label on
+ * --mdui-color-background, so it follows the card colour. */
+mdui-card.surface-card {
+  background-color: rgb(var(--card-bg, var(--mdui-color-surface-container)));
+  color: rgb(var(--card-on, var(--mdui-color-on-surface)));
+  --mdui-color-background: var(--card-bg, var(--mdui-color-surface-container));
+}
 .meta-text { margin: 0; color: rgb(var(--mdui-color-on-surface-variant)); font-size: 12px; line-height: 1.65; }
 .rate-line {
   display: flex;
@@ -169,7 +175,7 @@ mdui-card[variant="outlined"] { --mdui-color-background: var(--mdui-color-surfac
 .chart-text { fill: rgb(var(--mdui-color-on-surface-variant)); font: 11px var(--mono); }
 .chart-line { fill: none; stroke: rgb(var(--mdui-color-primary)); stroke-width: 2.25; stroke-linejoin: round; stroke-linecap: round; }
 .chart-area { fill: rgb(var(--mdui-color-primary)); opacity: .12; }
-.chart-extreme { stroke: rgb(var(--mdui-color-surface)); stroke-width: 2; }
+.chart-extreme { stroke: rgb(var(--card-bg, var(--mdui-color-surface))); stroke-width: 2; }
 .chart-high .chart-extreme { fill: rgb(var(--app-color-high)); }
 .chart-low .chart-extreme { fill: rgb(var(--app-color-low)); }
 .chart-extreme-label { fill: rgb(var(--mdui-color-on-surface-variant)); font: 500 10px/1 var(--mono); }
@@ -183,7 +189,7 @@ mdui-card[variant="outlined"] { --mdui-color-background: var(--mdui-color-surfac
     opacity var(--mdui-motion-duration-short3) var(--mdui-motion-easing-standard);
 }
 .chart-cursor { stroke: rgb(var(--mdui-color-on-surface-variant)); stroke-dasharray: 3 3; }
-.chart-dot { fill: rgb(var(--mdui-color-primary)); stroke: rgb(var(--mdui-color-surface)); stroke-width: 2.5; }
+.chart-dot { fill: rgb(var(--mdui-color-primary)); stroke: rgb(var(--card-bg, var(--mdui-color-surface))); stroke-width: 2.5; }
 .chart-svg.is-hovering .chart-cursor, .chart-svg.is-hovering .chart-dot { opacity: 1; }
 .chart-svg.is-hovering .chart-area { opacity: .18; }
 .chart-area { transition: opacity var(--mdui-motion-duration-short4) var(--mdui-motion-easing-standard); }
@@ -234,7 +240,6 @@ mdui-card[variant="outlined"] { --mdui-color-background: var(--mdui-color-surfac
 }
 @keyframes skeleton-shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
 
-.mc-panel { background-color: rgb(var(--mdui-color-surface-container-low)); --mdui-color-background: var(--mdui-color-surface-container-low); }
 .mc-note { margin: 0 0 16px; color: rgb(var(--mdui-color-on-surface-variant)); font-size: 12px; line-height: 1.75; }
 .mc-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .site-footer {
@@ -284,14 +289,6 @@ mdui-card[variant="outlined"] { --mdui-color-background: var(--mdui-color-surfac
 .page > section:nth-of-type(4) { animation-delay: 240ms; }
 @keyframes rise-in { from { opacity: 0; transform: translateY(16px); } }
 
-/* Odometer-style digits for the rate value. */
-.digit { display: inline-block; }
-.digit.roll {
-  animation: digit-roll var(--mdui-motion-duration-medium4) var(--mdui-motion-easing-emphasized-decelerate) both;
-  animation-delay: calc(var(--i) * 28ms);
-}
-@keyframes digit-roll { from { opacity: 0; transform: translateY(.45em); } }
-
 /* Swap button: the icon turns half a circle on every click. */
 #swap-btn::part(icon) { transition: transform var(--mdui-motion-duration-medium4) var(--mdui-motion-easing-emphasized-decelerate); }
 #swap-btn.is-flipped::part(icon) { transform: rotate(180deg); }
@@ -322,4 +319,5 @@ mdui-card[variant="outlined"] { --mdui-color-background: var(--mdui-color-surfac
     transition-duration: 1ms !important;
   }
   .skeleton { animation: none; }
+  .chart-pulse { display: none; }
 }

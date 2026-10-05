@@ -43,16 +43,28 @@
 .calc-result { font-weight: 560; letter-spacing: -.01em; }
 .chart-tooltip-value { font-weight: 600; }
 
-/* ---------- hero card: the rate is the most important thing on the page ---------- */
+/* ---------- colour blocks: every card is a filled container ----------
+ * M3's big colour blocks: each card gets a container role and its matching
+ * "on" colour. The rate (hero) uses primary, the converter tertiary for
+ * contrast, the chart secondary, and the Mastercard note a neutral surface
+ * tone as the least important block. */
+.rate-card  { --card-bg: var(--mdui-color-primary-container);   --card-on: var(--mdui-color-on-primary-container); }
+.calc-card  { --card-bg: var(--mdui-color-tertiary-container);  --card-on: var(--mdui-color-on-tertiary-container); }
+.chart-card { --card-bg: var(--mdui-color-secondary-container); --card-on: var(--mdui-color-on-secondary-container); }
+.mc-panel   { --card-bg: var(--mdui-color-surface-container-highest); --card-on: var(--mdui-color-on-surface); }
+.surface-card .meta-text,
+.surface-card .result-label,
+.surface-card .calc-equals,
+.surface-card .mc-note,
+.surface-card .chart-readout { color: rgba(var(--card-on), .82); }
+.surface-card .calc-result { color: rgb(var(--card-on)); }
+.surface-card .chart-text, .surface-card .chart-extreme-label { fill: rgb(var(--card-on)); opacity: .75; }
+.surface-card .chart-grid { stroke: rgb(var(--card-on)); opacity: .14; }
 
-.rate-card {
-  position: relative;
-  overflow: hidden;
-  background-color: rgb(var(--mdui-color-primary-container));
-  color: rgb(var(--mdui-color-on-primary-container));
-}
-.rate-card .meta-text { color: rgb(var(--mdui-color-on-primary-container)); opacity: .8; }
-.rate-card .rate-line { color: rgb(var(--mdui-color-on-primary-container)); }
+/* ---------- hero card ---------- */
+
+.rate-card { position: relative; overflow: hidden; }
+.rate-card .rate-line { color: rgb(var(--card-on)); }
 .rate-card .rate-line .eq { color: inherit; opacity: .6; }
 .rate-card > :not(.deco-shape) { position: relative; }
 
@@ -69,9 +81,12 @@
   opacity: .12;
   clip-path: var(--shape);
   transition: clip-path var(--ex-slow-spatial-dur) var(--ex-slow-spatial);
-  animation: deco-spin 60s linear infinite;
+  animation:
+    deco-spin 60s linear infinite,
+    deco-breathe 7s ease-in-out infinite alternate;
 }
 @keyframes deco-spin { to { rotate: 360deg; } }
+@keyframes deco-breathe { from { scale: .94; } to { scale: 1.06; } }
 @media (max-width: 560px) {
   .deco-shape { width: 170px; height: 170px; top: -50px; right: -50px; }
 }
@@ -130,6 +145,11 @@ mdui-segmented-button-group.connected-group { gap: 2px; border: 0; }
 .range-tabs.connected-group { margin-bottom: 14px; }
 /* Equal widths regardless of label length ("1 年" vs "180 天"). */
 .range-tabs.connected-group > mdui-segmented-button { flex: 1 1 0; min-width: 0; }
+/* On the coloured chart card, unselected buttons use the lightest (darkest in
+ * dark mode) surface so they stand out from the card. */
+.chart-card .connected-group > mdui-segmented-button:not([selected]) {
+  background-color: rgb(var(--mdui-color-surface-container-lowest));
+}
 .theme-group.connected-group > mdui-segmented-button::part(button) { padding: 0 14px; }
 @media (max-width: 560px) {
   .theme-group.connected-group > mdui-segmented-button::part(button) { padding: 0 10px; }
@@ -209,7 +229,6 @@ mdui-card.rate-card { --shape-corner: var(--mdui-shape-corner-extra-large); }
 
 .page > .eyebrow,
 .page > section { animation-duration: var(--ex-slow-spatial-dur); animation-timing-function: var(--ex-slow-spatial); }
-.digit.roll { animation-duration: var(--ex-default-spatial-dur); animation-timing-function: var(--ex-default-spatial); }
 /* Following the pointer must not wobble: position uses the standard curve
  * (no overshoot); only the tooltip's appearance (scale) gets the spring. */
 .chart-cursor, .chart-dot {
@@ -229,3 +248,90 @@ mdui-card.rate-card { --shape-corner: var(--mdui-shape-corner-extra-large); }
 }
 .chart-tooltip.is-visible { transform: none; scale: 1; }
 .chart-svg.is-drawing .chart-extreme-g { animation-duration: var(--ex-fast-spatial-dur); animation-timing-function: var(--ex-fast-spatial); }
+
+/* ---------- scroll-triggered entrance ----------
+ * Sections wait (paused on their first frame) until they scroll into view;
+ * app.js adds .in-view. Only with JS, so nothing stays hidden without it. */
+html.js .page > section:not(.in-view) { animation-play-state: paused; }
+
+/* ---------- odometer digits (rate value) ---------- */
+
+.rate-value { white-space: nowrap; }
+.odo { display: inline-block; }
+.odo-digit {
+  position: relative;
+  line-height: 1.2em;
+  clip-path: inset(0 -0.1em); /* clip the strip without changing the baseline */
+}
+.odo-ghost { visibility: hidden; }
+.odo-strip {
+  position: absolute;
+  inset: 0 0 auto 0;
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  transform: translateY(calc(var(--d) * -1.2em));
+  transition: transform var(--ex-slow-spatial-dur) var(--ex-default-spatial);
+  transition-delay: calc(var(--i, 0) * 40ms);
+}
+.odo-strip > span { height: 1.2em; line-height: 1.2em; }
+
+/* ---------- day-over-day change chip ---------- */
+
+.rate-change {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  margin: -4px 0 12px;
+  font-size: 13px;
+}
+.change-chip {
+  --chip: var(--app-color-high);
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 26px;
+  padding: 0 10px 0 6px;
+  border-radius: var(--mdui-shape-corner-full);
+  background-color: rgba(var(--chip), .14);
+  color: rgb(var(--chip));
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.change-chip.is-down { --chip: var(--app-color-low); }
+.change-chip.is-flat { --chip: var(--card-on); }
+.change-chip mdui-icon { font-size: 16px; }
+.change-chip.is-flash { animation: chip-flash 1.6s var(--ex-default-effects) 1; }
+@keyframes chip-flash {
+  0%, 30% { background-color: rgba(var(--chip), .4); }
+}
+.change-label { color: rgb(var(--card-on)); opacity: .75; }
+
+/* ---------- chart: latest point, morph, waiting ---------- */
+
+.chart-latest { fill: rgb(var(--mdui-color-primary)); stroke: rgb(var(--card-bg, var(--mdui-color-surface))); stroke-width: 2; }
+/* A slow "breathing" ring marks the newest data point. */
+.chart-pulse {
+  fill: rgb(var(--mdui-color-primary));
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: chart-pulse 2.6s cubic-bezier(0, 0, .2, 1) infinite;
+}
+@keyframes chart-pulse {
+  0% { transform: scale(1); opacity: .45; }
+  70%, 100% { transform: scale(3.4); opacity: 0; }
+}
+/* First draw: the latest point pops in after the line reaches it. */
+.chart-svg.is-drawing .chart-latest-g { animation: marker-pop var(--ex-fast-spatial-dur) var(--ex-fast-spatial) 850ms both; }
+/* Morph: markers hide while the line reshapes, new axis labels fade in,
+ * then the markers pop back once it settles. */
+.chart-svg.is-morphing .chart-extreme-g,
+.chart-svg.is-morphing .chart-latest-g { opacity: 0; }
+.chart-svg.is-morphing .chart-axes { animation: fade-in 260ms var(--ex-default-effects) 80ms both; }
+.chart-svg.is-settled .chart-extreme-g,
+.chart-svg.is-settled .chart-latest-g { animation: marker-pop var(--ex-fast-spatial-dur) var(--ex-fast-spatial) both; }
+.chart-svg.is-settled .chart-low { animation-delay: 60ms; }
+.chart-svg.is-settled .chart-latest-g { animation-delay: 120ms; }
+/* Drawn while still below the fold: hold until the chart is on screen. */
+.chart-svg.is-waiting * { animation-play-state: paused !important; }

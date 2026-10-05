@@ -56,26 +56,50 @@ async function currencyApiOn(tag) {
 
 /* ---------- /api/rate ---------- */
 
+// Returns the latest rate and the one from the previous publication day (for
+// the "较前一日" change). Cached for 10 minutes only, so a new ECB fix shows up
+// soon after it is published (the page refreshes itself around that time).
+const RATE_TTL = 600;
+
 async function rate() {
   try {
-    const data = await firstOk(FRANKFURTER.map((f) => async () => checkFrankfurter(await getJson(`${f.root}/latest?${f.query}`, 3600))));
-    const cnyToJpy = data.rates?.JPY;
-    if (typeof cnyToJpy !== "number") throw new Error("unexpected response shape");
-    return rateResponse(data.date, cnyToJpy, "frankfurter");
+    // One open-ended range request yields both the latest and the previous day.
+    const since = new Date();
+    since.setUTCDate(since.getUTCDate() - 14);
+    const data = await firstOk(FRANKFURTER.map((f) => async () =>
+      checkFrankfurter(await getJson(`${f.root}/${isoDate(since)}..?${f.query}`, RATE_TTL))));
+    const days = Object.entries(data.rates || {})
+      .filter(([, r]) => typeof r.JPY === "number")
+      .sort(([a], [b]) => a.localeCompare(b));
+    if (!days.length) throw new Error("unexpected response shape");
+    const [date, latest] = days[days.length - 1];
+    const prev = days.length > 1 ? days[days.length - 2] : null;
+    return rateResponse(date, latest.JPY, prev && { date: prev[0], rate: prev[1].JPY }, "frankfurter");
   } catch { /* fall back */ }
   try {
-    const { date, rate: cnyToJpy } = await currencyApiOn("latest");
-    return rateResponse(date, cnyToJpy, "currency-api");
+    const latest = await currencyApiOn("latest");
+    const day = new Date(`${latest.date}T00:00:00Z`);
+    day.setUTCDate(day.getUTCDate() - 1);
+    const prev = await currencyApiOn(isoDate(day)).catch(() => null);
+    return rateResponse(latest.date, latest.rate, prev, "currency-api");
   } catch {
     return json({ error: "汇率获取失败，请稍后再试" }, 502);
   }
 }
 
-function rateResponse(date, cnyToJpy, source) {
+function rateResponse(date, cnyToJpy, prev, source) {
   return json(
-    { date, cny_to_jpy: cnyToJpy, jpy_to_cny: 1 / cnyToJpy, source, fetched_at: new Date().toISOString() },
+    {
+      date,
+      cny_to_jpy: cnyToJpy,
+      jpy_to_cny: 1 / cnyToJpy,
+      prev_date: prev ? prev.date : null,
+      prev_cny_to_jpy: prev ? prev.rate : null,
+      source,
+      fetched_at: new Date().toISOString(),
+    },
     200,
-    { "cache-control": "public, max-age=1800" },
+    { "cache-control": `public, max-age=${RATE_TTL}` },
   );
 }
 
@@ -85,7 +109,7 @@ const isoDate = (d) => d.toISOString().slice(0, 10);
 
 async function frankfurterHistory(range) {
   return firstOk(FRANKFURTER.map((f) => async () => {
-    const data = checkFrankfurter(await getJson(`${f.root}/${range}?${f.query}`, 21600));
+    const data = checkFrankfurter(await getJson(`${f.root}/${range}?${f.query}`, 3600));
     const points = Object.entries(data.rates || {})
       .map(([date, rates]) => ({ date, rate: rates.JPY }))
       .filter((p) => typeof p.rate === "number")
@@ -122,7 +146,7 @@ async function history(url) {
   const end = new Date();
   const start = new Date(end);
   start.setUTCDate(end.getUTCDate() - days);
-  const headers = { "cache-control": "public, max-age=21600" };
+  const headers = { "cache-control": "public, max-age=3600" };
   try {
     const points = await frankfurterHistory(`${isoDate(start)}..${isoDate(end)}`);
     return json({ points, source: "frankfurter" }, 200, headers);

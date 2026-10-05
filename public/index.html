@@ -40,7 +40,16 @@
 }
 </script>
 <!-- Apply the saved theme before first paint to avoid a light/dark flash. -->
-<script>try { var t = localStorage.getItem("theme-pref"); if (t === "light" || t === "dark") document.documentElement.className = "mdui-theme-" + t; } catch (e) {}</script>
+<script>
+  (function (root) {
+    try {
+      var t = localStorage.getItem("theme-pref");
+      if (t === "light" || t === "dark") root.className = "mdui-theme-" + t;
+    } catch (e) {}
+    // "js": scroll-triggered entrance animations may hold sections until they are visible.
+    root.classList.add("js");
+  })(document.documentElement);
+</script>
 <!-- mdui and fonts are self-hosted (public/vendor) so the page does not depend on
      unpkg / Google Fonts, which are slow or blocked in mainland China. -->
 <link rel="preload" href="vendor/fonts/material-icons.woff2" as="font" type="font/woff2" crossorigin />
@@ -75,6 +84,7 @@
             <div class="deco-shape" aria-hidden="true"></div>
             <p class="meta-text" id="updated"><span class="skeleton skeleton-text">数据日期 0000-00-00 · 欧洲央行参考汇率</span></p>
             <div class="rate-line" id="rate-line" aria-live="polite"><span class="rate-one">1</span><span class="cur cur-jpy" data-cur="JPY">JPY</span><span class="eq">=</span><span class="rate-value" id="rate-value"><span class="loading-indicator loading-indicator--sm" role="progressbar" aria-label="加载中"><span></span></span></span><span class="cur cur-cny" data-cur="CNY">CNY</span></div>
+            <div class="rate-change" id="rate-change" aria-live="polite"></div>
             <p class="meta-text" id="board-note">欧洲央行每个工作日公布一次参考汇率，周末和节假日沿用上一个工作日的数据。</p>
             <div class="card-actions">
               <mdui-button variant="filled" icon="swap_horiz" id="swap-btn">切换兑换方向</mdui-button>
@@ -86,7 +96,7 @@
           <div class="section-heading">
             <h2 id="calc-heading">换算计算器</h2>
           </div>
-          <mdui-card variant="outlined" class="surface-card calc-card">
+          <mdui-card variant="filled" class="surface-card calc-card">
             <mdui-text-field id="amount" type="number" inputmode="decimal" value="100" min="0" step="any" label="金额（JPY）" variant="outlined" class="calc-input"></mdui-text-field>
             <div class="calc-equals" aria-hidden="true">＝</div>
             <div class="calc-field">
@@ -100,7 +110,7 @@
           <div class="section-heading">
             <h2 id="chart-heading">历史走势</h2>
           </div>
-          <mdui-card variant="outlined" class="surface-card chart-card">
+          <mdui-card variant="filled" class="surface-card chart-card">
             <mdui-segmented-button-group id="range-group" class="range-tabs connected-group" selects="single" value="90" full-width>
               <mdui-segmented-button value="30">30 天</mdui-segmented-button>
               <mdui-segmented-button value="90">90 天</mdui-segmented-button>
@@ -129,7 +139,7 @@
           <div class="section-heading">
             <h2 id="mc-heading">Mastercard 官方换算器</h2>
           </div>
-          <mdui-card variant="outlined" class="surface-card mc-panel">
+          <mdui-card variant="filled" class="surface-card mc-panel">
             <p class="mc-note" id="mc-note">用万事达卡在海外刷卡时，入账按万事达的结算汇率计算，其中含有汇率差价，通常和本页的中间价略有不同；发卡行还可能另收货币转换费。实际金额请以万事达官方换算器和发卡行账单为准。</p>
             <div class="mc-actions">
               <mdui-button variant="tonal" icon="open_in_new" href="https://www.mastercard.com/us/en/personal/get-support/currency-exchange-rate-converter.html" target="_blank" rel="noopener noreferrer">打开万事达官方换算器</mdui-button>

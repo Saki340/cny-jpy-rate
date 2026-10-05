@@ -8,7 +8,7 @@ JPY ⇄ CNY 汇率板。单个 Cloudflare Worker + 静态资源，无构建步�
 
 ## 结构
 
-- `worker.js` — Worker 入口，处理 `/api/rate`、`/api/history`。两者共用同一数据源：主源 Frankfurter（欧洲央行参考汇率），失败时用 fawazahmed0 currency-api。**不要再接入 Yahoo 等条款不允许商用/公开展示的数据源。**其余请求交给 `env.ASSETS`。
+- `worker.js` — Worker 入口，处理 `/api/rate`（含前一个公布日，用于「较前一日」；缓存 10 分钟）、`/api/history`（缓存 1 小时）。两者共用同一数据源：主源 Frankfurter（欧洲央行参考汇率），失败时用 fawazahmed0 currency-api。**不要再接入 Yahoo 等条款不允许商用/公开展示的数据源。**其余请求交给 `env.ASSETS`。
 - `wrangler.toml` — `public/` 为静态资源目录，`/api/*` 先走 Worker；`[observability]` 开启 Workers Logs（不要删，否则部署会把日志关掉）。
 - `public/index.html` / `app.js` / `style.css` — 前端，原生 JS，无打包；走势图为手写 SVG。
 - `public/expressive.css` / `expressive.js` — M3 Expressive 层：弹簧动效令牌、连接式按钮组、波浪进度条、形状变形加载指示器、装饰形状（见下）。
@@ -34,6 +34,10 @@ mdui 2 与 Google 的 Material Web 都没有实现 M3 Expressive，本站按 m3.
 - **动效用弹簧令牌** `--ex-{fast,default,slow}-{spatial,effects}`（及 `-dur`），数值来自官网 Motion > Specs 的「Web: Convert springs to curves」。位置/尺寸/形状用 spatial（有回弹），颜色/透明度用 effects（无回弹）；**跟随指针移动的东西（悬浮提示、光标）不要用有回弹的曲线**。JS 里的 Web Animations 用 `app.js` 的 `SPRING_*` 常量。
 - **按钮组**：仍用 mdui 分段按钮（保留 ripple、键盘与无障碍），通过 `.connected-group` 从外部改成连接式按钮组外观；不要改回手写按钮。
 - **卡片圆角层级**：主视觉卡片（今日汇率）extra-large，其余卡片 large，统一用 mdui-card 的 `--shape-corner`。
+- **卡片色块**：每张卡片都是 filled 容器，用 `--card-bg` / `--card-on`（三元组）指定：今日汇率 primary-container、计算器 tertiary-container、走势 secondary-container、万事达 surface-container-highest。卡片内文字、图表描边都从这两个变量取色，换色只改这一处。
+- **数字**：今日汇率用 `odometer()`（每位数字是 0–9 的滚动列）；计算结果用 `tweenNumber()` + 轻微 `pop()`。
+- **走势图**：首次出现用画线动画（`draw`），之后切换范围/方向/新数据都用 `morph`（旧线变形为新线，不重画）；在屏幕外时动画暂停到可见（`is-waiting`）。
+- **区块入场**：`html.js` 下各 section 滚动到可见才播放入场动画。
 - **形状**：由 `ExpressiveShapes.polygon(name)` 生成同点数的 `polygon()`，可直接用 clip-path 过渡变形；新形状加在 `radius` 表里。
 - **字体**：Google Sans Flex 是唯一的拉丁字体（数字用 tabular-nums）；显示文字和关键数字用 `font-variation-settings: "ROND" 100`。子集只含 ASCII 和 · − ± ⇄，新增符号需重新下载子集。
 - 所有装饰性动画都受 `prefers-reduced-motion` 控制（`style.css` 末尾）。
@@ -44,6 +48,7 @@ mdui 2 与 Google 的 Material Web 都没有实现 M3 Expressive，本站按 m3.
 - 改动后在浏览器里分别检查浅色、深色和手机宽度（375px）。
 - 本机为 Windows / PowerShell 5.1；仓库设置了 `core.autocrlf=false`，文件保持 LF。
 - 目标用户在中国大陆和日本（及全球）：新增外部资源前考虑大陆的可达性，优先自托管。
+- 页面开着时会在欧洲央行下次公布后自动刷新（`scheduleRefresh()`）；走势图若比今日汇率旧一天，前端会把今日汇率补为最后一点（`chartPoints()`），保证两处一致。
 - 改了 `docs/og-image.html` 后用 README 中的 Edge 命令重新生成 `public/og-image.png`。
 - 用户可见文案为简体中文；提交说明也用中文。
 - **提交说明不要加 `Co-Authored-By: Claude …` 之类的署名行**，PR 描述也不要加 Claude Code 署名；README 等文档中也不要把 Claude 列为作者或贡献者。
