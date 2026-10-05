@@ -14,7 +14,14 @@
 - **换算计算器**：输入金额即时折算。
 - **历史走势**：30 天 / 90 天 / 180 天 / 1 年，标出区间最高、最低和涨跌幅；悬停或轻点任意一天可查看当天汇率及与最新值的差距，也支持键盘方向键逐日查看。
 - **数据一致**：页面上所有数字来自同一数据源，同一天的汇率在各处相同。
-- **Material Design 3 界面**：浅色 / 深色 / 跟随系统三种主题，适配手机；动效遵循系统的「减弱动态效果」设置。
+- **较前一日涨跌**：今日汇率旁显示与前一个公布日相比的涨跌幅。
+- **自动更新**：页面开着时，欧洲央行公布新汇率后会自动刷新，数字以滚动动画变为新值。
+- **Material 3 Expressive 风格**：弹簧动效、连接式按钮组、形状变形的加载动画和装饰图形；浅色 / 深色 / 跟随系统三种主题，适配手机；动效遵循系统的「减弱动态效果」设置。
+- **可添加到主屏幕**：页面底部有安装卡片（安卓 / 电脑上的 Chrome、Edge 一键安装，iPhone 显示操作说明）；安装后像 App 一样打开。
+- **离线可用**：断网时显示上次获取的数据，并在顶部注明是哪一天的汇率；恢复联网后自动刷新。
+- **一键复制换算结果**：点击结果或复制按钮，复制不带千分位的纯数字，方便粘贴到其他 App。
+- **分享换算结果**：手机上调出系统分享菜单，其他浏览器复制文字和链接；链接形如 `/?amount=10000&from=JPY`，打开即显示同样的换算。
+- **提示下次更新时间**：按访客所在时区显示欧洲央行下次公布汇率的大致时间。
 - **国内外都能访问**：界面库和字体全部自托管，不依赖 unpkg、Google Fonts 等在中国大陆不稳定的 CDN。
 - 免费、无广告、无跟踪 Cookie。
 
@@ -22,7 +29,7 @@
 
 - **运行环境**：[Cloudflare Workers](https://developers.cloudflare.com/workers/)（Static Assets 提供前端，`worker.js` 处理 `/api/*`）
 - **前端**：原生 HTML / CSS / JavaScript，无构建步骤、无 npm 依赖；走势图为手写 SVG
-- **界面组件**：[mdui 2](https://www.mdui.org/zh-cn/docs/2/)（Material Design 3 Web Components）
+- **界面组件**：[mdui 2](https://www.mdui.org/zh-cn/docs/2/)（Material Design 3 Web Components），在其上手工实现 M3 Expressive 的部分规范（`expressive.css` / `expressive.js`）
 
 ## 项目结构
 
@@ -34,6 +41,11 @@ cny-jpy-rate/
 │   ├── index.html
 │   ├── app.js           # 前端逻辑、走势图、动效
 │   ├── style.css
+│   ├── expressive.css   # M3 Expressive：弹簧动效、按钮组、进度与加载指示器、装饰形状
+│   ├── expressive.js    # 形状生成（形状变形）
+│   ├── manifest.webmanifest
+│   ├── sw.js            # Service Worker：网络优先，离线时使用缓存
+│   ├── icons/           # Web App 图标
 │   ├── favicon.svg
 │   ├── og-image.png     # 分享卡片预览图（1200×630），源文件 docs/og-image.html
 │   ├── robots.txt
@@ -67,8 +79,8 @@ npx wrangler dev
 
 | 路由 | 说明 | 缓存 |
 | --- | --- | --- |
-| `GET /api/rate` | 当前中间汇率，返回 `{ date, cny_to_jpy, jpy_to_cny, source }` | 30 分钟 |
-| `GET /api/history?days=N` | 日线历史，`N` 为 7～365（默认 90），返回 `{ points: [{ date, rate }], source }` | 6 小时 |
+| `GET /api/rate` | 当前中间汇率及前一个公布日，返回 `{ date, cny_to_jpy, jpy_to_cny, prev_date, prev_cny_to_jpy, source }` | 10 分钟 |
+| `GET /api/history?days=N` | 日线历史，`N` 为 7～365（默认 90），返回 `{ points: [{ date, rate }], source }` | 1 小时 |
 
 - `rate` 始终为 1 CNY 兑 JPY，前端按兑换方向自行取倒数。
 - `source` 为 `frankfurter`（主源）或 `currency-api`（备用源），页面会据此注明。
@@ -83,7 +95,7 @@ npx wrangler dev
 
 ## 开发备注
 
-- **静态资源自托管**：`public/vendor/mdui/` 为 mdui 2.1.5 的 `mdui.css` 与 `mdui.global.js`。升级时运行 `npm pack mdui@2`，解压后替换这两个文件。`public/vendor/fonts/` 为 Roboto、IBM Plex Mono（拉丁子集）和 Material Icons；中文使用系统字体。
+- **静态资源自托管**：`public/vendor/mdui/` 为 mdui 2.1.5 的 `mdui.css` 与 `mdui.global.js`。升级时运行 `npm pack mdui@2`，解压后替换这两个文件。`public/vendor/fonts/` 为 Google Sans Flex（可变字体，ASCII 子集）和 Material Icons；中文使用系统字体。
 - **日志**：`wrangler.toml` 中开启了 Workers Logs（`[observability]`）。请不要删除这一项，否则部署会把控制台中开启的日志关闭。
 - **预览图**：编辑 `docs/og-image.html` 后，用无头浏览器重新生成：
 
@@ -93,11 +105,40 @@ npx wrangler dev
 
 - **搜索引擎**：已在 Google Search Console 验证，sitemap 为 `/sitemap.xml`。页面 `<head>` 中的 description、canonical、Open Graph 与 JSON-LD 都直接写在 HTML 里，不依赖 JS。
 
+## 更新日志
+
+### 2026-10-06：Material 3 Expressive 改版
+
+**界面**
+- 按 [M3 Expressive](https://m3.material.io) 规范改版：弹簧动效（使用官方给出的 Web 曲线）、连接式按钮组、波浪形进度条、形状变形的加载指示器、缓慢旋转并会变形的装饰形状。
+- 所有卡片改为 M3 大色块：今日汇率为主色容器，计算器为自定义青绿色，走势图为第二色容器，万事达为中性色；圆角分层级（主卡片更大）。
+- 字体统一为 Google Sans Flex（可变字体，圆润轴，等宽数字），移除 Roboto 与 IBM Plex Mono，页面只加载两个字体文件。
+- 大标题改为「JPY ⇄ CNY」，去掉英文小标题；万事达说明改为面向用户的简短说明。
+
+**动效**
+- 汇率数字以里程表方式逐位滚动；切换兑换方向时两种货币互换位置，装饰形状随之变形。
+- 走势图首次出现时从左到右画出；切换时间范围、方向或有新数据时，旧曲线直接变形为新曲线。
+- 各区块滚动到可见时才播放入场动画；走势图最新数据点有呼吸光圈；悬浮提示平滑跟随指针。
+- 加载指示器先退场再显示数据；缓存命中的切换不再闪现进度条。
+- 主题切换时，新主题从点击处圆形扩散。
+- 所有装饰性动画都遵循系统的「减弱动态效果」设置。
+
+**功能**
+- 今日汇率显示「较前一日」涨跌，以及欧洲央行下次公布汇率的大致时间（按访客所在时区）。
+- 页面开着时，欧洲央行公布新汇率后自动刷新。
+- 一键复制换算结果；分享换算结果（系统分享菜单，或复制文字与链接，链接打开即还原金额与方向）。
+- 可添加到主屏幕（Web App），离线时显示上次的数据并注明日期，恢复联网后自动刷新。
+
+**修复与改进**
+- 今日汇率接口缓存缩短为 10 分钟、历史走势为 1 小时；走势图落后时自动补上当天的点，与今日汇率保持一致。
+- 1 年走势的横轴改为显示年月，避免跨年日期重复。
+- 读屏软件可以正确读出汇率与换算结果；选中复制汇率时不再混入动画用的数字。
+
 ## 许可证
 
 本项目代码以 [MIT License](LICENSE) 发布。
 
-`public/vendor/` 中的第三方文件沿用各自的许可证：mdui 为 MIT（见 `public/vendor/mdui/LICENSE.txt`）；Roboto、IBM Plex Mono 为 SIL Open Font License 1.1，Material Icons 为 Apache License 2.0（见 `public/vendor/fonts/README.txt`）。汇率数据的版权和使用条款归各数据提供方所有。
+`public/vendor/` 中的第三方文件沿用各自的许可证：mdui 为 MIT（见 `public/vendor/mdui/LICENSE.txt`）；Google Sans Flex 为 SIL Open Font License 1.1，Material Icons 为 Apache License 2.0（见 `public/vendor/fonts/README.txt`）。汇率数据的版权和使用条款归各数据提供方所有。
 
 ## 作者
 
@@ -111,8 +152,8 @@ npx wrangler dev
 - [Frankfurter](https://frankfurter.dev)（[lineofflight/frankfurter](https://github.com/lineofflight/frankfurter)，MIT）：把欧洲央行参考汇率整理成免费、开源、无需密钥的 API。
 - [currency-api / exchange-api](https://github.com/fawazahmed0/exchange-api)（fawazahmed0，CC0 1.0）：免费的汇率数据，作为本站的备用数据源。
 - [mdui](https://www.mdui.org)（[zdhxiong/mdui](https://github.com/zdhxiong/mdui)，MIT）：本站界面使用的 Material Design 3 Web Components 组件库。
-- [Material Design 3](https://m3.material.io)（Google）：本站遵循的设计规范，包括配色、动效和组件形态。
-- [Roboto](https://fonts.google.com/specimen/Roboto)、[IBM Plex Mono](https://fonts.google.com/specimen/IBM+Plex+Mono)、[Material Icons](https://github.com/google/material-design-icons)：页面使用的字体和图标。
+- [Material Design 3 / M3 Expressive](https://m3.material.io)（Google）：本站遵循的设计规范，包括配色、弹簧动效、按钮组、进度指示器与形状库。
+- [Google Sans Flex](https://fonts.google.com/specimen/Google+Sans+Flex)、[Material Icons](https://github.com/google/material-design-icons)：页面使用的字体和图标。
 - [Cloudflare Workers](https://workers.cloudflare.com)：本站的托管与部署平台。
 - [jsDelivr](https://www.jsdelivr.com)、[shields.io](https://shields.io)：备用数据的 CDN 和本文档中的徽章。
 

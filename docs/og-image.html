@@ -6,14 +6,14 @@
 <head>
 <meta charset="UTF-8" />
 <style>
-  @font-face { font-family: "Roboto"; font-weight: 100 900; src: url(../public/vendor/fonts/roboto-latin.woff2) format("woff2"); }
-  @font-face { font-family: "IBM Plex Mono"; font-weight: 500; src: url(../public/vendor/fonts/ibm-plex-mono-500-latin.woff2) format("woff2"); }
+  @font-face { font-family: "Google Sans Flex"; font-weight: 300 800; src: url(../public/vendor/fonts/google-sans-flex-ascii.woff2) format("woff2"); }
   html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; }
   body {
     position: relative;
     background: #fef7ff;
     color: #1d1b20;
-    font-family: Roboto, "Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif;
+    font-family: "Google Sans Flex", "Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif;
+    font-variation-settings: "ROND" 100;
   }
   .card {
     position: absolute;
@@ -28,7 +28,7 @@
   .brand svg { width: 64px; height: 64px; }
   .brand span { font-size: 30px; font-weight: 500; color: #49454f; letter-spacing: .04em; }
   h1 { margin: 40px 0 0; font-size: 84px; font-weight: 700; line-height: 1.1; letter-spacing: .02em; color: #1d1b20; }
-  .pair { margin-top: 22px; font: 500 48px/1 "IBM Plex Mono", monospace; letter-spacing: -.02em; }
+  .pair { margin-top: 22px; font: 600 52px/1 "Google Sans Flex", sans-serif; font-variation-settings: "ROND" 100; }
   .pair .jpy { color: #286092; }
   .pair .cny { color: #a43b31; }
   .pair .arrow { color: #6750a4; margin: 0 14px; }
@@ -37,7 +37,7 @@
     position: absolute; right: 72px; bottom: 56px;
     padding: 12px 26px; border-radius: 999px;
     background: #6750a4; color: #fff;
-    font: 500 26px/1 Roboto, sans-serif; letter-spacing: .02em;
+    font: 600 26px/1 "Google Sans Flex", sans-serif; letter-spacing: .02em;
   }
 </style>
 </head>
