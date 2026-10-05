@@ -20,6 +20,9 @@ const THEME_KEY = "theme-pref";
 // called from JS. CSS uses the --mdui-motion-* variables directly.
 const EASE_EMPHASIZED_DECELERATE = "cubic-bezier(0.05, 0.7, 0.1, 1)";
 const EASE_STANDARD = "cubic-bezier(0.2, 0, 0, 1)";
+// M3 Expressive springs converted to curves (m3.material.io, motion specs).
+const SPRING_DEFAULT_SPATIAL = { easing: "cubic-bezier(0.38, 1.21, 0.22, 1.00)", duration: 500 };
+const SPRING_SLOW_SPATIAL = { easing: "cubic-bezier(0.39, 1.29, 0.35, 0.98)", duration: 650 };
 
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 const motionOK = () => !reducedMotion.matches;
@@ -158,7 +161,7 @@ function switchTheme(mode) {
   transition.ready.then(() => {
     document.documentElement.animate(
       { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`] },
-      { duration: 550, easing: EASE_EMPHASIZED_DECELERATE, pseudoElement: "::view-transition-new(root)" },
+      { ...SPRING_SLOW_SPATIAL, pseudoElement: "::view-transition-new(root)" },
     );
   }).catch(() => { /* transition skipped */ });
 }
@@ -232,7 +235,7 @@ function renderRateLine(swapping) {
       const dy = before[k].top - after.top;
       node.animate(
         [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "translate(0, 0)" }],
-        { duration: 500, easing: EASE_EMPHASIZED_DECELERATE },
+        SPRING_DEFAULT_SPATIAL,
       );
     });
   }
@@ -245,6 +248,7 @@ function renderRateLine(swapping) {
 function toggleDirection() {
   state.direction = state.direction === "cny2jpy" ? "jpy2cny" : "cny2jpy";
   el("swap-btn").classList.toggle("is-flipped");
+  if (typeof morphDecoShape === "function" && motionOK()) morphDecoShape();
   if (!state.cnyToJpy) return;
   renderRateLine(true);
   runCalculator(450);

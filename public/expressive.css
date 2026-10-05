@@ -1,0 +1,246 @@
+/* ==========================================================================
+ * Material 3 Expressive layer (experimental branch).
+ *
+ * mdui 2 implements baseline M3; M3 Expressive is not implemented on the web
+ * by Google either (m3.material.io/develop/web). This file hand-builds the
+ * parts of Expressive that suit this page, following m3.material.io specs:
+ *   - motion physics: springs converted to curves (Styles > Motion > Specs,
+ *     "Web: Convert springs to curves")
+ *   - connected button groups (Components > Button groups > Specs)
+ *   - wavy linear progress indicator (Components > Progress indicators)
+ *   - shape-morphing loading indicator and decorative shapes (shape library)
+ *   - Google Sans Flex for display / numeric type
+ * ========================================================================== */
+
+@font-face {
+  font-family: "Google Sans Flex";
+  font-style: normal;
+  font-weight: 300 800;
+  font-display: swap;
+  /* ASCII + a few symbols only; Chinese falls back to the system font. */
+  src: url(vendor/fonts/google-sans-flex-ascii.woff2) format("woff2");
+}
+
+:root {
+  /* Spring tokens, as the curve + duration pairs published for the web. */
+  --ex-fast-spatial: cubic-bezier(0.42, 1.67, 0.21, 0.90);
+  --ex-fast-spatial-dur: 350ms;
+  --ex-default-spatial: cubic-bezier(0.38, 1.21, 0.22, 1.00);
+  --ex-default-spatial-dur: 500ms;
+  --ex-slow-spatial: cubic-bezier(0.39, 1.29, 0.35, 0.98);
+  --ex-slow-spatial-dur: 650ms;
+  --ex-fast-effects: cubic-bezier(0.31, 0.94, 0.34, 1.00);
+  --ex-fast-effects-dur: 150ms;
+  --ex-default-effects: cubic-bezier(0.34, 0.80, 0.34, 1.00);
+  --ex-default-effects-dur: 200ms;
+
+  --display: "Google Sans Flex", Roboto, "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans", system-ui, sans-serif;
+}
+
+/* ---------- typography: Google Sans Flex, rounded and emphasised ---------- */
+
+.eyebrow,
+.section-heading h2,
+.rate-line,
+.calc-result,
+.chart-tooltip-value {
+  font-family: var(--display);
+  font-variation-settings: "ROND" 100;
+  font-variant-numeric: tabular-nums;
+}
+.eyebrow { font-weight: 760; letter-spacing: .01em; }
+.section-heading h2 { font-weight: 650; letter-spacing: 0; }
+.rate-line { font-weight: 560; letter-spacing: -.02em; }
+.calc-result { font-weight: 560; letter-spacing: -.01em; }
+.chart-tooltip-value { font-weight: 600; }
+
+/* ---------- hero card: the rate is the most important thing on the page ---------- */
+
+.rate-card {
+  position: relative;
+  overflow: hidden;
+  background-color: rgb(var(--mdui-color-primary-container));
+  color: rgb(var(--mdui-color-on-primary-container));
+  border-radius: var(--mdui-shape-corner-extra-large);
+}
+.rate-card .meta-text { color: rgb(var(--mdui-color-on-primary-container)); opacity: .8; }
+.rate-card .rate-line { color: rgb(var(--mdui-color-on-primary-container)); }
+.rate-card .rate-line .eq { color: inherit; opacity: .6; }
+.rate-card > :not(.deco-shape) { position: relative; }
+
+/* Decorative shape from the M3 shape library, peeking in from the corner. It
+ * rotates slowly and morphs into another shape when the direction is swapped. */
+.deco-shape {
+  position: absolute;
+  top: -70px;
+  right: -60px;
+  width: 240px;
+  height: 240px;
+  pointer-events: none;
+  background-color: rgb(var(--mdui-color-primary));
+  opacity: .12;
+  clip-path: var(--shape);
+  transition: clip-path var(--ex-slow-spatial-dur) var(--ex-slow-spatial);
+  animation: deco-spin 60s linear infinite;
+}
+@keyframes deco-spin { to { rotate: 360deg; } }
+@media (max-width: 560px) {
+  .deco-shape { width: 170px; height: 170px; top: -50px; right: -50px; }
+}
+
+/* ---------- buttons: shape morph on press ---------- */
+
+/* Registered so the corner radius can be animated with a spring. */
+@property --ex-radius {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 20px;
+}
+#swap-btn {
+  --ex-radius: 20px;
+  --shape-corner: var(--ex-radius);
+  transition: --ex-radius var(--ex-fast-spatial-dur) var(--ex-fast-spatial);
+}
+#swap-btn:active { --ex-radius: 8px; }
+#swap-btn::part(icon) { transition: transform var(--ex-default-spatial-dur) var(--ex-default-spatial); }
+
+/* ---------- connected button group (replaces segmented buttons) ----------
+ * Spec: 2dp gap, outer corners fully round, inner corners 8dp (small size),
+ * the selected button becomes fully round; pressing squeezes the corners.
+ * Colours follow the filled toggle button: unselected surface-container,
+ * selected primary. */
+.btn-group {
+  display: flex;
+  gap: 2px;
+}
+.btn-group > button {
+  --r-out: 20px;
+  --r-in: 8px;
+  position: relative;
+  flex: 1 1 0;
+  min-width: 48px;
+  height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--r-in);
+  background-color: rgb(var(--mdui-color-surface-container-highest));
+  color: rgb(var(--mdui-color-on-surface-variant));
+  font-family: inherit;
+  font-size: var(--mdui-typescale-label-large-size);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: var(--mdui-typescale-label-large-tracking);
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  overflow: hidden;
+  transition:
+    border-radius var(--ex-fast-spatial-dur) var(--ex-fast-spatial),
+    background-color var(--ex-default-effects-dur) var(--ex-default-effects),
+    color var(--ex-default-effects-dur) var(--ex-default-effects);
+}
+.btn-group > button:first-child { border-radius: var(--r-out) var(--r-in) var(--r-in) var(--r-out); }
+.btn-group > button:last-child { border-radius: var(--r-in) var(--r-out) var(--r-out) var(--r-in); }
+.btn-group > button[aria-checked="true"] {
+  border-radius: var(--r-out);
+  background-color: rgb(var(--mdui-color-primary));
+  color: rgb(var(--mdui-color-on-primary));
+}
+.btn-group > button:active { border-radius: 4px; }
+/* State layer (hover / focus / press), as in mdui's own buttons. */
+.btn-group > button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-color: currentColor;
+  opacity: 0;
+  transition: opacity var(--ex-fast-effects-dur) var(--ex-fast-effects);
+}
+.btn-group > button:hover::after { opacity: .08; }
+.btn-group > button:focus-visible::after, .btn-group > button:active::after { opacity: .12; }
+.btn-group > button:focus-visible { outline: 2px solid rgb(var(--mdui-color-secondary)); outline-offset: 2px; }
+.theme-group.btn-group > button { flex: 0 0 auto; padding: 0 14px; }
+.range-tabs.btn-group { margin-bottom: 14px; }
+@media (max-width: 560px) {
+  .theme-group.btn-group > button { padding: 0 10px; }
+}
+@media (max-width: 360px) {
+  .theme-group.btn-group > button { padding: 0 7px; min-width: 40px; }
+}
+
+/* ---------- wavy linear progress (indeterminate) ----------
+ * Active indicator: primary, a wave (amplitude 3, wavelength 20, 4px stroke)
+ * that flows while a segment travels across. Track: secondary-container. */
+.wavy-progress {
+  position: absolute;
+  inset: -8px 0 auto;
+  height: 10px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--ex-default-effects-dur) var(--ex-default-effects);
+}
+.chart-wrap.is-loading .wavy-progress { opacity: 1; }
+.wavy-progress::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 3px;
+  height: 4px;
+  border-radius: 2px;
+  background-color: rgb(var(--mdui-color-secondary-container));
+}
+.wavy-progress__bar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 42%;
+  background-color: rgb(var(--mdui-color-primary));
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='10'%3E%3Cpath d='M-5 5 Q0 0 5 5 T15 5 T25 5' fill='none' stroke='black' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E") 0 0 / 20px 10px repeat-x;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='10'%3E%3Cpath d='M-5 5 Q0 0 5 5 T15 5 T25 5' fill='none' stroke='black' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E") 0 0 / 20px 10px repeat-x;
+  border-radius: 5px;
+  animation:
+    wavy-travel 1.8s cubic-bezier(0.65, 0, 0.35, 1) infinite,
+    wavy-flow .6s linear infinite;
+}
+@keyframes wavy-travel { from { transform: translateX(-100%); } to { transform: translateX(240%); } }
+@keyframes wavy-flow { to { -webkit-mask-position: 20px 0; mask-position: 20px 0; } }
+
+/* ---------- loading indicator: morphing shapes (keyframes from expressive.js) ---------- */
+
+.loading-indicator {
+  display: inline-grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  vertical-align: middle;
+}
+.loading-indicator > span {
+  width: 38px;
+  height: 38px;
+  background-color: rgb(var(--mdui-color-primary));
+  animation:
+    ex-loading-morph 4.55s infinite,
+    ex-loading-spin 4.55s linear infinite;
+}
+.loading-indicator--sm { width: 1em; height: 1em; }
+.loading-indicator--sm > span { width: .8em; height: .8em; }
+@keyframes ex-loading-spin { to { rotate: 1turn; } }
+.chart.is-loading { display: grid; place-items: center; }
+
+/* ---------- springs for the existing interactions ---------- */
+
+.page > .eyebrow,
+.page > section { animation-duration: var(--ex-slow-spatial-dur); animation-timing-function: var(--ex-slow-spatial); }
+.digit.roll { animation-duration: var(--ex-default-spatial-dur); animation-timing-function: var(--ex-default-spatial); }
+.chart-cursor, .chart-dot {
+  transition:
+    transform var(--ex-fast-spatial-dur) var(--ex-fast-spatial),
+    opacity var(--ex-fast-effects-dur) var(--ex-fast-effects);
+}
+.chart-tooltip {
+  border-radius: var(--mdui-shape-corner-medium);
+  transition:
+    transform var(--ex-fast-spatial-dur) var(--ex-fast-spatial),
+    opacity var(--ex-fast-effects-dur) var(--ex-fast-effects);
+}
+.chart-svg.is-drawing .chart-extreme-g { animation-duration: var(--ex-fast-spatial-dur); animation-timing-function: var(--ex-fast-spatial); }

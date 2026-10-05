@@ -43,6 +43,7 @@
 <link rel="stylesheet" href="vendor/mdui/mdui.css" />
 <script src="vendor/mdui/mdui.global.js"></script>
 <link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="expressive.css" />
 </head>
 <body>
   <mdui-layout>
@@ -50,11 +51,11 @@
       <div class="app-bar-inner">
         <mdui-top-app-bar-title>日元人民币汇率</mdui-top-app-bar-title>
         <div class="app-bar-spacer"></div>
-        <mdui-segmented-button-group id="theme-group" class="theme-group" selects="single" value="auto">
-          <mdui-segmented-button value="light">浅色</mdui-segmented-button>
-          <mdui-segmented-button value="auto">系统</mdui-segmented-button>
-          <mdui-segmented-button value="dark">深色</mdui-segmented-button>
-        </mdui-segmented-button-group>
+        <div id="theme-group" class="theme-group btn-group" role="radiogroup" aria-label="主题" data-value="auto">
+          <button type="button" role="radio" value="light">浅色</button>
+          <button type="button" role="radio" value="auto">系统</button>
+          <button type="button" role="radio" value="dark">深色</button>
+        </div>
       </div>
     </mdui-top-app-bar>
 
@@ -68,11 +69,12 @@
             <span class="section-kicker">MID-MARKET RATE</span>
           </div>
           <mdui-card variant="filled" class="surface-card rate-card">
+            <div class="deco-shape" aria-hidden="true"></div>
             <p class="meta-text" id="updated"><span class="skeleton skeleton-text">数据日期 0000-00-00 · 欧洲央行参考汇率</span></p>
-            <div class="rate-line" id="rate-line" aria-live="polite"><span class="rate-one">1</span><span class="cur cur-jpy" data-cur="JPY">JPY</span><span class="eq">=</span><span class="rate-value" id="rate-value"><span class="skeleton">0.0000</span></span><span class="cur cur-cny" data-cur="CNY">CNY</span></div>
+            <div class="rate-line" id="rate-line" aria-live="polite"><span class="rate-one">1</span><span class="cur cur-jpy" data-cur="JPY">JPY</span><span class="eq">=</span><span class="rate-value" id="rate-value"><span class="loading-indicator loading-indicator--sm" role="progressbar" aria-label="加载中"><span></span></span></span><span class="cur cur-cny" data-cur="CNY">CNY</span></div>
             <p class="meta-text" id="board-note">欧洲央行每个工作日公布一次参考汇率，周末和节假日沿用上一个工作日的数据。</p>
             <div class="card-actions">
-              <mdui-button variant="tonal" icon="swap_horiz" id="swap-btn">切换兑换方向</mdui-button>
+              <mdui-button variant="filled" icon="swap_horiz" id="swap-btn">切换兑换方向</mdui-button>
             </div>
           </mdui-card>
         </section>
@@ -98,12 +100,12 @@
             <span class="section-kicker">HISTORY</span>
           </div>
           <mdui-card variant="outlined" class="surface-card chart-card">
-            <mdui-segmented-button-group id="range-group" class="range-tabs" selects="single" value="90" full-width>
-              <mdui-segmented-button value="30">30 天</mdui-segmented-button>
-              <mdui-segmented-button value="90">90 天</mdui-segmented-button>
-              <mdui-segmented-button value="180">180 天</mdui-segmented-button>
-              <mdui-segmented-button value="365">1 年</mdui-segmented-button>
-            </mdui-segmented-button-group>
+            <div id="range-group" class="range-tabs btn-group" role="radiogroup" aria-label="时间范围" data-value="90">
+              <button type="button" role="radio" value="30">30 天</button>
+              <button type="button" role="radio" value="90">90 天</button>
+              <button type="button" role="radio" value="180">180 天</button>
+              <button type="button" role="radio" value="365">1 年</button>
+            </div>
             <!-- Fixed three-line summary: it never changes while hovering, so the page does not jump. -->
             <div class="chart-readout" id="chart-readout">
               <span class="chart-readout-line" id="readout-latest"><span class="skeleton skeleton-text">最新 0000-00-00 · 0.000000 · 区间 +0.00%</span></span>
@@ -111,8 +113,8 @@
               <span class="chart-readout-line chart-readout-lo" id="readout-low"><span class="skeleton skeleton-text">最低 0000-00-00 · 0.000000</span></span>
             </div>
             <div class="chart-wrap">
-              <mdui-linear-progress class="chart-progress" id="chart-progress"></mdui-linear-progress>
-              <div class="chart is-loading" id="history-chart"><div class="skeleton skeleton-chart"></div></div>
+              <div class="wavy-progress" role="progressbar" aria-label="加载中"><div class="wavy-progress__bar"></div></div>
+              <div class="chart is-loading" id="history-chart"><span class="loading-indicator" role="progressbar" aria-label="加载中"><span></span></span></div>
               <div class="chart-tooltip" id="chart-tooltip" aria-hidden="true">
                 <span class="chart-tooltip-date" id="tooltip-date"></span>
                 <span class="chart-tooltip-value" id="tooltip-value"></span>
@@ -144,6 +146,7 @@
       </div>
     </mdui-layout-main>
   </mdui-layout>
+<script src="expressive.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
