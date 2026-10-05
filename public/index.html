@@ -7,6 +7,11 @@
 <title>日元人民币汇率 | 汇率板</title>
 <meta name="description" content="日元兑人民币（JPY ⇄ CNY）每日中间汇率（欧洲央行参考汇率），附金额换算计算器和 30 天至 1 年的历史走势，标出区间最高与最低。免费、无广告，支持深色模式。" />
 <link rel="canonical" href="https://rate.anontokyo.vip/" />
+<!-- One URL per language (the Worker rewrites title/description/canonical for ?lang=). -->
+<link rel="alternate" hreflang="zh-CN" href="https://rate.anontokyo.vip/" />
+<link rel="alternate" hreflang="ja" href="https://rate.anontokyo.vip/?lang=ja" />
+<link rel="alternate" hreflang="en" href="https://rate.anontokyo.vip/?lang=en" />
+<link rel="alternate" hreflang="x-default" href="https://rate.anontokyo.vip/?lang=en" />
 <!-- Search results show the favicon only when it is a crawlable file, not a data: URI. -->
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <!-- Installable web app ("add to home screen"); see manifest.webmanifest and sw.js. -->
@@ -62,13 +67,29 @@
   <mdui-layout>
     <mdui-top-app-bar class="app-bar" scroll-behavior="elevate">
       <div class="app-bar-inner">
-        <mdui-top-app-bar-title>日元人民币汇率</mdui-top-app-bar-title>
+        <mdui-top-app-bar-title data-i18n="app.title">日元人民币汇率</mdui-top-app-bar-title>
         <div class="app-bar-spacer"></div>
-        <mdui-segmented-button-group id="theme-group" class="theme-group connected-group" selects="single" value="auto">
-          <mdui-segmented-button value="light">浅色</mdui-segmented-button>
-          <mdui-segmented-button value="auto">系统</mdui-segmented-button>
-          <mdui-segmented-button value="dark">深色</mdui-segmented-button>
+        <!-- Icons show on narrow screens instead of the labels (which stay for screen readers). -->
+        <mdui-segmented-button-group id="theme-group" class="theme-group connected-group" selects="single" value="auto" data-i18n-attr="aria-label:theme.label">
+          <mdui-segmented-button value="light" icon="light_mode" selected-icon="light_mode" data-i18n="theme.light">浅色</mdui-segmented-button>
+          <mdui-segmented-button value="auto" icon="brightness_auto" selected-icon="brightness_auto" data-i18n="theme.auto">系统</mdui-segmented-button>
+          <mdui-segmented-button value="dark" icon="dark_mode" selected-icon="dark_mode" data-i18n="theme.dark">深色</mdui-segmented-button>
         </mdui-segmented-button-group>
+        <!-- Language: an M3 menu anchored to an icon button. The tooltip wraps the
+             whole dropdown (the button must be the dropdown's own trigger, or the
+             menu cannot find where to open) and is silenced while the menu is open. -->
+        <mdui-tooltip id="lang-tooltip" placement="bottom-end" data-i18n-attr="content:lang.label">
+        <mdui-dropdown placement="bottom-end" id="lang-dropdown">
+          <mdui-button-icon slot="trigger" icon="translate" id="lang-btn" data-i18n-attr="aria-label:lang.label"></mdui-button-icon>
+          <mdui-menu selects="single" id="lang-menu" value="auto">
+            <mdui-menu-item value="auto" icon="" selected-icon="check" data-i18n="lang.auto">跟随设备语言</mdui-menu-item>
+            <mdui-divider></mdui-divider>
+            <mdui-menu-item value="zh" icon="" selected-icon="check" lang="zh-CN">简体中文</mdui-menu-item>
+            <mdui-menu-item value="ja" icon="" selected-icon="check" lang="ja">日本語</mdui-menu-item>
+            <mdui-menu-item value="en" icon="" selected-icon="check" lang="en">English</mdui-menu-item>
+          </mdui-menu>
+        </mdui-dropdown>
+        </mdui-tooltip>
       </div>
     </mdui-top-app-bar>
 
@@ -78,37 +99,37 @@
         <div class="offline-banner" id="offline-banner" role="status" aria-live="polite">
           <div class="offline-banner-inner"><div class="offline-pill"><mdui-icon name="cloud_off"></mdui-icon><span id="offline-text"></span></div></div>
         </div>
-        <h1 class="eyebrow">JPY ⇄ CNY</h1>
+        <h1 class="eyebrow">JPY<mdui-icon class="eyebrow-arrow" name="sync_alt" aria-hidden="true"></mdui-icon><span class="sr-only">⇄</span>CNY</h1>
 
         <section aria-labelledby="board-heading">
           <div class="section-heading">
-            <h2 id="board-heading">今日汇率</h2>
+            <h2 id="board-heading" data-i18n="section.rate">今日汇率</h2>
           </div>
           <mdui-card variant="filled" class="surface-card rate-card">
             <div class="deco-shape" aria-hidden="true"></div>
             <p class="meta-text" id="updated"><span class="skeleton skeleton-text">数据日期 0000-00-00 · 欧洲央行参考汇率</span></p>
-            <div class="rate-line" id="rate-line" aria-live="polite"><span class="rate-one">1</span><span class="cur cur-jpy" data-cur="JPY">JPY</span><span class="eq">=</span><span class="rate-value" id="rate-value"><span class="loading-indicator loading-indicator--sm" role="progressbar" aria-label="加载中"><span></span></span></span><span class="cur cur-cny" data-cur="CNY">CNY</span></div>
+            <div class="rate-line" id="rate-line" aria-live="polite"><span class="rate-one">1</span><span class="cur cur-jpy" data-cur="JPY">JPY</span><span class="eq">=</span><span class="rate-value" id="rate-value"><span class="loading-indicator loading-indicator--sm" role="progressbar" aria-label="加载中" data-i18n-attr="aria-label:loading"><span></span></span></span><span class="cur cur-cny" data-cur="CNY">CNY</span></div>
             <div class="rate-change" id="rate-change" aria-live="polite"></div>
-            <p class="meta-text" id="board-note">欧洲央行每个工作日公布一次参考汇率，周末和节假日沿用上一个工作日的数据。</p>
+            <p class="meta-text" id="board-note" data-i18n="board.note">欧洲央行每个工作日公布一次参考汇率，周末和节假日沿用上一个工作日的数据。</p>
             <div class="card-actions">
-              <mdui-button variant="filled" icon="swap_horiz" id="swap-btn">切换兑换方向</mdui-button>
+              <mdui-button variant="filled" icon="swap_horiz" id="swap-btn" data-i18n="swap">切换兑换方向</mdui-button>
             </div>
           </mdui-card>
         </section>
 
         <section aria-labelledby="calc-heading">
           <div class="section-heading">
-            <h2 id="calc-heading">换算计算器</h2>
+            <h2 id="calc-heading" data-i18n="section.calc">换算计算器</h2>
           </div>
           <mdui-card variant="filled" class="surface-card calc-card">
             <mdui-text-field id="amount" type="number" inputmode="decimal" value="100" min="0" step="any" label="金额（JPY）" variant="outlined" class="calc-input"></mdui-text-field>
             <div class="calc-equals" aria-hidden="true">＝</div>
             <div class="calc-field">
-              <span class="result-label">折合 <span id="calc-to-label">CNY</span></span>
+              <span class="result-label" id="calc-result-label">折合 CNY</span>
               <div class="calc-result-row">
-                <output class="calc-result" id="calc-result" title="点击复制"><span class="calc-visible" aria-hidden="true"><span class="skeleton">0.000</span></span><span class="sr-only"></span></output>
-                <mdui-button-icon id="copy-btn" icon="content_copy" aria-label="复制换算结果"></mdui-button-icon>
-                <mdui-button-icon id="share-btn" icon="share" aria-label="分享换算结果"></mdui-button-icon>
+                <output class="calc-result" id="calc-result" title="点击复制" data-i18n-attr="title:calc.copyHint"><span class="calc-visible" aria-hidden="true"><span class="skeleton">0.000</span></span><span class="sr-only"></span></output>
+                <mdui-button-icon id="copy-btn" icon="content_copy" aria-label="复制换算结果" data-i18n-attr="aria-label:calc.copy"></mdui-button-icon>
+                <mdui-button-icon id="share-btn" icon="share" aria-label="分享换算结果" data-i18n-attr="aria-label:calc.share"></mdui-button-icon>
               </div>
             </div>
           </mdui-card>
@@ -116,14 +137,14 @@
 
         <section aria-labelledby="chart-heading">
           <div class="section-heading">
-            <h2 id="chart-heading">历史走势</h2>
+            <h2 id="chart-heading" data-i18n="section.chart">历史走势</h2>
           </div>
           <mdui-card variant="filled" class="surface-card chart-card">
-            <mdui-segmented-button-group id="range-group" class="range-tabs connected-group" selects="single" value="90" full-width>
-              <mdui-segmented-button value="30">30 天</mdui-segmented-button>
-              <mdui-segmented-button value="90">90 天</mdui-segmented-button>
-              <mdui-segmented-button value="180">180 天</mdui-segmented-button>
-              <mdui-segmented-button value="365">1 年</mdui-segmented-button>
+            <mdui-segmented-button-group id="range-group" class="range-tabs connected-group" selects="single" value="90" full-width data-i18n-attr="aria-label:range.label">
+              <mdui-segmented-button value="30" data-i18n="range.30">30 天</mdui-segmented-button>
+              <mdui-segmented-button value="90" data-i18n="range.90">90 天</mdui-segmented-button>
+              <mdui-segmented-button value="180" data-i18n="range.180">180 天</mdui-segmented-button>
+              <mdui-segmented-button value="365" data-i18n="range.365">1 年</mdui-segmented-button>
             </mdui-segmented-button-group>
             <!-- Fixed three-line summary: it never changes while hovering, so the page does not jump. -->
             <div class="chart-readout" id="chart-readout">
@@ -132,8 +153,8 @@
               <span class="chart-readout-line chart-readout-lo" id="readout-low"><span class="skeleton skeleton-text">最低 0000-00-00 · 0.000000</span></span>
             </div>
             <div class="chart-wrap">
-              <div class="wavy-progress" role="progressbar" aria-label="加载中"><div class="wavy-progress__bar"></div></div>
-              <div class="chart is-loading" id="history-chart"><span class="loading-indicator" role="progressbar" aria-label="加载中"><span></span></span></div>
+              <div class="wavy-progress" role="progressbar" aria-label="加载中" data-i18n-attr="aria-label:loading"><div class="wavy-progress__bar"></div></div>
+              <div class="chart is-loading" id="history-chart"><span class="loading-indicator" role="progressbar" aria-label="加载中" data-i18n-attr="aria-label:loading"><span></span></span></div>
               <div class="chart-tooltip" id="chart-tooltip" aria-hidden="true">
                 <span class="chart-tooltip-date" id="tooltip-date"></span>
                 <span class="chart-tooltip-value" id="tooltip-value"></span>
@@ -145,12 +166,12 @@
 
         <section aria-labelledby="mc-heading">
           <div class="section-heading">
-            <h2 id="mc-heading">Mastercard 官方换算器</h2>
+            <h2 id="mc-heading" data-i18n="section.mc">Mastercard 官方换算器</h2>
           </div>
           <mdui-card variant="filled" class="surface-card mc-panel">
-            <p class="mc-note" id="mc-note">用万事达卡在海外刷卡时，入账按万事达的结算汇率计算，其中含有汇率差价，通常和本页的中间价略有不同；发卡行还可能另收货币转换费。实际金额请以万事达官方换算器和发卡行账单为准。</p>
+            <p class="mc-note" id="mc-note" data-i18n="mc.note">用万事达卡在海外刷卡时，入账按万事达的结算汇率计算，其中含有汇率差价，通常和本页的中间价略有不同；发卡行还可能另收货币转换费。实际金额请以万事达官方换算器和发卡行账单为准。</p>
             <div class="mc-actions">
-              <mdui-button variant="tonal" icon="open_in_new" href="https://www.mastercard.com/us/en/personal/get-support/currency-exchange-rate-converter.html" target="_blank" rel="noopener noreferrer">打开万事达官方换算器</mdui-button>
+              <mdui-button variant="tonal" icon="open_in_new" href="https://www.mastercard.com/us/en/personal/get-support/currency-exchange-rate-converter.html" target="_blank" rel="noopener noreferrer" data-i18n="mc.open">打开万事达官方换算器</mdui-button>
             </div>
           </mdui-card>
         </section>
@@ -162,27 +183,28 @@
             <div class="install-row">
               <img class="install-icon" src="/icons/icon-192.png" alt="" width="48" height="48" />
               <div class="install-text">
-                <h2 id="install-heading">添加到桌面</h2>
-                <p class="meta-text" id="install-desc">像 App 一样从桌面打开，离线时也能查看上次获取的汇率。</p>
+                <h2 id="install-heading" data-i18n="install.title">添加到桌面</h2>
+                <p class="meta-text" id="install-desc" data-i18n="install.desc">像 App 一样从桌面打开，离线时也能查看上次获取的汇率。</p>
               </div>
             </div>
             <div class="install-actions">
-              <mdui-button variant="text" id="install-dismiss">不用了</mdui-button>
-              <mdui-button variant="filled" icon="add_to_home_screen" id="install-btn">安装</mdui-button>
+              <mdui-button variant="text" id="install-dismiss" data-i18n="install.dismiss">不用了</mdui-button>
+              <mdui-button variant="filled" icon="add_to_home_screen" id="install-btn" data-i18n="install.button">安装</mdui-button>
             </div>
           </mdui-card>
         </section>
 
         <mdui-divider></mdui-divider>
         <footer class="site-footer">
-          <p>今日汇率、换算和历史走势使用同一数据源：欧洲央行（ECB）参考汇率，经 <a href="https://frankfurter.dev" target="_blank" rel="noopener noreferrer">Frankfurter</a> 提供，每个工作日更新一次。Frankfurter 暂时不可用时，改用社区维护的 <a href="https://github.com/fawazahmed0/exchange-api" target="_blank" rel="noopener noreferrer">currency-api</a> 作为备用，页面会注明。以上均为中间汇率，不含任何机构的实际买卖点差。</p>
-          <p>界面使用 <a href="https://www.mdui.org/zh-cn/docs/2/" target="_blank" rel="noopener noreferrer">mdui 2</a>（Material Design 3 Web Components），并参照 <a href="https://m3.material.io" target="_blank" rel="noopener noreferrer">Material 3 Expressive</a> 设计规范实现了弹簧动效、按钮组、进度与加载指示器和形状；字体为 <a href="https://fonts.google.com/specimen/Google+Sans+Flex" target="_blank" rel="noopener noreferrer">Google Sans Flex</a>，图标为 <a href="https://github.com/google/material-design-icons" target="_blank" rel="noopener noreferrer">Material Icons</a>。</p>
-          <p>本项目开源于 <a href="https://github.com/Saki340/cny-jpy-rate" target="_blank" rel="noopener noreferrer">GitHub</a>，欢迎提交 Issue 反馈问题。</p>
-          <p class="disclaimer">本网站仅提供汇率查询与换算参考功能，不构成任何金融、投资或法律建议，也不对因使用本站数据造成的任何损失承担责任；具体交易请以银行、支付机构或万事达官方渠道公布的汇率为准。</p>
+          <p data-i18n-html="footer.data">今日汇率、换算和历史走势使用同一数据源：欧洲央行（ECB）参考汇率，经 <a href="https://frankfurter.dev" target="_blank" rel="noopener noreferrer">Frankfurter</a> 提供，每个工作日更新一次。Frankfurter 暂时不可用时，改用社区维护的 <a href="https://github.com/fawazahmed0/exchange-api" target="_blank" rel="noopener noreferrer">currency-api</a> 作为备用，页面会注明。以上均为中间汇率，不含任何机构的实际买卖点差。</p>
+          <p data-i18n-html="footer.ui">界面使用 <a href="https://www.mdui.org/zh-cn/docs/2/" target="_blank" rel="noopener noreferrer">mdui 2</a>（Material Design 3 Web Components），并参照 <a href="https://m3.material.io" target="_blank" rel="noopener noreferrer">Material 3 Expressive</a> 设计规范实现了弹簧动效、按钮组、进度与加载指示器和形状；字体为 <a href="https://fonts.google.com/specimen/Google+Sans+Flex" target="_blank" rel="noopener noreferrer">Google Sans Flex</a>，图标为 <a href="https://github.com/google/material-design-icons" target="_blank" rel="noopener noreferrer">Material Icons</a>。</p>
+          <p data-i18n-html="footer.github">本项目开源于 <a href="https://github.com/Saki340/cny-jpy-rate" target="_blank" rel="noopener noreferrer">GitHub</a>，欢迎提交 Issue 反馈问题。</p>
+          <p class="disclaimer" data-i18n="footer.disclaimer">本网站仅提供汇率查询与换算参考功能，不构成任何金融、投资或法律建议，也不对因使用本站数据造成的任何损失承担责任；具体交易请以银行、支付机构或万事达官方渠道公布的汇率为准。</p>
         </footer>
       </div>
     </mdui-layout-main>
   </mdui-layout>
+<script src="i18n.js"></script>
 <script src="expressive.js"></script>
 <script src="app.js"></script>
 </body>

@@ -383,3 +383,41 @@ html.js .page > section:not(.in-view) { animation-play-state: paused; }
   font-variation-settings: "ROND" 100;
 }
 .install-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+
+/* ---------- languages ----------
+ * Han characters look different in Chinese and Japanese fonts, so Japanese
+ * pages put Japanese fonts first (Google Sans Flex still covers Latin). The
+ * language names in the menu each use their own script's fonts. */
+:root:lang(ja) {
+  --font: "Google Sans Flex", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Yu Gothic", Meiryo, "Noto Sans JP", system-ui, sans-serif;
+}
+:root:lang(en) {
+  --font: "Google Sans Flex", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+mdui-menu-item[lang="ja"] { font-family: "Hiragino Sans", "Yu Gothic UI", "Yu Gothic", Meiryo, "Noto Sans JP", sans-serif; }
+mdui-menu-item[lang="zh-CN"] { font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif; }
+
+/* Theme buttons: text labels on wide screens; icons on narrow ones, where
+ * three languages' labels would not fit beside the title and the language
+ * button. The label stays in the accessibility tree (visually hidden). */
+.theme-group.connected-group > mdui-segmented-button::part(icon) { display: none; }
+@media (max-width: 600px) {
+  .theme-group.connected-group > mdui-segmented-button::part(icon),
+  .theme-group.connected-group > mdui-segmented-button::part(selected-icon) { display: inline-flex; }
+  .theme-group.connected-group > mdui-segmented-button::part(label) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}
+/* mdui-dropdown is display: contents; give it a box so the tooltip around it
+ * has something to anchor to. */
+#lang-dropdown { display: inline-flex; flex: none; }
+
+/* The ⇄ in the headline is an icon: the font has no such glyph, and each
+ * language's fallback font drew it at a different weight. */
+.eyebrow { display: flex; align-items: center; }
+.eyebrow-arrow { font-size: .9em; margin: 0 .22em; }
