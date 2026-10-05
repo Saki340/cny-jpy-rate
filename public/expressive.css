@@ -122,9 +122,14 @@ mdui-segmented-button-group.connected-group { gap: 2px; border: 0; }
   --mdui-comp-ripple-state-layer-color: var(--mdui-color-on-primary);
 }
 .connected-group > mdui-segmented-button:active { border-radius: 4px; }
-/* Shape and colour already mark the selection, so the check icon is dropped. */
+/* Shape and colour already mark the selection, so the check icon is dropped,
+ * together with the gap mdui keeps before the label for it (otherwise the
+ * selected label sits 8px off-centre and the button grows when selected). */
 .connected-group > mdui-segmented-button::part(selected-icon) { display: none; }
+.connected-group > mdui-segmented-button::part(label) { padding-left: 0; padding-right: 0; }
 .range-tabs.connected-group { margin-bottom: 14px; }
+/* Equal widths regardless of label length ("1 年" vs "180 天"). */
+.range-tabs.connected-group > mdui-segmented-button { flex: 1 1 0; min-width: 0; }
 .theme-group.connected-group > mdui-segmented-button::part(button) { padding: 0 14px; }
 @media (max-width: 560px) {
   .theme-group.connected-group > mdui-segmented-button::part(button) { padding: 0 10px; }

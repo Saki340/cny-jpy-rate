@@ -232,7 +232,7 @@ async function loadRate() {
     fadeIn(updated);
 
     const next = nextEcbUpdate();
-    if (next) boardNote.textContent = `欧洲央行在工作日公布参考汇率，下次更新约在${describeLocalTime(next)}（你所在地的时间）。`;
+    if (next) boardNote.textContent = `欧洲央行在工作日公布参考汇率，下次更新约在${describeLocalTime(next)}（当地时间）。`;
 
     renderRateLine(false);
     runCalculator(700);
