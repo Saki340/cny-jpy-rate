@@ -178,6 +178,40 @@ function initTheme() {
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", syncThemeColor);
 }
 
+/* ---------- next update time ---------- */
+
+// The ECB publishes reference rates around 16:00 Frankfurt time on working
+// days (Mon–Fri; TARGET holidays are ignored here, hence "约"), and Frankfurter
+// picks them up shortly after, so we aim for 16:15 Europe/Berlin.
+function berlinOffsetMinutes(date) {
+  const name = new Intl.DateTimeFormat("en-US", { timeZone: "Europe/Berlin", timeZoneName: "shortOffset" })
+    .formatToParts(date).find((p) => p.type === "timeZoneName")?.value || "GMT+1";
+  const m = name.match(/GMT([+-])(\d+)(?::(\d+))?/);
+  return m ? (m[1] === "-" ? -1 : 1) * (Number(m[2]) * 60 + Number(m[3] || 0)) : 60;
+}
+
+function nextEcbUpdate(now = new Date()) {
+  const berlinDate = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin", year: "numeric", month: "2-digit", day: "2-digit" });
+  for (let d = 0; d < 8; d++) {
+    const [y, m, day] = berlinDate.format(new Date(now.getTime() + d * 86400000)).split("-").map(Number);
+    const weekday = new Date(Date.UTC(y, m - 1, day)).getUTCDay();
+    if (weekday === 0 || weekday === 6) continue;
+    const wall = new Date(Date.UTC(y, m - 1, day, 16, 15));
+    const at = new Date(wall.getTime() - berlinOffsetMinutes(wall) * 60000);
+    if (at > now) return at;
+  }
+  return null;
+}
+
+// "今天 22:15" / "明天 22:15" / "周一 22:15", in the viewer's own time zone.
+function describeLocalTime(at, now = new Date()) {
+  const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const days = Math.round((startOfDay(at) - startOfDay(now)) / 86400000);
+  const day = days === 0 ? "今天" : days === 1 ? "明天" : WEEKDAYS[at.getDay()];
+  const time = at.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", hour12: false });
+  return `${day} ${time}`;
+}
+
 /* ---------- rate board + calculator ---------- */
 
 async function loadRate() {
@@ -196,6 +230,9 @@ async function loadRate() {
       ? `数据日期 ${esc(data.date)} · 欧洲央行数据暂不可用，当前为备用源 ${sourceLink("currency-api")}`
       : `数据日期 ${esc(data.date)} · ${SOURCES.frankfurter.label}（${sourceLink("frankfurter")}）`;
     fadeIn(updated);
+
+    const next = nextEcbUpdate();
+    if (next) boardNote.textContent = `欧洲央行在工作日公布参考汇率，下次更新约在${describeLocalTime(next)}（你所在地的时间）。`;
 
     renderRateLine(false);
     runCalculator(700);
@@ -492,3 +529,10 @@ window.addEventListener("DOMContentLoaded", () => {
   loadRate();
   loadHistory(90);
 });
+
+// Offline support and "add to home screen" (see sw.js).
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => { /* optional */ });
+  });
+}

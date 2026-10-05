@@ -12,15 +12,6 @@
  *   - Google Sans Flex for display / numeric type
  * ========================================================================== */
 
-@font-face {
-  font-family: "Google Sans Flex";
-  font-style: normal;
-  font-weight: 300 800;
-  font-display: swap;
-  /* ASCII + a few symbols only; Chinese falls back to the system font. */
-  src: url(vendor/fonts/google-sans-flex-ascii.woff2) format("woff2");
-}
-
 :root {
   /* Spring tokens, as the curve + duration pairs published for the web. */
   --ex-fast-spatial: cubic-bezier(0.42, 1.67, 0.21, 0.90);
@@ -34,19 +25,17 @@
   --ex-default-effects: cubic-bezier(0.34, 0.80, 0.34, 1.00);
   --ex-default-effects-dur: 200ms;
 
-  --display: "Google Sans Flex", Roboto, "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans", system-ui, sans-serif;
 }
 
 /* ---------- typography: Google Sans Flex, rounded and emphasised ---------- */
 
+/* Display text and the key numbers use the fully rounded end of the ROND axis. */
 .eyebrow,
 .section-heading h2,
 .rate-line,
 .calc-result,
 .chart-tooltip-value {
-  font-family: var(--display);
   font-variation-settings: "ROND" 100;
-  font-variant-numeric: tabular-nums;
 }
 .eyebrow { font-weight: 760; letter-spacing: .01em; }
 .section-heading h2 { font-weight: 650; letter-spacing: 0; }
@@ -61,7 +50,6 @@
   overflow: hidden;
   background-color: rgb(var(--mdui-color-primary-container));
   color: rgb(var(--mdui-color-on-primary-container));
-  border-radius: var(--mdui-shape-corner-extra-large);
 }
 .rate-card .meta-text { color: rgb(var(--mdui-color-on-primary-container)); opacity: .8; }
 .rate-card .rate-line { color: rgb(var(--mdui-color-on-primary-container)); }
@@ -104,69 +92,51 @@
 #swap-btn:active { --ex-radius: 8px; }
 #swap-btn::part(icon) { transition: transform var(--ex-default-spatial-dur) var(--ex-default-spatial); }
 
-/* ---------- connected button group (replaces segmented buttons) ----------
+/* ---------- connected button group ----------
+ * mdui's own segmented buttons (ripple, focus ring, keyboard and a11y stay
+ * native), restyled from outside into an M3 Expressive connected button group.
  * Spec: 2dp gap, outer corners fully round, inner corners 8dp (small size),
- * the selected button becomes fully round; pressing squeezes the corners.
- * Colours follow the filled toggle button: unselected surface-container,
- * selected primary. */
-.btn-group {
-  display: flex;
-  gap: 2px;
-}
-.btn-group > button {
+ * the selected button becomes fully round, pressing squeezes the corners.
+ * Colours follow the filled toggle button: unselected surface-container-
+ * highest, selected primary. */
+mdui-segmented-button-group.connected-group { gap: 2px; border: 0; }
+.connected-group > mdui-segmented-button {
   --r-out: 20px;
   --r-in: 8px;
-  position: relative;
-  flex: 1 1 0;
-  min-width: 48px;
-  height: 40px;
-  padding: 0 16px;
+  margin: 0;
   border: 0;
   border-radius: var(--r-in);
   background-color: rgb(var(--mdui-color-surface-container-highest));
   color: rgb(var(--mdui-color-on-surface-variant));
-  font-family: inherit;
-  font-size: var(--mdui-typescale-label-large-size);
-  font-weight: 500;
-  line-height: 1;
-  letter-spacing: var(--mdui-typescale-label-large-tracking);
-  white-space: nowrap;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  overflow: hidden;
   transition:
     border-radius var(--ex-fast-spatial-dur) var(--ex-fast-spatial),
     background-color var(--ex-default-effects-dur) var(--ex-default-effects),
     color var(--ex-default-effects-dur) var(--ex-default-effects);
 }
-.btn-group > button:first-child { border-radius: var(--r-out) var(--r-in) var(--r-in) var(--r-out); }
-.btn-group > button:last-child { border-radius: var(--r-in) var(--r-out) var(--r-out) var(--r-in); }
-.btn-group > button[aria-checked="true"] {
+.connected-group > mdui-segmented-button.mdui-segmented-button-first { border-radius: var(--r-out) var(--r-in) var(--r-in) var(--r-out); }
+.connected-group > mdui-segmented-button.mdui-segmented-button-last { border-radius: var(--r-in) var(--r-out) var(--r-out) var(--r-in); }
+.connected-group > mdui-segmented-button[selected] {
   border-radius: var(--r-out);
   background-color: rgb(var(--mdui-color-primary));
   color: rgb(var(--mdui-color-on-primary));
+  --mdui-comp-ripple-state-layer-color: var(--mdui-color-on-primary);
 }
-.btn-group > button:active { border-radius: 4px; }
-/* State layer (hover / focus / press), as in mdui's own buttons. */
-.btn-group > button::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-color: currentColor;
-  opacity: 0;
-  transition: opacity var(--ex-fast-effects-dur) var(--ex-fast-effects);
-}
-.btn-group > button:hover::after { opacity: .08; }
-.btn-group > button:focus-visible::after, .btn-group > button:active::after { opacity: .12; }
-.btn-group > button:focus-visible { outline: 2px solid rgb(var(--mdui-color-secondary)); outline-offset: 2px; }
-.theme-group.btn-group > button { flex: 0 0 auto; padding: 0 14px; }
-.range-tabs.btn-group { margin-bottom: 14px; }
+.connected-group > mdui-segmented-button:active { border-radius: 4px; }
+/* Shape and colour already mark the selection, so the check icon is dropped. */
+.connected-group > mdui-segmented-button::part(selected-icon) { display: none; }
+.range-tabs.connected-group { margin-bottom: 14px; }
+.theme-group.connected-group > mdui-segmented-button::part(button) { padding: 0 14px; }
 @media (max-width: 560px) {
-  .theme-group.btn-group > button { padding: 0 10px; }
+  .theme-group.connected-group > mdui-segmented-button::part(button) { padding: 0 10px; }
 }
 @media (max-width: 360px) {
-  .theme-group.btn-group > button { padding: 0 7px; min-width: 40px; }
+  .theme-group.connected-group > mdui-segmented-button::part(button) { padding: 0 7px; }
 }
+
+/* ---------- card shapes: one hierarchy instead of two styles ----------
+ * Hero card extra-large (28dp); every other card large (16dp). */
+mdui-card.surface-card { --shape-corner: var(--mdui-shape-corner-large); }
+mdui-card.rate-card { --shape-corner: var(--mdui-shape-corner-extra-large); }
 
 /* ---------- wavy linear progress (indeterminate) ----------
  * Active indicator: primary, a wave (amplitude 3, wavelength 20, 4px stroke)
@@ -179,7 +149,10 @@
   pointer-events: none;
   transition: opacity var(--ex-default-effects-dur) var(--ex-default-effects);
 }
-.chart-wrap.is-loading .wavy-progress { opacity: 1; }
+/* Shown only if loading takes longer than 200ms; cached ranges load faster
+ * than that and should not flash the indicator. */
+.chart-wrap.is-loading .wavy-progress { opacity: 1; transition-delay: 200ms; }
+.chart-wrap.is-loading .chart:not(.is-loading) { transition-delay: 200ms; }
 .wavy-progress::before {
   content: "";
   position: absolute;
@@ -232,15 +205,22 @@
 .page > .eyebrow,
 .page > section { animation-duration: var(--ex-slow-spatial-dur); animation-timing-function: var(--ex-slow-spatial); }
 .digit.roll { animation-duration: var(--ex-default-spatial-dur); animation-timing-function: var(--ex-default-spatial); }
+/* Following the pointer must not wobble: position uses the standard curve
+ * (no overshoot); only the tooltip's appearance (scale) gets the spring. */
 .chart-cursor, .chart-dot {
   transition:
-    transform var(--ex-fast-spatial-dur) var(--ex-fast-spatial),
+    transform var(--mdui-motion-duration-short4) var(--mdui-motion-easing-standard-decelerate),
     opacity var(--ex-fast-effects-dur) var(--ex-fast-effects);
 }
 .chart-tooltip {
   border-radius: var(--mdui-shape-corner-medium);
+  transform: none;
+  translate: var(--tx) var(--ty);
+  scale: .9;
   transition:
-    transform var(--ex-fast-spatial-dur) var(--ex-fast-spatial),
+    translate var(--mdui-motion-duration-short4) var(--mdui-motion-easing-standard-decelerate),
+    scale var(--ex-fast-spatial-dur) var(--ex-fast-spatial),
     opacity var(--ex-fast-effects-dur) var(--ex-fast-effects);
 }
+.chart-tooltip.is-visible { transform: none; scale: 1; }
 .chart-svg.is-drawing .chart-extreme-g { animation-duration: var(--ex-fast-spatial-dur); animation-timing-function: var(--ex-fast-spatial); }

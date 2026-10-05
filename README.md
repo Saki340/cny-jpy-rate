@@ -14,7 +14,9 @@
 - **换算计算器**：输入金额即时折算。
 - **历史走势**：30 天 / 90 天 / 180 天 / 1 年，标出区间最高、最低和涨跌幅；悬停或轻点任意一天可查看当天汇率及与最新值的差距，也支持键盘方向键逐日查看。
 - **数据一致**：页面上所有数字来自同一数据源，同一天的汇率在各处相同。
-- **Material Design 3 界面**：浅色 / 深色 / 跟随系统三种主题，适配手机；动效遵循系统的「减弱动态效果」设置。
+- **Material 3 Expressive 风格**：弹簧动效、连接式按钮组、形状变形的加载动画和装饰图形；浅色 / 深色 / 跟随系统三种主题，适配手机；动效遵循系统的「减弱动态效果」设置。
+- **可添加到主屏幕**：支持安装为 Web App，离线时显示上次获取的数据。
+- **提示下次更新时间**：按访客所在时区显示欧洲央行下次公布汇率的大致时间。
 - **国内外都能访问**：界面库和字体全部自托管，不依赖 unpkg、Google Fonts 等在中国大陆不稳定的 CDN。
 - 免费、无广告、无跟踪 Cookie。
 
@@ -22,7 +24,7 @@
 
 - **运行环境**：[Cloudflare Workers](https://developers.cloudflare.com/workers/)（Static Assets 提供前端，`worker.js` 处理 `/api/*`）
 - **前端**：原生 HTML / CSS / JavaScript，无构建步骤、无 npm 依赖；走势图为手写 SVG
-- **界面组件**：[mdui 2](https://www.mdui.org/zh-cn/docs/2/)（Material Design 3 Web Components）
+- **界面组件**：[mdui 2](https://www.mdui.org/zh-cn/docs/2/)（Material Design 3 Web Components），在其上手工实现 M3 Expressive 的部分规范（`expressive.css` / `expressive.js`）
 
 ## 项目结构
 
@@ -34,6 +36,11 @@ cny-jpy-rate/
 │   ├── index.html
 │   ├── app.js           # 前端逻辑、走势图、动效
 │   ├── style.css
+│   ├── expressive.css   # M3 Expressive：弹簧动效、按钮组、进度与加载指示器、装饰形状
+│   ├── expressive.js    # 形状生成（形状变形）
+│   ├── manifest.webmanifest
+│   ├── sw.js            # Service Worker：网络优先，离线时使用缓存
+│   ├── icons/           # Web App 图标
 │   ├── favicon.svg
 │   ├── og-image.png     # 分享卡片预览图（1200×630），源文件 docs/og-image.html
 │   ├── robots.txt
@@ -83,7 +90,7 @@ npx wrangler dev
 
 ## 开发备注
 
-- **静态资源自托管**：`public/vendor/mdui/` 为 mdui 2.1.5 的 `mdui.css` 与 `mdui.global.js`。升级时运行 `npm pack mdui@2`，解压后替换这两个文件。`public/vendor/fonts/` 为 Roboto、IBM Plex Mono（拉丁子集）和 Material Icons；中文使用系统字体。
+- **静态资源自托管**：`public/vendor/mdui/` 为 mdui 2.1.5 的 `mdui.css` 与 `mdui.global.js`。升级时运行 `npm pack mdui@2`，解压后替换这两个文件。`public/vendor/fonts/` 为 Google Sans Flex（可变字体，ASCII 子集）和 Material Icons；中文使用系统字体。
 - **日志**：`wrangler.toml` 中开启了 Workers Logs（`[observability]`）。请不要删除这一项，否则部署会把控制台中开启的日志关闭。
 - **预览图**：编辑 `docs/og-image.html` 后，用无头浏览器重新生成：
 
@@ -97,7 +104,7 @@ npx wrangler dev
 
 本项目代码以 [MIT License](LICENSE) 发布。
 
-`public/vendor/` 中的第三方文件沿用各自的许可证：mdui 为 MIT（见 `public/vendor/mdui/LICENSE.txt`）；Roboto、IBM Plex Mono 为 SIL Open Font License 1.1，Material Icons 为 Apache License 2.0（见 `public/vendor/fonts/README.txt`）。汇率数据的版权和使用条款归各数据提供方所有。
+`public/vendor/` 中的第三方文件沿用各自的许可证：mdui 为 MIT（见 `public/vendor/mdui/LICENSE.txt`）；Google Sans Flex 为 SIL Open Font License 1.1，Material Icons 为 Apache License 2.0（见 `public/vendor/fonts/README.txt`）。汇率数据的版权和使用条款归各数据提供方所有。
 
 ## 作者
 
@@ -111,8 +118,8 @@ npx wrangler dev
 - [Frankfurter](https://frankfurter.dev)（[lineofflight/frankfurter](https://github.com/lineofflight/frankfurter)，MIT）：把欧洲央行参考汇率整理成免费、开源、无需密钥的 API。
 - [currency-api / exchange-api](https://github.com/fawazahmed0/exchange-api)（fawazahmed0，CC0 1.0）：免费的汇率数据，作为本站的备用数据源。
 - [mdui](https://www.mdui.org)（[zdhxiong/mdui](https://github.com/zdhxiong/mdui)，MIT）：本站界面使用的 Material Design 3 Web Components 组件库。
-- [Material Design 3](https://m3.material.io)（Google）：本站遵循的设计规范，包括配色、动效和组件形态。
-- [Roboto](https://fonts.google.com/specimen/Roboto)、[IBM Plex Mono](https://fonts.google.com/specimen/IBM+Plex+Mono)、[Material Icons](https://github.com/google/material-design-icons)：页面使用的字体和图标。
+- [Material Design 3 / M3 Expressive](https://m3.material.io)（Google）：本站遵循的设计规范，包括配色、弹簧动效、按钮组、进度指示器与形状库。
+- [Google Sans Flex](https://fonts.google.com/specimen/Google+Sans+Flex)、[Material Icons](https://github.com/google/material-design-icons)：页面使用的字体和图标。
 - [Cloudflare Workers](https://workers.cloudflare.com)：本站的托管与部署平台。
 - [jsDelivr](https://www.jsdelivr.com)、[shields.io](https://shields.io)：备用数据的 CDN 和本文档中的徽章。
 

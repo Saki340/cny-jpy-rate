@@ -9,6 +9,10 @@
 <link rel="canonical" href="https://rate.anontokyo.vip/" />
 <!-- Search results show the favicon only when it is a crawlable file, not a data: URI. -->
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<!-- Installable web app ("add to home screen"); see manifest.webmanifest and sw.js. -->
+<link rel="manifest" href="/manifest.webmanifest" />
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-title" content="汇率板" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="汇率板" />
 <meta property="og:locale" content="zh_CN" />
@@ -51,22 +55,22 @@
       <div class="app-bar-inner">
         <mdui-top-app-bar-title>日元人民币汇率</mdui-top-app-bar-title>
         <div class="app-bar-spacer"></div>
-        <div id="theme-group" class="theme-group btn-group" role="radiogroup" aria-label="主题" data-value="auto">
-          <button type="button" role="radio" value="light">浅色</button>
-          <button type="button" role="radio" value="auto">系统</button>
-          <button type="button" role="radio" value="dark">深色</button>
-        </div>
+        <mdui-segmented-button-group id="theme-group" class="theme-group connected-group" selects="single" value="auto">
+          <mdui-segmented-button value="light">浅色</mdui-segmented-button>
+          <mdui-segmented-button value="auto">系统</mdui-segmented-button>
+          <mdui-segmented-button value="dark">深色</mdui-segmented-button>
+        </mdui-segmented-button-group>
       </div>
     </mdui-top-app-bar>
 
     <mdui-layout-main>
       <div class="page">
-        <h1 class="eyebrow">JPY ⇄ CNY · EXCHANGE RATE</h1>
+        <h1 class="eyebrow">JPY ⇄ CNY</h1>
 
         <section aria-labelledby="board-heading">
           <div class="section-heading">
             <h2 id="board-heading">今日汇率</h2>
-            <span class="section-kicker">MID-MARKET RATE</span>
+            <span class="section-kicker">中间价</span>
           </div>
           <mdui-card variant="filled" class="surface-card rate-card">
             <div class="deco-shape" aria-hidden="true"></div>
@@ -82,7 +86,6 @@
         <section aria-labelledby="calc-heading">
           <div class="section-heading">
             <h2 id="calc-heading">换算计算器</h2>
-            <span class="section-kicker">CONVERTER</span>
           </div>
           <mdui-card variant="outlined" class="surface-card calc-card">
             <mdui-text-field id="amount" type="number" inputmode="decimal" value="100" min="0" step="any" label="金额（JPY）" variant="outlined" class="calc-input"></mdui-text-field>
@@ -97,15 +100,14 @@
         <section aria-labelledby="chart-heading">
           <div class="section-heading">
             <h2 id="chart-heading">历史走势</h2>
-            <span class="section-kicker">HISTORY</span>
           </div>
           <mdui-card variant="outlined" class="surface-card chart-card">
-            <div id="range-group" class="range-tabs btn-group" role="radiogroup" aria-label="时间范围" data-value="90">
-              <button type="button" role="radio" value="30">30 天</button>
-              <button type="button" role="radio" value="90">90 天</button>
-              <button type="button" role="radio" value="180">180 天</button>
-              <button type="button" role="radio" value="365">1 年</button>
-            </div>
+            <mdui-segmented-button-group id="range-group" class="range-tabs connected-group" selects="single" value="90" full-width>
+              <mdui-segmented-button value="30">30 天</mdui-segmented-button>
+              <mdui-segmented-button value="90">90 天</mdui-segmented-button>
+              <mdui-segmented-button value="180">180 天</mdui-segmented-button>
+              <mdui-segmented-button value="365">1 年</mdui-segmented-button>
+            </mdui-segmented-button-group>
             <!-- Fixed three-line summary: it never changes while hovering, so the page does not jump. -->
             <div class="chart-readout" id="chart-readout">
               <span class="chart-readout-line" id="readout-latest"><span class="skeleton skeleton-text">最新 0000-00-00 · 0.000000 · 区间 +0.00%</span></span>
@@ -129,7 +131,7 @@
             <h2 id="mc-heading">Mastercard 官方换算器</h2>
           </div>
           <mdui-card variant="outlined" class="surface-card mc-panel">
-            <p class="mc-note" id="mc-note">本站曾尝试读取万事达官网换算器背后的内部接口，用来展示含点差的参考结算汇率。万事达没有公开的免费 API，该内部接口也没有文档，且官网启用了机器人防护，服务器请求几乎总会被拒绝（常见 HTTP 403）。多次更换请求方式和备用方案后，仍然无法稳定拿到可用数据，因此已去掉自动查询，避免展示过期或错误的汇率。结算汇率含点差，不等于本页中间价，也不代表发卡行最终入账汇率，请以官方换算器为准。</p>
+            <p class="mc-note" id="mc-note">用万事达卡在海外刷卡时，入账按万事达的结算汇率计算，其中含有汇率差价，通常和本页的中间价略有不同；发卡行还可能另收货币转换费。实际金额请以万事达官方换算器和发卡行账单为准。</p>
             <div class="mc-actions">
               <mdui-button variant="tonal" icon="open_in_new" href="https://www.mastercard.com/us/en/personal/get-support/currency-exchange-rate-converter.html" target="_blank" rel="noopener noreferrer">打开万事达官方换算器</mdui-button>
             </div>

@@ -25,6 +25,6 @@ SOFTWARE.
 Third-party files in public/vendor/ keep their own licenses:
 
 - public/vendor/mdui/     mdui 2 (MIT), see public/vendor/mdui/LICENSE.txt
-- public/vendor/fonts/    Roboto and IBM Plex Mono (SIL Open Font License 1.1),
+- public/vendor/fonts/    Google Sans Flex (SIL Open Font License 1.1),
                           Material Icons (Apache License 2.0),
                           see public/vendor/fonts/README.txt

@@ -11,7 +11,9 @@ JPY ⇄ CNY 汇率板。单个 Cloudflare Worker + 静态资源，无构建步�
 - `worker.js` — Worker 入口，处理 `/api/rate`、`/api/history`。两者共用同一数据源：主源 Frankfurter（欧洲央行参考汇率），失败时用 fawazahmed0 currency-api。**不要再接入 Yahoo 等条款不允许商用/公开展示的数据源。**其余请求交给 `env.ASSETS`。
 - `wrangler.toml` — `public/` 为静态资源目录，`/api/*` 先走 Worker；`[observability]` 开启 Workers Logs（不要删，否则部署会把日志关掉）。
 - `public/index.html` / `app.js` / `style.css` — 前端，原生 JS，无打包；走势图为手写 SVG。
-- `public/vendor/` — 自托管的 mdui 2.1.5 与字体。**不要改回 unpkg / Google Fonts 等外部 CDN**（大陆访问不稳定）。
+- `public/expressive.css` / `expressive.js` — M3 Expressive 层：弹簧动效令牌、连接式按钮组、波浪进度条、形状变形加载指示器、装饰形状（见下）。
+- `public/manifest.webmanifest` / `sw.js` / `icons/` — 可安装（添加到主屏幕）与离线；`sw.js` 全部网络优先，失败才用缓存，不要改成缓存优先。
+- `public/vendor/` — 自托管的 mdui 2.1.5 与字体（Google Sans Flex ASCII 子集、Material Icons）。**不要改回 unpkg / Google Fonts 等外部 CDN**（大陆访问不稳定）。
 - `docs/llms-full.txt` — mdui 2 官方完整文档（本地参考，不部署）。
 
 ## 界面规范：必须遵循 mdui 2
@@ -25,11 +27,23 @@ JPY ⇄ CNY 汇率板。单个 Cloudflare Worker + 静态资源，无构建步�
 - Web Components 不能自闭合；属性改动是异步渲染的（需要时 `await el.updateComplete`）。
 - 主题：`<html>` 上的 `mdui-theme-light|dark|auto`，用户选择存在 `localStorage`（键 `theme-pref`）。
 
+## M3 Expressive 层（`expressive.css` / `expressive.js`）
+
+mdui 2 与 Google 的 Material Web 都没有实现 M3 Expressive，本站按 m3.material.io 规范手工补充：
+
+- **动效用弹簧令牌** `--ex-{fast,default,slow}-{spatial,effects}`（及 `-dur`），数值来自官网 Motion > Specs 的「Web: Convert springs to curves」。位置/尺寸/形状用 spatial（有回弹），颜色/透明度用 effects（无回弹）；**跟随指针移动的东西（悬浮提示、光标）不要用有回弹的曲线**。JS 里的 Web Animations 用 `app.js` 的 `SPRING_*` 常量。
+- **按钮组**：仍用 mdui 分段按钮（保留 ripple、键盘与无障碍），通过 `.connected-group` 从外部改成连接式按钮组外观；不要改回手写按钮。
+- **卡片圆角层级**：主视觉卡片（今日汇率）extra-large，其余卡片 large，统一用 mdui-card 的 `--shape-corner`。
+- **形状**：由 `ExpressiveShapes.polygon(name)` 生成同点数的 `polygon()`，可直接用 clip-path 过渡变形；新形状加在 `radius` 表里。
+- **字体**：Google Sans Flex 是唯一的拉丁字体（数字用 tabular-nums）；显示文字和关键数字用 `font-variation-settings: "ROND" 100`。子集只含 ASCII 和 · − ± ⇄，新增符号需重新下载子集。
+- 所有装饰性动画都受 `prefers-reduced-motion` 控制（`style.css` 末尾）。
+
 ## 开发
 
 - 本地预览：`npx wrangler dev`（需要外网访问上游汇率 API）；`.claude/launch.json` 已配置 `wrangler-dev`，端口 8787。
 - 改动后在浏览器里分别检查浅色、深色和手机宽度（375px）。
 - 本机为 Windows / PowerShell 5.1；仓库设置了 `core.autocrlf=false`，文件保持 LF。
 - 目标用户在中国大陆和日本（及全球）：新增外部资源前考虑大陆的可达性，优先自托管。
+- 改了 `docs/og-image.html` 后用 README 中的 Edge 命令重新生成 `public/og-image.png`。
 - 用户可见文案为简体中文；提交说明也用中文。
 - **提交说明不要加 `Co-Authored-By: Claude …` 之类的署名行**，PR 描述也不要加 Claude Code 署名；README 等文档中也不要把 Claude 列为作者或贡献者。

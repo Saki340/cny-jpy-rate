@@ -69,42 +69,6 @@ const ExpressiveShapes = (() => {
   return { polygon, installLoadingKeyframes };
 })();
 
-// Connected button group with radio semantics. Exposes `value` and fires a
-// bubbling "change" event, like the mdui segmented button group it replaces.
-function initButtonGroup(root) {
-  const buttons = [...root.querySelectorAll('button[role="radio"]')];
-  let value = root.dataset.value || buttons[0].value;
-  const sync = () => {
-    for (const b of buttons) {
-      const on = b.value === value;
-      b.setAttribute("aria-checked", String(on));
-      b.tabIndex = on ? 0 : -1;
-    }
-  };
-  Object.defineProperty(root, "value", {
-    get: () => value,
-    set: (v) => { value = String(v); sync(); },
-  });
-  const select = (b) => {
-    if (b.value === value) return;
-    value = b.value;
-    sync();
-    root.dispatchEvent(new Event("change", { bubbles: true }));
-  };
-  buttons.forEach((b, i) => {
-    b.addEventListener("click", () => select(b));
-    b.addEventListener("keydown", (e) => {
-      const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
-      if (!step) return;
-      e.preventDefault();
-      const next = buttons[(i + step + buttons.length) % buttons.length];
-      next.focus();
-      select(next);
-    });
-  });
-  sync();
-}
-
 // Decorative shape in the rate card: alternate between two library shapes.
 const decoShapes = [["cookie12", 0], ["sunny", 22.5]];
 let decoIndex = 0;
@@ -117,8 +81,10 @@ function morphDecoShape() {
 
 (function initExpressive() {
   ExpressiveShapes.installLoadingKeyframes();
+  // iOS Safari only applies :active (used for the press shape morph) when the
+  // page has a touch listener.
+  document.addEventListener("touchstart", () => {}, { passive: true });
   const ready = () => {
-    document.querySelectorAll(".btn-group").forEach(initButtonGroup);
     const deco = document.querySelector(".deco-shape");
     if (deco) deco.style.setProperty("--shape", ExpressiveShapes.polygon(...decoShapes[0]));
   };
