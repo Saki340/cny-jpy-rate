@@ -12,7 +12,9 @@ JPY ⇄ CNY 汇率板。单个 Cloudflare Worker + 静态资源，无构建步�
 - `wrangler.toml` — `public/` 为静态资源目录，`/api/*` 先走 Worker；`[observability]` 开启 Workers Logs（不要删，否则部署会把日志关掉）。
 - `public/index.html` / `app.js` / `style.css` — 前端，原生 JS，无打包；走势图为手写 SVG。
 - `public/expressive.css` / `expressive.js` — M3 Expressive 层：弹簧动效令牌、连接式按钮组、波浪进度条、形状变形加载指示器、装饰形状（见下）。
-- `public/manifest.webmanifest` / `sw.js` / `icons/` — 可安装（添加到主屏幕）与离线；`sw.js` 全部网络优先，失败才用缓存，不要改成缓存优先。
+- `public/manifest.webmanifest` / `sw.js` / `icons/` — 可安装（添加到主屏幕）与离线；`sw.js` 全部网络优先，失败才用缓存，不要改成缓存优先。缓存返回的响应带 `X-From-Cache: 1`，页面据此显示离线提示（`noteCached()`）。
+- 安装卡片（`initInstall()`）：Chromium 用 `beforeinstallprompt` 显示「安装」按钮，iOS 显示「分享 → 添加到主屏幕」说明；已安装或 30 天内点过「不用了」则不显示。
+- 提示信息统一用 mdui 的 `snackbar` 函数（`app.js` 的 `notify()`）。
 - `public/vendor/` — 自托管的 mdui 2.1.5 与字体（Google Sans Flex ASCII 子集、Material Icons）。**不要改回 unpkg / Google Fonts 等外部 CDN**（大陆访问不稳定）。
 - `docs/llms-full.txt` — mdui 2 官方完整文档（本地参考，不部署）。
 

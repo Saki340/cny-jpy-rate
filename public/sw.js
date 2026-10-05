@@ -7,6 +7,12 @@
 
 const CACHE = "rate-board-v1";
 
+function markFromCache(response) {
+  const headers = new Headers(response.headers);
+  headers.set("X-From-Cache", "1");
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
+
 self.addEventListener("install", () => self.skipWaiting());
 
 self.addEventListener("activate", (event) => {
@@ -30,10 +36,12 @@ self.addEventListener("fetch", (event) => {
       return response;
     } catch (err) {
       const cached = await caches.match(request);
-      if (cached) return cached;
+      // Mark cached answers so the page can tell the visitor they are offline
+      // and which day's data they are looking at.
+      if (cached) return markFromCache(cached);
       if (request.mode === "navigate") {
         const home = await caches.match("/");
-        if (home) return home;
+        if (home) return markFromCache(home);
       }
       throw err;
     }

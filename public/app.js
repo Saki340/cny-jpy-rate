@@ -153,6 +153,11 @@ async function exitLoading(container) {
   await Promise.race([exit, new Promise((resolve) => setTimeout(resolve, 250))]);
 }
 
+// mdui snackbar (see "# snackbar 函数" in docs/llms-full.txt).
+function notify(message) {
+  if (window.mdui && typeof window.mdui.snackbar === "function") window.mdui.snackbar({ message, placement: "bottom" });
+}
+
 /* ---------- scroll-triggered entrance ---------- */
 
 // Sections (and the chart drawing) play their entrance when they scroll into
@@ -323,6 +328,131 @@ document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible" && refreshDue && Date.now() > refreshDue) refreshNow();
 });
 
+/* ---------- offline ---------- */
+
+// sw.js marks answers served from its cache with X-From-Cache; together with
+// the browser's online/offline events this drives the banner under the bar.
+let offlineDataDate = null;
+
+function setOffline(offline) {
+  if (offline) {
+    el("offline-text").textContent = offlineDataDate
+      ? `当前离线，显示的是 ${offlineDataDate} 的汇率`
+      : "当前离线，网络恢复后会自动更新";
+  }
+  el("offline-banner").classList.toggle("is-shown", offline);
+}
+
+function noteCached(res, date) {
+  if (!res.headers.get("X-From-Cache")) return;
+  if (date && (!offlineDataDate || date > offlineDataDate)) offlineDataDate = date;
+  setOffline(true);
+}
+
+function initOffline() {
+  if (!navigator.onLine) setOffline(true);
+  window.addEventListener("offline", () => setOffline(true));
+  window.addEventListener("online", () => {
+    const wasShown = el("offline-banner").classList.contains("is-shown");
+    offlineDataDate = null;
+    setOffline(false);
+    if (wasShown) notify("已恢复联网");
+    // Reload whatever failed or came from the cache.
+    if (!state.cnyToJpy) loadRate(); else loadRate({ refresh: true });
+    loadHistory(state.historyDays, { refresh: Boolean(chart) });
+  });
+}
+
+/* ---------- copy the converter result ---------- */
+
+function copyFallback(text) {
+  const area = document.createElement("textarea");
+  area.value = text;
+  area.setAttribute("readonly", "");
+  area.style.cssText = "position:fixed;opacity:0;pointer-events:none";
+  document.body.append(area);
+  area.select();
+  let ok = false;
+  try { ok = document.execCommand("copy"); } catch { /* unsupported */ }
+  area.remove();
+  return ok;
+}
+
+let copyResetTimer = 0;
+
+// Copies the plain number (no thousands separators) so it pastes cleanly
+// into other calculators and banking apps.
+async function copyResult() {
+  if (!currentMidRate()) return;
+  const text = String(Number(state.calcShown.toFixed(3)));
+  let ok = true;
+  try { await navigator.clipboard.writeText(text); } catch { ok = copyFallback(text); }
+  const [, to] = currentPair();
+  notify(ok ? `已复制 ${text} ${to}` : "复制失败，请手动选择数字复制");
+  if (!ok) return;
+  const btn = el("copy-btn");
+  btn.icon = "check";
+  pop(btn, 1.15);
+  clearTimeout(copyResetTimer);
+  copyResetTimer = setTimeout(() => { btn.icon = "content_copy"; }, 1600);
+}
+
+/* ---------- add to home screen ---------- */
+
+const INSTALL_KEY = "install-dismissed";
+let installPrompt = null;
+
+const isStandalone = () => window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+function installDismissed() {
+  try {
+    const at = Number(localStorage.getItem(INSTALL_KEY));
+    return at > 0 && Date.now() - at < 30 * 86400000;
+  } catch { return false; }
+}
+
+// Chromium browsers fire beforeinstallprompt, so the card gets a real
+// "安装" button; iOS has no such API, so it explains the Share-sheet steps.
+function showInstall(mode) {
+  if (isStandalone() || installDismissed()) return;
+  if (mode === "ios") {
+    el("install-desc").textContent = "点浏览器的「分享」按钮，再选「添加到主屏幕」，就能像 App 一样从桌面打开。";
+    el("install-btn").hidden = true;
+    el("install-dismiss").textContent = "知道了";
+  }
+  el("install-section").hidden = false;
+}
+
+function hideInstall() {
+  el("install-section").hidden = true;
+}
+
+function initInstall() {
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    installPrompt = e;
+    showInstall("prompt");
+  });
+  window.addEventListener("appinstalled", () => {
+    installPrompt = null;
+    hideInstall();
+    notify("已添加到桌面");
+  });
+  el("install-btn").addEventListener("click", async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    installPrompt = null;
+    if (outcome === "accepted") hideInstall();
+  });
+  el("install-dismiss").addEventListener("click", () => {
+    try { localStorage.setItem(INSTALL_KEY, String(Date.now())); } catch { /* ignore */ }
+    hideInstall();
+  });
+  if (isIOS() && !isStandalone()) showInstall("ios");
+}
+
 /* ---------- rate board + calculator ---------- */
 
 async function loadRate({ refresh = false } = {}) {
@@ -332,6 +462,7 @@ async function loadRate({ refresh = false } = {}) {
     const data = await res.json();
     if (data.error) throw new Error(data.error);
 
+    noteCached(res, data.date);
     const changed = data.date !== state.rateDate;
     if (refresh && !changed) return;
 
@@ -490,6 +621,7 @@ async function loadHistory(days, { refresh = false } = {}) {
     const data = await res.json();
     if (token !== state.historyReq) return;
     if (!data.points || data.points.length < 2) throw new Error(data.error || "no points");
+    noteCached(res, data.points[data.points.length - 1].date);
     state.history = data.points;
     state.historySource = data.source || "frankfurter";
     setChartLoading(false);
@@ -775,6 +907,10 @@ function hideTooltip(instant = false) {
 window.addEventListener("DOMContentLoaded", () => {
   initTheme();
   initReveal();
+  initOffline();
+  initInstall();
+  el("copy-btn").addEventListener("click", copyResult);
+  el("calc-result").addEventListener("click", copyResult);
   el("swap-btn").addEventListener("click", toggleDirection);
   el("amount").addEventListener("input", () => runCalculator(220, { fromInput: true }));
   el("range-group").addEventListener("change", (e) => {

@@ -335,3 +335,49 @@ html.js .page > section:not(.in-view) { animation-play-state: paused; }
 .chart-svg.is-settled .chart-latest-g { animation-delay: 120ms; }
 /* Drawn while still below the fold: hold until the chart is on screen. */
 .chart-svg.is-waiting * { animation-play-state: paused !important; }
+
+/* ---------- offline banner ----------
+ * Collapses to zero height when online; expands with a spring when the page
+ * loses the network or is showing cached data. */
+.offline-banner {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows var(--ex-default-spatial-dur) var(--ex-default-spatial),
+    margin-top var(--ex-default-spatial-dur) var(--ex-default-spatial),
+    opacity var(--ex-default-effects-dur) var(--ex-default-effects);
+}
+.offline-banner.is-shown { grid-template-rows: 1fr; opacity: 1; margin-top: 16px; }
+.offline-banner-inner { min-height: 0; overflow: hidden; }
+.offline-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: var(--mdui-shape-corner-full);
+  background-color: rgb(var(--mdui-color-secondary-container));
+  color: rgb(var(--mdui-color-on-secondary-container));
+  font-size: 14px;
+}
+.offline-pill mdui-icon { font-size: 20px; flex: none; }
+
+/* ---------- converter: copy the result ---------- */
+
+.calc-result-row { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.calc-result-row .calc-result { cursor: pointer; min-width: 0; -webkit-tap-highlight-color: transparent; }
+.calc-result-row mdui-button-icon { flex: none; color: rgb(var(--card-on)); }
+
+/* ---------- install card ---------- */
+
+.install-card { --card-bg: var(--mdui-color-surface-container-high); --card-on: var(--mdui-color-on-surface); }
+.install-row { display: flex; align-items: center; gap: 16px; }
+.install-icon { flex: none; width: 48px; height: 48px; border-radius: 12px; }
+.install-text { min-width: 0; }
+.install-text h2 {
+  margin: 0 0 2px;
+  font-size: var(--mdui-typescale-title-medium-size);
+  font-weight: 650;
+  font-variation-settings: "ROND" 100;
+}
+.install-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }

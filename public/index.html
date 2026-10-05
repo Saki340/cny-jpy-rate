@@ -74,6 +74,10 @@
 
     <mdui-layout-main>
       <div class="page">
+        <!-- Shown while offline; app.js fills in which day's data is on screen. -->
+        <div class="offline-banner" id="offline-banner" role="status" aria-live="polite">
+          <div class="offline-banner-inner"><div class="offline-pill"><mdui-icon name="cloud_off"></mdui-icon><span id="offline-text"></span></div></div>
+        </div>
         <h1 class="eyebrow">JPY ⇄ CNY</h1>
 
         <section aria-labelledby="board-heading">
@@ -101,7 +105,10 @@
             <div class="calc-equals" aria-hidden="true">＝</div>
             <div class="calc-field">
               <span class="result-label">折合 <span id="calc-to-label">CNY</span></span>
-              <output class="calc-result" id="calc-result"><span class="calc-visible" aria-hidden="true"><span class="skeleton">0.000</span></span><span class="sr-only"></span></output>
+              <div class="calc-result-row">
+                <output class="calc-result" id="calc-result" title="点击复制"><span class="calc-visible" aria-hidden="true"><span class="skeleton">0.000</span></span><span class="sr-only"></span></output>
+                <mdui-button-icon id="copy-btn" icon="content_copy" aria-label="复制换算结果"></mdui-button-icon>
+              </div>
             </div>
           </mdui-card>
         </section>
@@ -143,6 +150,24 @@
             <p class="mc-note" id="mc-note">用万事达卡在海外刷卡时，入账按万事达的结算汇率计算，其中含有汇率差价，通常和本页的中间价略有不同；发卡行还可能另收货币转换费。实际金额请以万事达官方换算器和发卡行账单为准。</p>
             <div class="mc-actions">
               <mdui-button variant="tonal" icon="open_in_new" href="https://www.mastercard.com/us/en/personal/get-support/currency-exchange-rate-converter.html" target="_blank" rel="noopener noreferrer">打开万事达官方换算器</mdui-button>
+            </div>
+          </mdui-card>
+        </section>
+
+        <!-- "Add to home screen": shown only where the page can be installed and
+             is not already running as an installed app (see initInstall). -->
+        <section class="install-section" id="install-section" aria-labelledby="install-heading" hidden>
+          <mdui-card variant="filled" class="surface-card install-card">
+            <div class="install-row">
+              <img class="install-icon" src="/icons/icon-192.png" alt="" width="48" height="48" />
+              <div class="install-text">
+                <h2 id="install-heading">添加到桌面</h2>
+                <p class="meta-text" id="install-desc">像 App 一样从桌面打开，离线时也能查看上次获取的汇率。</p>
+              </div>
+            </div>
+            <div class="install-actions">
+              <mdui-button variant="text" id="install-dismiss">不用了</mdui-button>
+              <mdui-button variant="filled" icon="add_to_home_screen" id="install-btn">安装</mdui-button>
             </div>
           </mdui-card>
         </section>
