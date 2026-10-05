@@ -79,9 +79,10 @@ function sourceLink(key) {
 // some digits change (a new daily fix), just those columns roll, passing
 // through the digits in between. When the format changes (direction swap),
 // the columns are rebuilt and roll up from 0, left to right.
+// The animated columns are hidden from screen readers; a visually hidden copy
+// of the text (.sr-only) is what they read.
 function odometer(node, text, animate = true) {
   node.dataset.text = text;
-  node.setAttribute("aria-label", text);
   if (!animate || !motionOK()) {
     node.textContent = text;
     return;
@@ -93,12 +94,13 @@ function odometer(node, text, animate = true) {
     chars.every((c, i) => isDigit(c) === cols[i].classList.contains("odo-digit"));
   if (!sameShape) {
     const strip = [...Array(10).keys()].map((d) => `<span>${d}</span>`).join("");
-    node.innerHTML = chars.map((c, i) => isDigit(c)
+    node.innerHTML = `<span class="sr-only"></span>` + chars.map((c, i) => isDigit(c)
       ? `<span class="odo odo-digit" style="--i:${i}" aria-hidden="true"><span class="odo-ghost">${c}</span><span class="odo-strip" style="--d:0">${strip}</span></span>`
       : `<span class="odo odo-sym" style="--i:${i}" aria-hidden="true">${esc(c)}</span>`).join("");
-    cols = [...node.children];
+    cols = [...node.children].filter((c) => c.classList.contains("odo"));
     void node.offsetWidth; // start every column at 0 before rolling
   }
+  node.querySelector(":scope > .sr-only").textContent = text;
   chars.forEach((c, i) => {
     const col = cols[i];
     if (isDigit(c)) {
@@ -347,7 +349,7 @@ async function loadRate({ refresh = false } = {}) {
     fadeIn(updated);
 
     const next = nextEcbUpdate();
-    if (next) boardNote.textContent = `欧洲央行在工作日公布参考汇率，下次更新约在${describeLocalTime(next)}（当地时间）。`;
+    if (next) boardNote.textContent = `下次更新：${describeLocalTime(next)} 左右（当地时间）`;
 
     if (!refresh) await exitLoading(el("rate-value"));
     renderRateLine(false);
@@ -363,7 +365,7 @@ async function loadRate({ refresh = false } = {}) {
     if (refresh) return; // keep showing the last good numbers
     el("updated").textContent = "";
     el("rate-value").textContent = "--";
-    el("calc-result").textContent = "--";
+    el("calc-result").querySelector(".calc-visible").textContent = "--";
     boardNote.textContent = "汇率获取失败，请稍后刷新页面重试。";
   }
 }
@@ -448,7 +450,10 @@ function runCalculator(duration = 220, { fromInput = false } = {}) {
   if (!rate) return;
   const value = amount * rate;
   const node = el("calc-result");
-  tweenNumber(node, state.calcShown, value, (v) => fmt(v, 3), duration);
+  // The counting animation runs in an aria-hidden span; screen readers get
+  // only the final value, not every intermediate frame.
+  tweenNumber(node.querySelector(".calc-visible"), state.calcShown, value, (v) => fmt(v, 3), duration);
+  node.querySelector(".sr-only").textContent = fmt(value, 3);
   if (fromInput && value !== state.calcShown) pop(node, 1.03);
   state.calcShown = value;
 }
@@ -583,11 +588,15 @@ function renderChart({ draw = false, morph = false } = {}) {
     axes += `<line class="chart-grid" x1="${padL}" x2="${W - padR}" y1="${gy.toFixed(1)}" y2="${gy.toFixed(1)}"/>`;
     axes += `<text class="chart-text" x="${padL - 6}" y="${(gy + 4).toFixed(1)}" text-anchor="end">${axisFmt(v)}</text>`;
   }
+  // MM-DD is ambiguous once the range crosses a year ("10-05" twice in 1 年),
+  // so longer ranges label the axis with YYYY-MM instead.
+  const spanDays = (Date.parse(pts[n - 1].date) - Date.parse(pts[0].date)) / 86400000;
+  const tickLabel = (date) => (spanDays > 200 ? date.slice(0, 7) : date.slice(5));
   const ticks = Math.min(5, n);
   for (let k = 0; k < ticks; k++) {
     const i = Math.round((k * (n - 1)) / (ticks - 1));
     const anchor = k === 0 ? "start" : k === ticks - 1 ? "end" : "middle";
-    axes += `<text class="chart-text" x="${x(i).toFixed(1)}" y="${H - 6}" text-anchor="${anchor}">${esc(pts[i].date.slice(5))}</text>`;
+    axes += `<text class="chart-text" x="${x(i).toFixed(1)}" y="${H - 6}" text-anchor="${anchor}">${esc(tickLabel(pts[i].date))}</text>`;
   }
 
   const line = pathOf(linePts);
@@ -666,7 +675,9 @@ function renderChart({ draw = false, morph = false } = {}) {
 // labels fade out over the new ones. Markers pop in once the line settles.
 function morphChart(svg, prev, linePts, areaOf, x0, x1) {
   const SAMPLES = 120;
-  const a = resample(prev.linePts, SAMPLES, x0, x1);
+  // Start from what is on screen: if the previous morph was interrupted
+  // (fast repeated clicks), continue from its in-between shape.
+  const a = resample(prev.liveShape || prev.linePts, SAMPLES, x0, x1);
   const b = resample(linePts, SAMPLES, x0, x1);
   const lineEl = svg.querySelector(".chart-line");
   const areaEl = svg.querySelector(".chart-area");
@@ -689,11 +700,13 @@ function morphChart(svg, prev, linePts, areaOf, x0, x1) {
     const t = Math.min((now - start) / duration, 1);
     const e = ease(t);
     const mid = a.map(([px, ay], k) => [px, ay + (b[k][1] - ay) * e]);
+    if (chart && chart.svg === svg) chart.liveShape = mid;
     lineEl.setAttribute("d", pathOf(mid));
     areaEl.setAttribute("d", areaOf(mid));
     if (t < 1) {
       morphRaf = requestAnimationFrame(frame);
     } else {
+      if (chart && chart.svg === svg) chart.liveShape = null;
       lineEl.setAttribute("d", finalLine);
       areaEl.setAttribute("d", finalArea);
       svg.classList.remove("is-morphing");

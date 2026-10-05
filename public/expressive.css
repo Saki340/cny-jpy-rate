@@ -45,11 +45,11 @@
 
 /* ---------- colour blocks: every card is a filled container ----------
  * M3's big colour blocks: each card gets a container role and its matching
- * "on" colour. The rate (hero) uses primary, the converter tertiary for
- * contrast, the chart secondary, and the Mastercard note a neutral surface
+ * "on" colour. The rate (hero) uses primary, the converter a custom teal
+ * role (style.css) for contrast, the chart secondary, and the Mastercard note a neutral surface
  * tone as the least important block. */
 .rate-card  { --card-bg: var(--mdui-color-primary-container);   --card-on: var(--mdui-color-on-primary-container); }
-.calc-card  { --card-bg: var(--mdui-color-tertiary-container);  --card-on: var(--mdui-color-on-tertiary-container); }
+.calc-card  { --card-bg: var(--app-color-calc-container);      --card-on: var(--app-color-on-calc-container); }
 .chart-card { --card-bg: var(--mdui-color-secondary-container); --card-on: var(--mdui-color-on-secondary-container); }
 .mc-panel   { --card-bg: var(--mdui-color-surface-container-highest); --card-on: var(--mdui-color-on-surface); }
 .surface-card .meta-text,

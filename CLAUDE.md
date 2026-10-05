@@ -34,7 +34,7 @@ mdui 2 与 Google 的 Material Web 都没有实现 M3 Expressive，本站按 m3.
 - **动效用弹簧令牌** `--ex-{fast,default,slow}-{spatial,effects}`（及 `-dur`），数值来自官网 Motion > Specs 的「Web: Convert springs to curves」。位置/尺寸/形状用 spatial（有回弹），颜色/透明度用 effects（无回弹）；**跟随指针移动的东西（悬浮提示、光标）不要用有回弹的曲线**。JS 里的 Web Animations 用 `app.js` 的 `SPRING_*` 常量。
 - **按钮组**：仍用 mdui 分段按钮（保留 ripple、键盘与无障碍），通过 `.connected-group` 从外部改成连接式按钮组外观；不要改回手写按钮。
 - **卡片圆角层级**：主视觉卡片（今日汇率）extra-large，其余卡片 large，统一用 mdui-card 的 `--shape-corner`。
-- **卡片色块**：每张卡片都是 filled 容器，用 `--card-bg` / `--card-on`（三元组）指定：今日汇率 primary-container、计算器 tertiary-container、走势 secondary-container、万事达 surface-container-highest。卡片内文字、图表描边都从这两个变量取色，换色只改这一处。
+- **卡片色块**：每张卡片都是 filled 容器，用 `--card-bg` / `--card-on`（三元组）指定：今日汇率 primary-container、计算器自定义青绿色（`--app-color-calc-container`，style.css 顶部浅/深两套）、走势 secondary-container、万事达 surface-container-highest。卡片内文字、图表描边都从这两个变量取色，换色只改这一处。
 - **数字**：今日汇率用 `odometer()`（每位数字是 0–9 的滚动列）；计算结果用 `tweenNumber()` + 轻微 `pop()`。
 - **走势图**：首次出现用画线动画（`draw`），之后切换范围/方向/新数据都用 `morph`（旧线变形为新线，不重画）；在屏幕外时动画暂停到可见（`is-waiting`）。
 - **区块入场**：`html.js` 下各 section 滚动到可见才播放入场动画。
