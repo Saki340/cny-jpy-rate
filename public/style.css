@@ -291,6 +291,12 @@ mdui-card[variant="outlined"] { --mdui-color-background: var(--mdui-color-surfac
   .chart { height: 205px; }
   .theme-group mdui-segmented-button::part(button) { padding: 0 10px; }
 }
+/* Very narrow phones (e.g. 320px): keep the full app-bar title beside the theme switch. */
+@media (max-width: 360px) {
+  .app-bar-inner { gap: 8px; }
+  .app-bar-inner mdui-top-app-bar-title { font-size: 18px; }
+  .theme-group mdui-segmented-button::part(button) { padding: 0 6px; }
+}
 
 /* ---------- motion ----------
  * Durations and easings come from mdui's motion tokens. Everything here is
