@@ -188,10 +188,11 @@
             <p class="meta-text" id="install-desc" data-i18n="install.desc">像 App 一样从桌面打开，离线时也能查看上次获取的汇率。</p>
           </div>
         </div>
-        <!-- Samsung Internet packages installed pages itself, and Play Protect then
-             warns that the app "was built for an older version of Android";
-             installing from Chrome (a Google-minted WebAPK) avoids it. -->
-        <p class="install-note" id="install-samsung" data-i18n="install.samsung" hidden>用三星浏览器安装时，系统可能提示「这是为旧版 Android 设计的应用」。用 Chrome 打开本页再安装，就不会出现这个提示。</p>
+        <!-- Android browsers other than Chrome (e.g. Samsung Internet) package
+             installed pages themselves, and Play Protect may then warn that the app
+             "was built for an older version of Android"; Chrome's Google-minted
+             WebAPK does not trigger it. -->
+        <p class="install-note" id="install-browser-note" data-i18n="install.otherBrowser" hidden>在手机上安装建议使用 Chrome。用其他浏览器安装时，系统可能会提示「这是为旧版 Android 设计的应用」。</p>
         <div class="install-actions">
           <button type="button" class="m3-button m3-button--text m3-interactive" id="install-dismiss" data-i18n="install.dismiss">不用了</button>
           <a class="m3-button m3-button--tonal m3-interactive" id="install-chrome" href="/" hidden><span class="m3-icon" aria-hidden="true">open_in_new</span><span data-i18n="install.chrome">用 Chrome 打开</span></a>
