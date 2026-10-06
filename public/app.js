@@ -117,14 +117,15 @@ function odometer(node, text, animate = true) {
 // Count a number from its previous value to `to` (used by the calculator).
 function tweenNumber(node, from, to, format, duration) {
   cancelAnimationFrame(Number(node.dataset.raf || 0));
-  if (!motionOK() || !isFinite(from) || from === to) {
+  if (!motionOK() || !isFinite(from) || from === to || !(duration > 0)) {
     node.textContent = format(to);
     return;
   }
   const start = performance.now();
   const ease = (t) => 1 - Math.pow(1 - t, 3);
   const step = (now) => {
-    const t = Math.min((now - start) / duration, 1);
+    // A frame's timestamp can be slightly earlier than `start`.
+    const t = Math.min(Math.max((now - start) / duration, 0), 1);
     node.textContent = format(from + (to - from) * ease(t));
     if (t < 1) node.dataset.raf = String(requestAnimationFrame(step));
   };
@@ -430,6 +431,8 @@ function shareLink() {
   const url = new URL("/", location.origin);
   url.searchParams.set("amount", String(parseFloat(el("amount").value) || 0));
   url.searchParams.set("from", from);
+  // Same language as the shared text, so the link preview matches it too.
+  if (currentLang !== "zh") url.searchParams.set("lang", currentLang);
   return url.href;
 }
 
@@ -977,9 +980,15 @@ function initLanguage() {
   const menu = el("lang-menu");
   const dropdown = el("lang-dropdown");
   const tooltip = el("lang-tooltip");
-  // The tooltip would otherwise reappear over the open menu.
-  dropdown.addEventListener("open", () => { tooltip.open = false; tooltip.disabled = true; });
-  dropdown.addEventListener("closed", () => { tooltip.disabled = false; });
+  // The tooltip must not show over the open menu, nor on touch (a tap focuses
+  // the button, which would open it on top of the menu; M3 shows plain
+  // tooltips on hover only).
+  let pointerType = "mouse";
+  el("lang-btn").addEventListener("pointerdown", (e) => { pointerType = e.pointerType; });
+  tooltip.addEventListener("open", (e) => {
+    if (e.target === tooltip && (dropdown.open || pointerType === "touch")) e.preventDefault();
+  });
+  dropdown.addEventListener("open", () => { tooltip.open = false; });
   menu.value = langChoice();
   menu.addEventListener("change", () => {
     if (!menu.value) {

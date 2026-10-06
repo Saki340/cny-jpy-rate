@@ -45,17 +45,17 @@ cny-jpy-rate/
 │   ├── style.css
 │   ├── expressive.css   # M3 Expressive：弹簧动效、按钮组、进度与加载指示器、装饰形状
 │   ├── expressive.js    # 形状生成（形状变形）
-│   ├── manifest.webmanifest
+│   ├── manifest*.webmanifest  # Web App 清单（中文 / -ja / -en，安装后的名称随语言）
 │   ├── sw.js            # Service Worker：网络优先，离线时使用缓存
 │   ├── icons/           # Web App 图标
 │   ├── favicon.svg
-│   ├── og-image.png     # 分享卡片预览图（1200×630），源文件 docs/og-image.html
+│   ├── og-image*.png    # 分享卡片预览图（1200×630，中文 / -ja / -en），源文件 docs/og-image.html
 │   ├── robots.txt
 │   ├── sitemap.xml
 │   └── vendor/          # 自托管的 mdui 与字体
 ├── docs/
 │   ├── llms-full.txt    # mdui 2 官方完整文档，开发参考，不部署
-│   └── og-image.html    # og-image.png 的源文件
+│   └── og-image.html    # 预览图的源文件（?lang=ja / en 切换语言）
 ├── CLAUDE.md            # 给 Claude Code 的项目说明
 ├── LICENSE
 └── README.md
@@ -99,10 +99,12 @@ npx wrangler dev
 
 - **静态资源自托管**：`public/vendor/mdui/` 为 mdui 2.1.5 的 `mdui.css` 与 `mdui.global.js`。升级时运行 `npm pack mdui@2`，解压后替换这两个文件。`public/vendor/fonts/` 为 Google Sans Flex（可变字体，ASCII 子集）和 Material Icons；中文使用系统字体。
 - **日志**：`wrangler.toml` 中开启了 Workers Logs（`[observability]`）。请不要删除这一项，否则部署会把控制台中开启的日志关闭。
-- **预览图**：编辑 `docs/og-image.html` 后，用无头浏览器重新生成：
+- **预览图**：编辑 `docs/og-image.html` 后，用无头浏览器重新生成三种语言（文件路径需为绝对路径的 `file:///` 网址，才能带上 `?lang=`）：
 
   ```bash
-  msedge --headless --hide-scrollbars --force-device-scale-factor=1 --window-size=1200,630 --screenshot=public/og-image.png docs/og-image.html
+  msedge --headless --hide-scrollbars --force-device-scale-factor=1 --window-size=1200,630 --screenshot=public/og-image.png "file:///D:/Project/cny-jpy-rate/docs/og-image.html"
+  msedge --headless --hide-scrollbars --force-device-scale-factor=1 --window-size=1200,630 --screenshot=public/og-image-ja.png "file:///D:/Project/cny-jpy-rate/docs/og-image.html?lang=ja"
+  msedge --headless --hide-scrollbars --force-device-scale-factor=1 --window-size=1200,630 --screenshot=public/og-image-en.png "file:///D:/Project/cny-jpy-rate/docs/og-image.html?lang=en"
   ```
 
 - **搜索引擎**：已在 Google Search Console 验证，sitemap 为 `/sitemap.xml`。页面 `<head>` 中的 description、canonical、Open Graph 与 JSON-LD 都直接写在 HTML 里，不依赖 JS。
@@ -112,10 +114,12 @@ npx wrangler dev
 ### 2026-10-06：多语言
 
 - 新增日本語和 English 界面，按设备语言自动选择（中文设备显示中文、日文设备显示日文，其余显示英文）。
-- 顶栏新增语言菜单（M3 菜单，可选「跟随设备语言」），选择会被记住。
-- 每种语言有独立网址，搜索引擎可分别收录；页面标题、描述、分享卡片文字随语言变化。
+- 顶栏新增语言菜单，按 M3 Expressive 菜单规格制作（分组色块、大圆角、选中项填色并变形，数值取自 Jetpack Compose Material 3），可选「跟随设备语言」，选择会被记住。
+- 每种语言有独立网址，搜索引擎可分别收录；页面标题、描述、分享卡片的文字和预览图、安装后的 App 名称都随语言变化。
+- 分享换算结果的链接带上当前语言，对方打开时与分享文字一致。
 - 日期、时间、星期和数字按各语言习惯显示；日文页面使用日文字体。
 - 手机上主题切换按钮改为图标，为语言按钮腾出空间。
+- 换算结果的复制、分享按钮固定在行尾，数字滚动时不再跟着抖动。
 
 ### 2026-10-06：Material 3 Expressive 改版
 

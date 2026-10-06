@@ -367,7 +367,10 @@ html.js .page > section:not(.in-view) { animation-play-state: paused; }
 /* ---------- converter: copy the result ---------- */
 
 .calc-result-row { display: flex; align-items: center; gap: 4px; min-width: 0; }
-.calc-result-row .calc-result { cursor: pointer; min-width: 0; -webkit-tap-highlight-color: transparent; }
+/* The result takes all the free width so the buttons stay pinned at the end
+ * of the row; they would otherwise shift with every frame of the number tween
+ * as its width changes. */
+.calc-result-row .calc-result { flex: 1 1 auto; cursor: pointer; min-width: 0; -webkit-tap-highlight-color: transparent; }
 .calc-result-row mdui-button-icon { flex: none; color: rgb(var(--card-on)); }
 
 /* ---------- install card ---------- */
@@ -416,6 +419,93 @@ mdui-menu-item[lang="zh-CN"] { font-family: "PingFang SC", "Microsoft YaHei", "N
 /* mdui-dropdown is display: contents; give it a box so the tooltip around it
  * has something to anchor to. */
 #lang-dropdown { display: inline-flex; flex: none; }
+#lang-tooltip::part(popup) { white-space: nowrap; }
+
+/* ---------- menu: M3 Expressive vertical menu ----------
+ * mdui-menu is baseline M3 (one flat 4dp sheet, dividers). The Expressive
+ * menu splits it into groups; values from Jetpack Compose Material 3
+ * (MenuDefaults, SegmentedMenuTokens, StandardMenuTokens):
+ *   - each group is its own surface-container-low container, 2dp apart
+ *     (GroupSpacing) instead of a divider; 4dp padding inside a group
+ *   - group corners: first group 16dp top / 8dp bottom, last group 8dp top /
+ *     16dp bottom (leading/trailingGroupShape)
+ *   - items 44dp, body-large, 20dp icons 8dp from the label; corners 12dp at
+ *     the top/bottom of a group and 4dp in between (leading/middle/
+ *     trailingItemShape)
+ *   - the selected item fills with tertiary-container and morphs to 12dp all
+ *     round (selectedItemShape), with the fast spatial spring
+ * Mark each group's first and last item with .group-start / .group-end.
+ * The host element is the group's slice and ::part(container) the item, so
+ * mdui's ripple (which fills the host) is replaced by state layers drawn on
+ * the item shape. */
+.ex-menu {
+  /* As wide as the longest label (up to mdui's 17.5rem), not truncated. */
+  width: max-content;
+  min-width: 12.5rem;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  /* Elevation level 2, following the groups' outline. */
+  filter:
+    drop-shadow(0 1px 1px rgba(var(--mdui-color-shadow), .3))
+    drop-shadow(0 2px 4px rgba(var(--mdui-color-shadow), .15));
+}
+.ex-menu > mdui-menu-item {
+  --mdui-state-layer-hover: 0;
+  --mdui-state-layer-focus: 0;
+  --mdui-state-layer-pressed: 0;
+  --layer: var(--mdui-color-on-surface);
+  padding: 0 4px;
+  background-color: rgb(var(--mdui-color-surface-container-low));
+}
+.ex-menu > .group-start { padding-top: 4px; border-top-left-radius: 8px; border-top-right-radius: 8px; }
+.ex-menu > .group-end { padding-bottom: 4px; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; }
+.ex-menu > .group-end:not(:last-child) { margin-bottom: 2px; }
+.ex-menu > :first-child { border-top-left-radius: 16px; border-top-right-radius: 16px; }
+.ex-menu > :last-child { border-bottom-left-radius: 16px; border-bottom-right-radius: 16px; }
+
+.ex-menu > mdui-menu-item::part(container) {
+  height: 44px;
+  padding: 0 12px;
+  border-radius: 4px;
+  transition:
+    border-radius var(--ex-fast-spatial-dur) var(--ex-fast-spatial),
+    background-color var(--ex-fast-effects-dur) var(--ex-fast-effects);
+}
+.ex-menu > .group-start::part(container) { border-top-left-radius: 12px; border-top-right-radius: 12px; }
+.ex-menu > .group-end::part(container) { border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; }
+.ex-menu > mdui-menu-item::part(label) {
+  color: rgb(var(--mdui-color-on-surface));
+  font-size: var(--mdui-typescale-body-large-size);
+  font-weight: var(--mdui-typescale-body-large-weight);
+  letter-spacing: var(--mdui-typescale-body-large-tracking);
+  transition: color var(--ex-fast-effects-dur) var(--ex-fast-effects);
+}
+.ex-menu > mdui-menu-item::part(icon),
+.ex-menu > mdui-menu-item::part(selected-icon) { font-size: 20px; margin-right: 8px; }
+
+.ex-menu > mdui-menu-item[selected] { --layer: var(--mdui-color-on-tertiary-container); }
+.ex-menu > mdui-menu-item[selected]::part(container) {
+  border-radius: 12px;
+  background-color: rgb(var(--mdui-color-tertiary-container));
+}
+.ex-menu > mdui-menu-item[selected]::part(label),
+.ex-menu > mdui-menu-item[selected]::part(selected-icon) { color: rgb(var(--mdui-color-on-tertiary-container)); }
+/* The check pops in with the spring as the item is selected. */
+.ex-menu > mdui-menu-item[selected]::part(selected-icon) { animation: marker-pop var(--ex-fast-spatial-dur) var(--ex-fast-spatial) both; }
+
+/* State layers (hover 8%, focus and press 10%) on the item shape. */
+.ex-menu > mdui-menu-item:hover::part(container) { background-image: linear-gradient(rgba(var(--layer), .08), rgba(var(--layer), .08)); }
+.ex-menu > mdui-menu-item[focus-visible]::part(container),
+.ex-menu > mdui-menu-item:active::part(container) { background-image: linear-gradient(rgba(var(--layer), .1), rgba(var(--layer), .1)); }
+.ex-menu > mdui-menu-item[focus-visible]::part(container) { outline: 2px solid rgb(var(--mdui-color-secondary)); outline-offset: -2px; }
+/* The global reduced-motion rule (style.css) does not reach ::part(). */
+@media (prefers-reduced-motion: reduce) {
+  .ex-menu > mdui-menu-item::part(container),
+  .ex-menu > mdui-menu-item::part(label),
+  .ex-menu > mdui-menu-item::part(selected-icon) { transition: none; animation: none; }
+}
 
 /* The ⇄ in the headline is an icon: the font has no such glyph, and each
  * language's fallback font drew it at a different weight. */

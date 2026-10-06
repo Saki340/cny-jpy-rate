@@ -1,8 +1,8 @@
 {
-  "name": "日元人民币汇率",
-  "short_name": "汇率板",
-  "description": "日元兑人民币每日中间汇率、换算计算器与历史走势",
-  "lang": "zh-CN",
+  "name": "Yen–Yuan Rate",
+  "short_name": "Rate Board",
+  "description": "Daily mid-market JPY ⇄ CNY rate, converter and history",
+  "lang": "en",
   "id": "/",
   "start_url": "/",
   "scope": "/",

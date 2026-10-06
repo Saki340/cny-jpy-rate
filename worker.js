@@ -173,6 +173,10 @@ const PAGE_META = {
     title: "円・人民元 為替レート | レートボード",
     description: "日本円と人民元（JPY ⇄ CNY）の毎日の仲値（欧州中央銀行の参照レート）。金額の換算と30日〜1年のチャートで、期間中の最高値・最安値も確認できます。無料・広告なし・ダークモード対応。",
     ogDescription: "日本円と人民元の毎日の仲値。換算ツールとレートの推移チャート付き。",
+    siteName: "レートボード",
+    imageAlt: "レートボード：円・人民元レート、JPY ⇄ CNY",
+    ldName: "レートボード · 円・人民元 為替レート",
+    ldDescription: "日本円と人民元（JPY ⇄ CNY）の毎日の仲値、金額の換算、レートの推移。",
   },
   en: {
     htmlLang: "en",
@@ -180,6 +184,10 @@ const PAGE_META = {
     title: "JPY to CNY Exchange Rate | Rate Board",
     description: "Daily mid-market JPY ⇄ CNY exchange rate (European Central Bank reference rate), with a converter and 30-day to 1-year charts showing highs and lows. Free, no ads, dark mode.",
     ogDescription: "Daily mid-market JPY ⇄ CNY rate with a converter and history charts.",
+    siteName: "Rate Board",
+    imageAlt: "Rate Board: Yen–Yuan Rate, JPY ⇄ CNY",
+    ldName: "Rate Board · JPY to CNY Exchange Rate",
+    ldDescription: "Daily mid-market JPY ⇄ CNY exchange rate, converter and history.",
   },
 };
 
@@ -196,6 +204,28 @@ function localizedPage(response, lang) {
     .on('meta[property="og:locale"]', setAttr("content", meta.ogLocale))
     .on('meta[property="og:title"]', setAttr("content", meta.title))
     .on('meta[property="og:description"]', setAttr("content", meta.ogDescription))
+    .on('meta[property="og:site_name"]', setAttr("content", meta.siteName))
+    .on('meta[property="og:image"]', setAttr("content", `${SITE}og-image-${lang}.png`))
+    .on('meta[property="og:image:alt"]', setAttr("content", meta.imageAlt))
+    .on('meta[name="apple-mobile-web-app-title"]', setAttr("content", meta.siteName))
+    .on('link[rel="manifest"]', setAttr("href", `/manifest-${lang}.webmanifest`))
+    .on('script[type="application/ld+json"]', {
+      element(el) {
+        el.setInnerContent(JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebApplication",
+          name: meta.ldName,
+          url,
+          image: `${SITE}og-image-${lang}.png`,
+          description: meta.ldDescription,
+          applicationCategory: "FinanceApplication",
+          operatingSystem: "Any",
+          inLanguage: meta.htmlLang,
+          isAccessibleForFree: true,
+          offers: { "@type": "Offer", price: "0", priceCurrency: "CNY" },
+        }, null, 2), { html: true });
+      },
+    })
     .transform(response);
 }
 

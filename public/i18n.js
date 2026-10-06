@@ -9,10 +9,11 @@
 // app.js goes through t(). Keep the three dictionaries in step: every key in
 // zh must exist in ja and en.
 
+// manifest: the installed app's name follows the language (same app id "/").
 const LANGS = {
-  zh: { htmlLang: "zh-CN", locale: "zh-CN", name: "简体中文" },
-  ja: { htmlLang: "ja", locale: "ja-JP", name: "日本語" },
-  en: { htmlLang: "en", locale: "en-US", name: "English" },
+  zh: { htmlLang: "zh-CN", locale: "zh-CN", name: "简体中文", manifest: "/manifest.webmanifest" },
+  ja: { htmlLang: "ja", locale: "ja-JP", name: "日本語", manifest: "/manifest-ja.webmanifest" },
+  en: { htmlLang: "en", locale: "en-US", name: "English", manifest: "/manifest-en.webmanifest" },
 };
 
 const LANG_KEY = "lang-pref";
@@ -32,6 +33,7 @@ const I18N = {
   zh: {
     "doc.title": "日元人民币汇率 | 汇率板",
     "doc.description": "日元兑人民币（JPY ⇄ CNY）每日中间汇率（欧洲央行参考汇率），附金额换算计算器和 30 天至 1 年的历史走势，标出区间最高与最低。免费、无广告，支持深色模式。",
+    "doc.siteName": "汇率板",
     "app.title": "日元人民币汇率",
     "theme.label": "主题",
     "theme.light": "浅色",
@@ -105,6 +107,7 @@ const I18N = {
   ja: {
     "doc.title": "円・人民元 為替レート | レートボード",
     "doc.description": "日本円と人民元（JPY ⇄ CNY）の毎日の仲値（欧州中央銀行の参照レート）。金額の換算と30日〜1年のチャートで、期間中の最高値・最安値も確認できます。無料・広告なし・ダークモード対応。",
+    "doc.siteName": "レートボード",
     "app.title": "円・人民元レート",
     "theme.label": "テーマ",
     "theme.light": "ライト",
@@ -178,6 +181,7 @@ const I18N = {
   en: {
     "doc.title": "JPY to CNY Exchange Rate | Rate Board",
     "doc.description": "Daily mid-market JPY ⇄ CNY exchange rate (European Central Bank reference rate), with a converter and 30-day to 1-year charts showing highs and lows. Free, no ads, dark mode.",
+    "doc.siteName": "Rate Board",
     "app.title": "Yen–Yuan Rate",
     "theme.label": "Theme",
     "theme.light": "Light",
@@ -302,6 +306,9 @@ function applyI18n(root = document) {
   document.documentElement.lang = LANGS[currentLang].htmlLang;
   document.title = t("doc.title");
   document.querySelector('meta[name="description"]')?.setAttribute("content", t("doc.description"));
+  document.querySelector('meta[name="apple-mobile-web-app-title"]')?.setAttribute("content", t("doc.siteName"));
+  const manifest = document.querySelector('link[rel="manifest"]');
+  if (manifest && manifest.getAttribute("href") !== LANGS[currentLang].manifest) manifest.setAttribute("href", LANGS[currentLang].manifest);
   root.querySelectorAll("[data-i18n]").forEach((node) => { node.textContent = t(node.dataset.i18n); });
   root.querySelectorAll("[data-i18n-html]").forEach((node) => { node.innerHTML = t(node.dataset.i18nHtml); });
   root.querySelectorAll("[data-i18n-attr]").forEach((node) => {

@@ -81,12 +81,13 @@
         <mdui-tooltip id="lang-tooltip" placement="bottom-end" data-i18n-attr="content:lang.label">
         <mdui-dropdown placement="bottom-end" id="lang-dropdown">
           <mdui-button-icon slot="trigger" icon="translate" id="lang-btn" data-i18n-attr="aria-label:lang.label"></mdui-button-icon>
-          <mdui-menu selects="single" id="lang-menu" value="auto">
-            <mdui-menu-item value="auto" icon="" selected-icon="check" data-i18n="lang.auto">跟随设备语言</mdui-menu-item>
-            <mdui-divider></mdui-divider>
-            <mdui-menu-item value="zh" icon="" selected-icon="check" lang="zh-CN">简体中文</mdui-menu-item>
+          <!-- M3 Expressive menu: two groups (device language / the languages),
+               separated by a gap instead of a divider; see .ex-menu in expressive.css. -->
+          <mdui-menu selects="single" id="lang-menu" class="ex-menu" value="auto">
+            <mdui-menu-item value="auto" icon="" selected-icon="check" class="group-start group-end" data-i18n="lang.auto">跟随设备语言</mdui-menu-item>
+            <mdui-menu-item value="zh" icon="" selected-icon="check" class="group-start" lang="zh-CN">简体中文</mdui-menu-item>
             <mdui-menu-item value="ja" icon="" selected-icon="check" lang="ja">日本語</mdui-menu-item>
-            <mdui-menu-item value="en" icon="" selected-icon="check" lang="en">English</mdui-menu-item>
+            <mdui-menu-item value="en" icon="" selected-icon="check" class="group-end" lang="en">English</mdui-menu-item>
           </mdui-menu>
         </mdui-dropdown>
         </mdui-tooltip>

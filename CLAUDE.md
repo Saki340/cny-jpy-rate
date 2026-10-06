@@ -54,7 +54,7 @@ mdui 2 与 Google 的 Material Web 都没有实现 M3 Expressive，本站按 m3.
 - 本机为 Windows / PowerShell 5.1；仓库设置了 `core.autocrlf=false`，文件保持 LF。
 - 目标用户在中国大陆和日本（及全球）：新增外部资源前考虑大陆的可达性，优先自托管。
 - 页面开着时会在欧洲央行下次公布后自动刷新（`scheduleRefresh()`）；走势图若比今日汇率旧一天，前端会把今日汇率补为最后一点（`chartPoints()`），保证两处一致。
-- 改了 `docs/og-image.html` 后用 README 中的 Edge 命令重新生成 `public/og-image.png`。
+- 改了 `docs/og-image.html` 后用 README 中的 Edge 命令重新生成三张预览图（`og-image.png`、`og-image-ja.png`、`og-image-en.png`）。
 - 提交说明用中文。
 
 ## 多语言（`public/i18n.js`）
@@ -63,6 +63,8 @@ mdui 2 与 Google 的 Material Web 都没有实现 M3 Expressive，本站按 m3.
 - **新增或修改任何用户可见文字，三种语言都要写**：静态文字在 `index.html` 用 `data-i18n` / `data-i18n-html`（含链接）/ `data-i18n-attr="attr:key;…"` 标记；`app.js` 里用 `t(key, params)`，数字和时间用 `locale()`。不要在 HTML/JS 里写死中文。
 - 切换语言会派发 `langchange` 事件，`app.js` 的 `initLanguage()` 里重绘所有 JS 生成的文字；新增动态文字要在那里加上。
 - 每种语言有独立 URL（`/`、`/?lang=ja`、`/?lang=en`），Worker 用 HTMLRewriter 改写 `<head>`（lang、title、description、canonical、og）以便搜索引擎收录；`worker.js` 的 `PAGE_META` 要和 `i18n.js` 的 `doc.title` / `doc.description` 保持一致。hreflang 写在 `index.html` 和 `sitemap.xml`。
-- 语言菜单：mdui-dropdown + mdui-menu（单选，选中项带勾）。**按钮必须直接作为 dropdown 的 trigger**（包在 tooltip 里菜单会定位到屏幕外），tooltip 包在整个 dropdown 外层，菜单打开时禁用。
+- 语言菜单：mdui-dropdown + mdui-menu（单选，选中项带勾）。**按钮必须直接作为 dropdown 的 trigger**（包在 tooltip 里菜单会定位到屏幕外），tooltip 包在整个 dropdown 外层；菜单打开时和触屏点击时取消 tooltip 的 `open` 事件。
+- 菜单外观用 `.ex-menu`（`expressive.css`）改成 M3 Expressive 分组菜单，数值取自 Jetpack Compose Material 3 源码（`MenuDefaults` / `SegmentedMenuTokens`，可在 GitHub androidx/androidx 的 `compose/material3` 下查）；用 `.group-start` / `.group-end` 标出每组首尾，不要再用 `mdui-divider` 分隔。mdui 的涟漪铺满整个菜单项宿主元素，已关掉，改为在 `::part(container)` 上画状态层。
+- 每种语言另有分享预览图 `og-image-{ja,en}.png` 和清单 `manifest-{ja,en}.webmanifest`（`id` 同为 `/`，是同一个 App），Worker 按 `?lang=` 改写，`applyI18n()` 在页面里同步切换。
 - 日文页面优先用日文字体（`:root:lang(ja)`），否则汉字会显示成中文字形。
 - **提交说明不要加 `Co-Authored-By: Claude …` 之类的署名行**，PR 描述也不要加 Claude Code 署名；README 等文档中也不要把 Claude 列为作者或贡献者。
