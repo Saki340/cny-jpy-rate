@@ -297,7 +297,8 @@
 .m3-text-field__input::-webkit-inner-spin-button { margin: 0; -webkit-appearance: none; }
 .m3-text-field__outline {
   position: absolute;
-  inset: -5px 0 0;
+  inset: -5px 0 auto;
+  height: 61px; /* the 56dp input plus the legend overhang, not the supporting text */
   margin: 0;
   padding: 0 12px;
   border: 1px solid var(--md-sys-color-outline);
@@ -345,6 +346,20 @@
 }
 .m3-text-field__input:focus ~ .m3-text-field__outline { border-width: 2px; border-color: var(--md-sys-color-primary); padding-inline: 11px; }
 .m3-text-field__input:focus ~ .m3-text-field__label { color: var(--md-sys-color-primary); }
+/* Supporting text (body-small, 4dp below, 16dp in); error state in error. */
+.m3-text-field__supporting {
+  display: block;
+  padding: 4px 16px 0;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-body-small-size);
+  line-height: var(--md-sys-typescale-body-small-line-height);
+  letter-spacing: var(--md-sys-typescale-body-small-tracking);
+}
+.m3-text-field__supporting:empty { display: none; }
+.m3-text-field.is-error .m3-text-field__input:is(*, :focus) ~ .m3-text-field__outline { border-color: var(--md-sys-color-error); }
+.m3-text-field.is-error .m3-text-field__input:is(*, :focus) ~ .m3-text-field__label,
+.m3-text-field.is-error .m3-text-field__supporting.m3-text-field__supporting { color: var(--md-sys-color-error); }
+.m3-text-field.is-error .m3-text-field__input { caret-color: var(--md-sys-color-error); }
 
 /* ---------- menu (Expressive vertical menu with groups) ----------
  * SegmentedMenuTokens / StandardMenuTokens / MenuDefaults:
@@ -475,8 +490,9 @@
   width: max-content;
   min-width: min(344px, calc(100% - 32px));
   max-width: min(672px, calc(100% - 32px));
+  gap: 8px;
   min-height: 48px;
-  padding: 14px 16px;
+  padding: 0 8px 0 16px;
   border-radius: var(--md-sys-shape-corner-extra-small);
   background-color: var(--md-sys-color-inverse-surface);
   color: var(--md-sys-color-inverse-on-surface);
@@ -485,12 +501,166 @@
   line-height: var(--md-sys-typescale-body-medium-line-height);
   letter-spacing: var(--md-sys-typescale-body-medium-tracking);
   opacity: 0;
+  visibility: hidden;
   transform: translateX(-50%) scale(.8);
   transition:
     opacity var(--md-sys-motion-spring-default-effects-duration) var(--md-sys-motion-spring-default-effects),
-    transform var(--md-sys-motion-spring-default-spatial-duration) var(--md-sys-motion-spring-default-spatial);
+    transform var(--md-sys-motion-spring-default-spatial-duration) var(--md-sys-motion-spring-default-spatial),
+    visibility 0s linear var(--md-sys-motion-spring-default-spatial-duration);
 }
-.m3-snackbar.is-visible { opacity: 1; transform: translateX(-50%); }
+.m3-snackbar.is-visible { opacity: 1; visibility: visible; transform: translateX(-50%); transition-delay: 0s; }
+.m3-snackbar__text { flex: 1 1 auto; padding: 14px 8px 14px 0; }
+/* Action: a text button in inverse-primary, label-large. */
+.m3-snackbar__action {
+  flex: none;
+  height: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 18px;
+  background: none;
+  color: var(--md-sys-color-inverse-primary);
+  font-family: inherit;
+  font-size: var(--md-sys-typescale-label-large-size);
+  font-weight: var(--md-sys-typescale-label-large-weight);
+  letter-spacing: var(--md-sys-typescale-label-large-tracking);
+}
+
+/* ---------- dialog (basic) ----------
+ * DialogTokens: surface-container-high, extra-large corners (28dp),
+ * elevation 3, 24dp padding, headline-small headline, body-medium content,
+ * text-button actions; 280–560dp wide. Scrim: ScrimTokens, scrim at 32%.
+ * Opens by growing from 90% with the default spatial spring. */
+.m3-dialog {
+  width: min(560px, calc(100% - 48px));
+  max-height: calc(100% - 48px);
+  margin: auto;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  background: none;
+  color: var(--md-sys-color-on-surface);
+}
+.m3-dialog::backdrop { background-color: color-mix(in srgb, var(--md-sys-color-scrim) 32%, transparent); }
+.m3-dialog__container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: min(280px, 100%);
+  max-height: inherit;
+  overflow: auto;
+  padding: 24px;
+  border-radius: var(--md-sys-shape-corner-extra-large);
+  background-color: var(--md-sys-color-surface-container-high);
+  box-shadow: var(--md-sys-elevation-level3);
+}
+.m3-dialog__headline {
+  margin: 0;
+  color: var(--md-sys-color-on-surface);
+  font-size: var(--md-sys-typescale-headline-small-size);
+  font-weight: var(--md-sys-typescale-headline-small-weight);
+  line-height: var(--md-sys-typescale-headline-small-line-height);
+  letter-spacing: var(--md-sys-typescale-headline-small-tracking);
+}
+.m3-dialog__content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 6px; /* room for the first field's floating label */
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-body-medium-size);
+  line-height: var(--md-sys-typescale-body-medium-line-height);
+}
+.m3-dialog__actions { display: flex; justify-content: flex-end; gap: 8px; padding-top: 8px; }
+.m3-dialog__start { margin-right: auto; }
+.m3-dialog[open] { animation: m3-dialog-in var(--md-sys-motion-spring-default-spatial-duration) var(--md-sys-motion-spring-default-spatial); }
+.m3-dialog[open]::backdrop { animation: m3-fade-in var(--md-sys-motion-spring-default-effects-duration) var(--md-sys-motion-spring-default-effects); }
+.m3-dialog.is-closing,
+.m3-dialog.is-closing::backdrop { animation: m3-fade-out var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects) forwards; }
+@keyframes m3-dialog-in { from { opacity: 0; transform: scale(.9); } }
+@keyframes m3-fade-in { from { opacity: 0; } }
+@keyframes m3-fade-out { to { opacity: 0; } }
+
+/* ---------- segmented list (Expressive) ----------
+ * ListTokens / ListItemDefaults.segmentedShapes: each item is its own
+ * container, 2dp apart (SegmentedGap); corners extra-small (4dp), the first
+ * item's top and the last item's bottom large (16dp). Hovered items morph to
+ * medium (12dp), pressed or focused to large. Two-line items: 72dp, 16dp
+ * leading/trailing space, 10dp top/bottom, 12dp between elements;
+ * body-large headline, body-medium supporting text (on-surface-variant).
+ * Container: --list-item-bg (Compose uses surface, meant for lists placed on
+ * a surface-container background). */
+.m3-list { display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.m3-list-item {
+  --r-top: var(--md-sys-shape-corner-extra-small);
+  --r-bottom: var(--md-sys-shape-corner-extra-small);
+  display: flex;
+  align-items: center;
+  min-height: 72px;
+  padding-right: 4px;
+  border-radius: var(--r-top) var(--r-top) var(--r-bottom) var(--r-bottom);
+  background-color: var(--list-item-bg, var(--md-sys-color-surface));
+  color: var(--md-sys-color-on-surface);
+  transition:
+    border-radius var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial);
+}
+.m3-list-item:first-child { --r-top: var(--md-sys-shape-corner-large); }
+.m3-list-item:last-child { --r-bottom: var(--md-sys-shape-corner-large); }
+@media (hover: hover) {
+  .m3-list-item:hover { --r-top: var(--md-sys-shape-corner-medium); --r-bottom: var(--md-sys-shape-corner-medium); }
+}
+.m3-list-item:active,
+.m3-list-item:has(:focus-visible) { --r-top: var(--md-sys-shape-corner-large); --r-bottom: var(--md-sys-shape-corner-large); }
+.m3-list-item__main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 72px;
+  padding: 10px 12px 10px 16px;
+  border: 0;
+  border-radius: var(--r-top) 0 0 var(--r-bottom);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+}
+.m3-list-item__main:focus-visible { outline-offset: -3px; }
+.m3-list-item__text { display: flex; flex-direction: column; flex: 1 1 auto; min-width: 0; }
+.m3-list-item__headline {
+  overflow: hidden;
+  font-size: var(--md-sys-typescale-body-large-size);
+  line-height: var(--md-sys-typescale-body-large-line-height);
+  letter-spacing: var(--md-sys-typescale-body-large-tracking);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.m3-list-item__supporting {
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-body-medium-size);
+  line-height: var(--md-sys-typescale-body-medium-line-height);
+  letter-spacing: var(--md-sys-typescale-body-medium-tracking);
+}
+
+/* ---------- assist chip ----------
+ * AssistChipTokens: 32dp, small corners (8dp), 1dp outline-variant outline,
+ * label-large on-surface. */
+.m3-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 16px;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-small);
+  background: none;
+  color: var(--md-sys-color-on-surface);
+  font-family: inherit;
+  font-size: var(--md-sys-typescale-label-large-size);
+  font-weight: var(--md-sys-typescale-label-large-weight);
+  letter-spacing: var(--md-sys-typescale-label-large-tracking);
+}
 
 /* ---------- divider ---------- DividerTokens: 1dp outline-variant. */
 .m3-divider { height: 1px; margin: 0; border: 0; background-color: var(--md-sys-color-outline-variant); }
