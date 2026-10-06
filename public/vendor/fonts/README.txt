@@ -8,6 +8,10 @@ material-symbols-rounded.woff2  Material Symbols Rounded (variable: opsz    Apac
 
 Chinese and Japanese text use the visitor's system fonts.
 
+The files are cached for a week (public/_headers) and loaded as
+<file>.woff2?v=N: after replacing a file, bump N in style.css and in the
+preload links in index.html.
+
 To add an icon, request a new subset with every icon name (comma-separated,
 in alphabetical order) and save the woff2 linked from the returned CSS. Send
 a desktop Chrome User-Agent, or the CSS will not point to a woff2 file:

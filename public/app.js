@@ -22,6 +22,14 @@ const state = {
 };
 
 const THEME_KEY = "theme-pref";
+const DIRECTION_KEY = "direction-pref";
+
+// The last direction used (e.g. always CNY -> JPY) is where the page opens;
+// a shared link's ?from= wins over it.
+try {
+  const savedDirection = localStorage.getItem(DIRECTION_KEY);
+  if (savedDirection === "cny2jpy" || savedDirection === "jpy2cny") state.direction = savedDirection;
+} catch { /* ignore */ }
 
 // Motion for Web Animations called from JS: the Expressive spring tokens from
 // m3/tokens.css (CSS uses the --md-sys-motion-* variables directly).
@@ -221,11 +229,19 @@ function saveThemePref(mode) {
 }
 
 // Keep the browser UI colour (mobile address bar) in sync with the page surface.
+// Keep the browser UI colour (mobile address bar) in step with the top app
+// bar: surface, or surface-container once content scrolls under it. Both
+// theme-color metas (light / dark, for the first paint) get the same value.
+let barScrolled = null;
 function syncThemeColor() {
-  const meta = document.querySelector('meta[name="theme-color"]');
-  const surface = getComputedStyle(document.documentElement).getPropertyValue("--md-sys-color-surface").trim();
-  if (meta && surface) meta.content = surface;
+  barScrolled = window.scrollY > 0;
+  const token = barScrolled ? "--md-sys-color-surface-container" : "--md-sys-color-surface";
+  const color = getComputedStyle(document.documentElement).getPropertyValue(token).trim();
+  if (color) document.querySelectorAll('meta[name="theme-color"]').forEach((meta) => { meta.content = color; });
 }
+window.addEventListener("scroll", () => {
+  if ((window.scrollY > 0) !== barScrolled) syncThemeColor();
+}, { passive: true });
 
 function applyTheme(mode) {
   const next = mode === "dark" || mode === "light" ? mode : "auto";
@@ -375,6 +391,7 @@ function initOffline() {
     // Reload whatever failed or came from the cache.
     if (!state.cnyToJpy) loadRate(); else loadRate({ refresh: true });
     loadHistory(state.historyDays, { refresh: Boolean(chart) });
+    if (!state.year.length) loadYear();
   });
 }
 
@@ -407,10 +424,10 @@ async function copyResult() {
   if (!ok) return;
   const btn = el("copy-btn");
   const icon = btn.querySelector(".m3-icon");
-  icon.textContent = "check";
+  icon.dataset.icon = "check";
   pop(btn, 1.15);
   clearTimeout(copyResetTimer);
-  copyResetTimer = setTimeout(() => { icon.textContent = "content_copy"; }, 1600);
+  copyResetTimer = setTimeout(() => { icon.dataset.icon = "content_copy"; }, 1600);
 }
 
 /* ---------- share ---------- */
@@ -432,8 +449,11 @@ function readShareParams() {
   clean.searchParams.delete("amount");
   clean.searchParams.delete("from");
   history.replaceState(null, "", clean.pathname + clean.search + clean.hash); // keeps ?lang=
+}
 
-  // Put the currencies in the shared order right away (before rates load).
+// Puts the currencies in the current order right away (before rates load):
+// the remembered direction, or the one from a shared link.
+function placeCurrencies() {
   const [first, second] = currentPair();
   const line = el("rate-line");
   line.append(line.querySelector(".rate-one"), line.querySelector(`[data-cur="${first}"]`),
@@ -668,7 +688,7 @@ function renderChange({ flash = false } = {}) {
   const icon = { up: "arrow_upward", down: "arrow_downward", flat: "remove" }[dir];
   const wasEmpty = !box.firstElementChild;
   box.innerHTML =
-    `<span class="change-chip is-${dir}"><span class="m3-icon" aria-hidden="true">${icon}</span>${pctFmt(change).replace(/^[+−±]/, "")}</span>` +
+    `<span class="change-chip is-${dir}"><span class="m3-icon" data-icon="${icon}" aria-hidden="true"></span>${pctFmt(change).replace(/^[+−±]/, "")}</span>` +
     `<span class="change-label">${esc(t("change.label", { date: (state.prevDate || "").slice(5) }))}</span>`;
   const chip = box.querySelector(".change-chip");
   if (flash) {
@@ -681,6 +701,7 @@ function renderChange({ flash = false } = {}) {
 
 function toggleDirection() {
   state.direction = state.direction === "cny2jpy" ? "jpy2cny" : "cny2jpy";
+  try { localStorage.setItem(DIRECTION_KEY, state.direction); } catch { /* ignore */ }
   el("swap-btn").classList.toggle("is-flipped");
   if (typeof morphDecoShape === "function" && motionOK()) morphDecoShape();
   renderTax();
@@ -1249,7 +1270,7 @@ function renderSaved() {
       (item.name ? `<span class="m3-list-item__supporting">${esc(amountText)}</span>` : "") + `</span>` +
       `<span class="saved-result"><span class="sr-only">≈</span><span class="saved-result-value">${value === null ? "--" : esc(fmt(value, 2))}</span> <span class="saved-result-cur">${to}</span></span>` +
       `</button>` +
-      `<button type="button" class="m3-icon-button m3-interactive" data-edit="${esc(item.id)}" aria-label="${editLabel}" data-tooltip="${editLabel}"><span class="m3-icon" aria-hidden="true">edit</span></button>` +
+      `<button type="button" class="m3-icon-button m3-interactive" data-edit="${esc(item.id)}" aria-label="${editLabel}" data-tooltip="${editLabel}"><span class="m3-icon" data-icon="edit" aria-hidden="true"></span></button>` +
       `</li>`;
   }).join("");
 }
@@ -1388,6 +1409,7 @@ window.addEventListener("DOMContentLoaded", () => {
   initTax();
   initSaved();
   readShareParams();
+  placeCurrencies();
   el("copy-btn").addEventListener("click", copyResult);
   el("share-btn").addEventListener("click", shareResult);
   el("calc-result").addEventListener("click", copyResult);

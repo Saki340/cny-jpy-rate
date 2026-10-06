@@ -12,6 +12,9 @@
 /* ---------- icons ----------
  * Material Symbols Rounded (variable font, self-hosted subset, see
  * style.css): ligatures, optical size matched to the icon size, weight 400.
+ * The icon name goes in data-icon and is drawn as generated content, so it
+ * never becomes part of the text (search snippets, copied text, headings):
+ * <span class="m3-icon" data-icon="share" aria-hidden="true"></span>
  * FILL is 0 (outlined) normally and 1 for selected states; it is a
  * registered property, so the fill animates. */
 @property --m3-icon-fill {
@@ -41,6 +44,7 @@
   -webkit-font-smoothing: antialiased;
   user-select: none;
 }
+.m3-icon::before { content: attr(data-icon); }
 
 /* ---------- interaction: state layer, ripple, focus ----------
  * StateTokens: hover 8%, focus 10%, pressed 10%. The layer takes the
@@ -169,6 +173,12 @@
   transition: --m3-radius var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial);
 }
 .m3-button:active { --m3-radius: var(--md-sys-shape-corner-small); }
+/* 48dp touch target around the 40dp button (Compose adds this with
+ * minimumInteractiveComponentSize); vertical only, so neighbours keep theirs. */
+.m3-button::after,
+.m3-toggle::after { content: ""; position: absolute; inset: -4px 0; }
+.m3-chip { position: relative; }
+.m3-chip::after { content: ""; position: absolute; inset: -8px 0; }
 .m3-button .m3-icon { --m3-icon-opsz: 20; font-size: 20px; }
 .m3-button--filled { background-color: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); }
 .m3-button--tonal { background-color: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }

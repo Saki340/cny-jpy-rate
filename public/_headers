@@ -1,0 +1,10 @@
+# Cloudflare static assets: extra response headers (not served as a file).
+#
+# Fonts rarely change, so browsers may keep them for a week. Their URLs carry
+# ?v= (style.css and the preloads in index.html): bump it when a font file is
+# replaced, or visitors keep the old one (e.g. missing new icons).
+/vendor/fonts/*
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+
+/icons/*
+  Cache-Control: public, max-age=86400

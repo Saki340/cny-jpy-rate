@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<!-- Served for unknown paths (wrangler.toml: not_found_handling = "404-page").
+     Text in the visitor's language, picked like i18n.js does. -->
+<html lang="zh-CN" class="theme-auto">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="robots" content="noindex" />
+<meta name="theme-color" content="#fef7ff" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#141218" media="(prefers-color-scheme: dark)" />
+<title>找不到页面 | 汇率板</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<script>
+  (function (root) {
+    try {
+      var t = localStorage.getItem("theme-pref");
+      if (t === "light" || t === "dark") root.className = "theme-" + t;
+    } catch (e) {}
+  })(document.documentElement);
+</script>
+<link rel="stylesheet" href="/m3/tokens.css" />
+<link rel="stylesheet" href="/m3/m3.css" />
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <main class="not-found">
+    <div class="not-found-mark" aria-hidden="true"><span class="not-found-shape" id="nf-shape"></span><span class="not-found-code">404</span></div>
+    <h1 class="not-found-title" id="nf-title">找不到这个页面</h1>
+    <p class="not-found-text" id="nf-text">链接可能有误，或者页面已经不存在了。</p>
+    <a class="m3-button m3-button--filled m3-interactive" id="nf-home" href="/">回到首页</a>
+  </main>
+<script src="/m3/m3.js"></script>
+<script src="/expressive.js"></script>
+<script>
+  (function () {
+    var TEXT = {
+      zh: { lang: "zh-CN", title: "找不到页面 | 汇率板", h1: "找不到这个页面", text: "链接可能有误，或者页面已经不存在了。", home: "回到首页" },
+      ja: { lang: "ja", title: "ページが見つかりません | レートボード", h1: "ページが見つかりません", text: "リンクが間違っているか、ページが削除された可能性があります。", home: "トップページへ" },
+      en: { lang: "en", title: "Page not found | Rate Board", h1: "Page not found", text: "The link may be wrong, or the page no longer exists.", home: "Back to home" }
+    };
+    var urlLang = new URLSearchParams(location.search).get("lang");
+    var lang = TEXT[urlLang] ? urlLang : null;
+    if (!lang) { try { var saved = localStorage.getItem("lang-pref"); if (TEXT[saved]) lang = saved; } catch (e) {} }
+    if (!lang) {
+      var list = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || ""];
+      for (var i = 0; i < list.length && !lang; i++) { var base = String(list[i]).toLowerCase().split("-")[0]; if (TEXT[base]) lang = base; }
+    }
+    var t = TEXT[lang || "en"];
+    document.documentElement.lang = t.lang;
+    document.title = t.title;
+    document.getElementById("nf-title").textContent = t.h1;
+    document.getElementById("nf-text").textContent = t.text;
+    var home = document.getElementById("nf-home");
+    home.textContent = t.home;
+    if (TEXT[urlLang] && urlLang !== "zh") home.href = "/?lang=" + urlLang;
+    // expressive.js declares ExpressiveShapes with const (not a window property).
+    if (typeof ExpressiveShapes !== "undefined") document.getElementById("nf-shape").style.clipPath = ExpressiveShapes.polygon("cookie9");
+  })();
+</script>
+</body>
+</html>

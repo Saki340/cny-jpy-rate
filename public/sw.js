@@ -5,7 +5,18 @@
 // response is cached, and when the network is unavailable the last copy is
 // served instead (the page shows the data date, so old rates are visible).
 
-const CACHE = "rate-board-v1";
+// Bumping the name drops older caches on activate (v1 still held the
+// removed mdui files).
+const CACHE = "rate-board-v2";
+
+// Pages are cached under their path plus ?lang= only, so share links
+// (?amount=…&from=…) do not each keep a copy of the page.
+function cacheKey(request) {
+  if (request.mode !== "navigate") return request;
+  const url = new URL(request.url);
+  const lang = url.searchParams.get("lang");
+  return url.origin + url.pathname + (lang ? `?lang=${encodeURIComponent(lang)}` : "");
+}
 
 function markFromCache(response) {
   const headers = new Headers(response.headers);
@@ -31,11 +42,11 @@ self.addEventListener("fetch", (event) => {
       const response = await fetch(request);
       if (response.ok) {
         const copy = response.clone();
-        event.waitUntil(caches.open(CACHE).then((cache) => cache.put(request, copy)));
+        event.waitUntil(caches.open(CACHE).then((cache) => cache.put(cacheKey(request), copy)));
       }
       return response;
     } catch (err) {
-      const cached = await caches.match(request);
+      const cached = await caches.match(cacheKey(request));
       // Mark cached answers so the page can tell the visitor they are offline
       // and which day's data they are looking at.
       if (cached) return markFromCache(cached);

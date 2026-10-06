@@ -32,7 +32,7 @@ const L = {
 const I18N = {
   zh: {
     "doc.title": "日元人民币汇率 | 汇率板",
-    "doc.description": "日元兑人民币（JPY ⇄ CNY）每日中间汇率（欧洲央行参考汇率），附金额换算计算器和 30 天至 1 年的历史走势，标出区间最高与最低。免费、无广告，支持深色模式。",
+    "doc.description": "日元兑人民币（JPY ⇄ CNY）每日中间汇率（欧洲央行参考汇率）：金额换算支持算式和日本免税，可保存房租等常用金额，附 30 天至 1 年的历史走势和近一年汇率位置。免费、无广告，支持深色模式。",
     "doc.siteName": "汇率板",
     "app.title": "日元人民币汇率",
     "theme.label": "主题",
@@ -142,7 +142,7 @@ const I18N = {
 
   ja: {
     "doc.title": "円・人民元 為替レート | レートボード",
-    "doc.description": "日本円と人民元（JPY ⇄ CNY）の毎日の仲値（欧州中央銀行の参照レート）。金額の換算と30日〜1年のチャートで、期間中の最高値・最安値も確認できます。無料・広告なし・ダークモード対応。",
+    "doc.description": "日本円と人民元（JPY ⇄ CNY）の毎日の仲値（欧州中央銀行の参照レート）。計算式や日本の免税に対応した換算、家賃などよく使う金額の保存、30日〜1年のチャートと過去1年でのレートの位置を確認できます。無料・広告なし・ダークモード対応。",
     "doc.siteName": "レートボード",
     "app.title": "円・人民元レート",
     "theme.label": "テーマ",
@@ -252,7 +252,7 @@ const I18N = {
 
   en: {
     "doc.title": "JPY to CNY Exchange Rate | Rate Board",
-    "doc.description": "Daily mid-market JPY ⇄ CNY exchange rate (European Central Bank reference rate), with a converter and 30-day to 1-year charts showing highs and lows. Free, no ads, dark mode.",
+    "doc.description": "Daily mid-market JPY ⇄ CNY exchange rate (European Central Bank reference rate) with a converter that handles arithmetic and Japan tax-free prices, saved amounts like rent, and 30-day to 1-year charts showing where today's rate stands. Free, no ads, dark mode.",
     "doc.siteName": "Rate Board",
     "app.title": "Yen–Yuan Rate",
     "theme.label": "Theme",

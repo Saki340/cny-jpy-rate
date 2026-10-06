@@ -16,14 +16,18 @@ JPY ⇄ CNY 汇率板。单个 Cloudflare Worker + 静态资源，无构建步�
   - `tokens.css` — 系统设计令牌（颜色、字号、形状、状态层、动效），**由 `tools/m3-tokens.py` 从 Jetpack Compose Material 3 源码生成，不要手改**。
   - `m3.css` / `m3.js` — 顶部应用栏、按钮、图标按钮、连接式按钮组、卡片、描边文本框、菜单、提示、snackbar、涟漪。
 - `public/expressive.js` — M3 形状库（装饰形状、加载指示器的形状变形）。
-- `public/manifest.webmanifest` / `sw.js` / `icons/` — 可安装（添加到主屏幕）与离线；`sw.js` 全部网络优先，失败才用缓存，不要改成缓存优先。缓存返回的响应带 `X-From-Cache: 1`，页面据此显示离线提示（`noteCached()`）。
+- `public/manifest.webmanifest` / `sw.js` / `icons/` — 可安装（添加到主屏幕）与离线；`sw.js` 全部网络优先，失败才用缓存，不要改成缓存优先；页面按「路径 + ?lang=」缓存一份；改动缓存结构时把 `CACHE` 的版本号加 1，旧缓存会在激活时删除。缓存返回的响应带 `X-From-Cache: 1`，页面据此显示离线提示（`noteCached()`）。
 - 安装卡片（`initInstall()`）：Chromium 用 `beforeinstallprompt` 显示「安装」按钮，iOS 显示「分享 → 添加到主屏幕」说明；安卓上 Chrome 以外的浏览器（按 `userAgentData.brands` 判断）另显示「建议用 Chrome 安装」的提示和「用 Chrome 打开」（intent 链接）：三星浏览器等自己打包的 APK 可能被 Play Protect 警告「为旧版 Android 设计」，Chrome 由 Google 生成的 WebAPK 不会。已安装或 30 天内点过「不用了」则不显示。
 - 提示信息统一用 `M3.snackbar()`（`app.js` 的 `notify()`）。
 - 分享链接参数 `?amount=…&from=JPY|CNY`（`readShareParams()`），读取后从地址栏移除；manifest 的 shortcuts 也用 `?from=`。
 - 金额框是文本框，支持简单算式（`evaluateAmount()`，手写递归下降解析，不要用 `eval`）；换算一律用 `effectiveAmount()`（已按日本免税扣除消费税），不要直接读输入框。
+- 记住上次的换算方向（`direction-pref`，只在点切换时保存；分享链接的 `?from=` 优先但不保存）。
+- 浏览器地址栏颜色（两个 `theme-color`，分浅色/深色）跟随顶部应用栏：滚动后为 surface-container（`syncThemeColor()`）。
 - 常用金额（`saved-amounts`，localStorage，最多 10 个）；今日汇率在近一年的位置（`renderRank()`，单独取 365 天数据）。
 - 里程表数字的滚动列设了 `user-select: none`，复制时取 `.sr-only` 里的纯文本；不要去掉，否则复制出来是 0–9 一串。
-- `public/vendor/fonts/` — 自托管的字体（Google Sans Flex ASCII 子集、Material Symbols Rounded 子集）。**图标字体只含页面用到的图标，新增图标要按 `vendor/fonts/README.txt` 重新下载子集**，否则显示成英文单词。**不要改用 Google Fonts 等外部 CDN**（大陆访问不稳定），也不要再引入 UI 组件库。
+- `public/vendor/fonts/` — 自托管的字体（Google Sans Flex ASCII 子集、Material Symbols Rounded 子集）。**图标字体只含页面用到的图标，新增图标要按 `vendor/fonts/README.txt` 重新下载子集**，否则显示成英文单词。字体文件缓存一周（`public/_headers`），网址带 `?v=`：**换了字体文件就要把 `style.css` 和 `index.html` 预加载里的 `?v=` 一起加 1**。
+- 图标写成 `<span class="m3-icon" data-icon="share" aria-hidden="true"></span>`（图标名由 CSS `::before` 画出，不进入页面文字，避免搜索结果和标题里出现 `sync_alt` 之类的词）；JS 里改 `dataset.icon`。
+- 不存在的路径返回 `public/404.html`（`wrangler.toml` 的 `not_found_handling`），三种语言在页面内判断。**不要改用 Google Fonts 等外部 CDN**（大陆访问不稳定），也不要再引入 UI 组件库。
 - `tools/m3-tokens.py` — 从 GitHub androidx/androidx（固定提交）读取 Compose Material 3 的 `tokens/*.kt`，生成 `public/m3/tokens.css`。
 
 ## 界面规范：Material 3（数值以 Jetpack Compose Material 3 源码为准）
