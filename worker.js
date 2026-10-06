@@ -159,6 +159,76 @@ async function history(url) {
   }
 }
 
+/* ---------- per-language page head ---------- */
+
+// The page text is translated in the browser (public/i18n.js), but search
+// engines and link previews read <head> as served. For /?lang=ja and
+// /?lang=en the Worker rewrites the language-specific head tags, so each
+// language has its own indexable URL (see the hreflang links in index.html).
+const SITE = "https://rate.anontokyo.vip/";
+const PAGE_META = {
+  ja: {
+    htmlLang: "ja",
+    ogLocale: "ja_JP",
+    title: "円・人民元 為替レート | レートボード",
+    description: "日本円と人民元（JPY ⇄ CNY）の毎日の仲値（欧州中央銀行の参照レート）。金額の換算と30日〜1年のチャートで、期間中の最高値・最安値も確認できます。無料・広告なし・ダークモード対応。",
+    ogDescription: "日本円と人民元の毎日の仲値。換算ツールとレートの推移チャート付き。",
+    siteName: "レートボード",
+    imageAlt: "レートボード：円・人民元レート、JPY ⇄ CNY",
+    ldName: "レートボード · 円・人民元 為替レート",
+    ldDescription: "日本円と人民元（JPY ⇄ CNY）の毎日の仲値、金額の換算、レートの推移。",
+  },
+  en: {
+    htmlLang: "en",
+    ogLocale: "en_US",
+    title: "JPY to CNY Exchange Rate | Rate Board",
+    description: "Daily mid-market JPY ⇄ CNY exchange rate (European Central Bank reference rate), with a converter and 30-day to 1-year charts showing highs and lows. Free, no ads, dark mode.",
+    ogDescription: "Daily mid-market JPY ⇄ CNY rate with a converter and history charts.",
+    siteName: "Rate Board",
+    imageAlt: "Rate Board: Yen–Yuan Rate, JPY ⇄ CNY",
+    ldName: "Rate Board · JPY to CNY Exchange Rate",
+    ldDescription: "Daily mid-market JPY ⇄ CNY exchange rate, converter and history.",
+  },
+};
+
+function localizedPage(response, lang) {
+  const meta = PAGE_META[lang];
+  const url = `${SITE}?lang=${lang}`;
+  const setAttr = (name, value) => ({ element(el) { el.setAttribute(name, value); } });
+  return new HTMLRewriter()
+    .on("html", setAttr("lang", meta.htmlLang))
+    .on("title", { element(el) { el.setInnerContent(meta.title); } })
+    .on('meta[name="description"]', setAttr("content", meta.description))
+    .on('link[rel="canonical"]', setAttr("href", url))
+    .on('meta[property="og:url"]', setAttr("content", url))
+    .on('meta[property="og:locale"]', setAttr("content", meta.ogLocale))
+    .on('meta[property="og:title"]', setAttr("content", meta.title))
+    .on('meta[property="og:description"]', setAttr("content", meta.ogDescription))
+    .on('meta[property="og:site_name"]', setAttr("content", meta.siteName))
+    .on('meta[property="og:image"]', setAttr("content", `${SITE}og-image-${lang}.png`))
+    .on('meta[property="og:image:alt"]', setAttr("content", meta.imageAlt))
+    .on('meta[name="apple-mobile-web-app-title"]', setAttr("content", meta.siteName))
+    .on('link[rel="manifest"]', setAttr("href", `/manifest-${lang}.webmanifest`))
+    .on('script[type="application/ld+json"]', {
+      element(el) {
+        el.setInnerContent(JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebApplication",
+          name: meta.ldName,
+          url,
+          image: `${SITE}og-image-${lang}.png`,
+          description: meta.ldDescription,
+          applicationCategory: "FinanceApplication",
+          operatingSystem: "Any",
+          inLanguage: meta.htmlLang,
+          isAccessibleForFree: true,
+          offers: { "@type": "Offer", price: "0", priceCurrency: "CNY" },
+        }, null, 2), { html: true });
+      },
+    })
+    .transform(response);
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -169,6 +239,12 @@ export default {
       if (url.pathname === "/api/history") return history(url);
       return json({ error: "Not found" }, 404);
     }
-    return env.ASSETS.fetch(request);
+    const response = await env.ASSETS.fetch(request);
+    const lang = url.searchParams.get("lang");
+    if (url.pathname === "/" && lang in PAGE_META && response.ok &&
+        (response.headers.get("content-type") || "").includes("text/html")) {
+      return localizedPage(response, lang);
+    }
+    return response;
   },
 };

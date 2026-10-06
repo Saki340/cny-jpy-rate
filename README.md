@@ -6,13 +6,14 @@
 
 **在线访问：<https://rate.anontokyo.vip>**
 
-![License: MIT](https://img.shields.io/badge/license-MIT-blue) ![Cloudflare Workers](https://img.shields.io/badge/deploy-Cloudflare%20Workers-f38020) ![mdui 2](https://img.shields.io/badge/UI-mdui%202-6750a4)
+![License: MIT](https://img.shields.io/badge/license-MIT-blue) ![Cloudflare Workers](https://img.shields.io/badge/deploy-Cloudflare%20Workers-f38020) ![Material 3](https://img.shields.io/badge/UI-Material%203%20Expressive-6750a4)
 
 ## 功能
 
 - **今日汇率**：JPY ⇄ CNY 中间汇率，一键切换兑换方向。
 - **换算计算器**：输入金额即时折算。
 - **历史走势**：30 天 / 90 天 / 180 天 / 1 年，标出区间最高、最低和涨跌幅；悬停或轻点任意一天可查看当天汇率及与最新值的差距，也支持键盘方向键逐日查看。
+- **三种语言**：简体中文、日本語、English，按设备语言自动选择，也可以在顶栏的语言菜单中切换；每种语言有独立网址（`/`、`/?lang=ja`、`/?lang=en`），方便分享和搜索引擎收录。
 - **数据一致**：页面上所有数字来自同一数据源，同一天的汇率在各处相同。
 - **较前一日涨跌**：今日汇率旁显示与前一个公布日相比的涨跌幅。
 - **自动更新**：页面开着时，欧洲央行公布新汇率后会自动刷新，数字以滚动动画变为新值。
@@ -29,7 +30,7 @@
 
 - **运行环境**：[Cloudflare Workers](https://developers.cloudflare.com/workers/)（Static Assets 提供前端，`worker.js` 处理 `/api/*`）
 - **前端**：原生 HTML / CSS / JavaScript，无构建步骤、无 npm 依赖；走势图为手写 SVG
-- **界面组件**：[mdui 2](https://www.mdui.org/zh-cn/docs/2/)（Material Design 3 Web Components），在其上手工实现 M3 Expressive 的部分规范（`expressive.css` / `expressive.js`）
+- **界面**：自己实现的 [Material 3 Expressive](https://m3.material.io) 组件（`public/m3/`），不依赖 UI 库。配色、字号、形状、动效等设计令牌由 `tools/m3-tokens.py` 从 [Jetpack Compose Material 3](https://github.com/androidx/androidx/tree/androidx-main/compose/material3) 源码生成；各组件的尺寸也取自其中的组件令牌
 
 ## 项目结构
 
@@ -40,20 +41,25 @@ cny-jpy-rate/
 ├── public/
 │   ├── index.html
 │   ├── app.js           # 前端逻辑、走势图、动效
+│   ├── i18n.js          # 界面文案（中 / 日 / 英）与语言切换
 │   ├── style.css
-│   ├── expressive.css   # M3 Expressive：弹簧动效、按钮组、进度与加载指示器、装饰形状
-│   ├── expressive.js    # 形状生成（形状变形）
-│   ├── manifest.webmanifest
+│   ├── m3/
+│   │   ├── tokens.css   # M3 系统设计令牌（由 tools/m3-tokens.py 生成）
+│   │   ├── m3.css       # M3 组件样式
+│   │   └── m3.js        # M3 组件行为（菜单、按钮组、提示、snackbar、涟漪）
+│   ├── expressive.js    # M3 形状库（装饰形状、加载指示器）
+│   ├── manifest*.webmanifest  # Web App 清单（中文 / -ja / -en，安装后的名称随语言）
 │   ├── sw.js            # Service Worker：网络优先，离线时使用缓存
 │   ├── icons/           # Web App 图标
 │   ├── favicon.svg
-│   ├── og-image.png     # 分享卡片预览图（1200×630），源文件 docs/og-image.html
+│   ├── og-image*.png    # 分享卡片预览图（1200×630，中文 / -ja / -en），源文件 docs/og-image.html
 │   ├── robots.txt
 │   ├── sitemap.xml
-│   └── vendor/          # 自托管的 mdui 与字体
+│   └── vendor/fonts/    # 自托管的字体
 ├── docs/
-│   ├── llms-full.txt    # mdui 2 官方完整文档，开发参考，不部署
-│   └── og-image.html    # og-image.png 的源文件
+│   └── og-image.html    # 预览图的源文件（?lang=ja / en 切换语言）
+├── tools/
+│   └── m3-tokens.py     # 从 Compose Material 3 源码生成 tokens.css
 ├── CLAUDE.md            # 给 Claude Code 的项目说明
 ├── LICENSE
 └── README.md
@@ -95,17 +101,43 @@ npx wrangler dev
 
 ## 开发备注
 
-- **静态资源自托管**：`public/vendor/mdui/` 为 mdui 2.1.5 的 `mdui.css` 与 `mdui.global.js`。升级时运行 `npm pack mdui@2`，解压后替换这两个文件。`public/vendor/fonts/` 为 Google Sans Flex（可变字体，ASCII 子集）和 Material Icons；中文使用系统字体。
-- **日志**：`wrangler.toml` 中开启了 Workers Logs（`[observability]`）。请不要删除这一项，否则部署会把控制台中开启的日志关闭。
-- **预览图**：编辑 `docs/og-image.html` 后，用无头浏览器重新生成：
+- **设计令牌**：`public/m3/tokens.css` 由脚本生成，不要手改。更新到 Compose 的新版本：
 
   ```bash
-  msedge --headless --hide-scrollbars --force-device-scale-factor=1 --window-size=1200,630 --screenshot=public/og-image.png docs/og-image.html
+  python tools/m3-tokens.py <androidx 提交 SHA>
+  ```
+
+- **静态资源自托管**：`public/vendor/fonts/` 为 Google Sans Flex（可变字体，ASCII 子集）和 Material Symbols Rounded（可变字体，只含用到的图标，新增图标的方法见该目录的 README.txt）；中文、日文使用系统字体。
+- **日志**：`wrangler.toml` 中开启了 Workers Logs（`[observability]`）。请不要删除这一项，否则部署会把控制台中开启的日志关闭。
+- **预览图**：编辑 `docs/og-image.html` 后，用无头浏览器重新生成三种语言（文件路径需为绝对路径的 `file:///` 网址，才能带上 `?lang=`）：
+
+  ```bash
+  msedge --headless --hide-scrollbars --force-device-scale-factor=1 --window-size=1200,630 --screenshot=public/og-image.png "file:///D:/Project/cny-jpy-rate/docs/og-image.html"
+  msedge --headless --hide-scrollbars --force-device-scale-factor=1 --window-size=1200,630 --screenshot=public/og-image-ja.png "file:///D:/Project/cny-jpy-rate/docs/og-image.html?lang=ja"
+  msedge --headless --hide-scrollbars --force-device-scale-factor=1 --window-size=1200,630 --screenshot=public/og-image-en.png "file:///D:/Project/cny-jpy-rate/docs/og-image.html?lang=en"
   ```
 
 - **搜索引擎**：已在 Google Search Console 验证，sitemap 为 `/sitemap.xml`。页面 `<head>` 中的 description、canonical、Open Graph 与 JSON-LD 都直接写在 HTML 里，不依赖 JS。
 
 ## 更新日志
+
+### 2026-10-06：按 Compose Material 3 源码重做界面
+
+- 移除 mdui，全部组件改为自己实现（`public/m3/`），设计规范完全以 Jetpack Compose Material 3 的源码为准。
+- 配色、字号、形状、状态层和动效令牌由脚本从 Compose 源码生成；动效直接使用 Compose 的弹簧参数（刚度、阻尼比），转换为 CSS `linear()` 曲线。
+- 按钮按下时变形为小圆角；连接式按钮组按下的按钮会变宽 15%，并挤压相邻按钮；文本框、菜单、提示、snackbar、顶部应用栏均按 Compose 的组件令牌实现。
+- 图标改为 Material Symbols Rounded（可变字体，选中状态的图标会填充），只保留用到的图标，图标字体从 128 KB 减到 14 KB。
+- 页面不再加载约 380 KB 的组件库脚本和样式。
+
+### 2026-10-06：多语言
+
+- 新增日本語和 English 界面，按设备语言自动选择（中文设备显示中文、日文设备显示日文，其余显示英文）。
+- 顶栏新增语言菜单，按 M3 Expressive 菜单规格制作（分组色块、大圆角、选中项填色并变形，数值取自 Jetpack Compose Material 3），可选「跟随设备语言」，选择会被记住。
+- 每种语言有独立网址，搜索引擎可分别收录；页面标题、描述、分享卡片的文字和预览图、安装后的 App 名称都随语言变化。
+- 分享换算结果的链接带上当前语言，对方打开时与分享文字一致。
+- 日期、时间、星期和数字按各语言习惯显示；日文页面使用日文字体。
+- 手机上主题切换按钮改为图标，为语言按钮腾出空间。
+- 换算结果的复制、分享按钮固定在行尾，数字滚动时不再跟着抖动。
 
 ### 2026-10-06：Material 3 Expressive 改版
 
@@ -138,7 +170,7 @@ npx wrangler dev
 
 本项目代码以 [MIT License](LICENSE) 发布。
 
-`public/vendor/` 中的第三方文件沿用各自的许可证：mdui 为 MIT（见 `public/vendor/mdui/LICENSE.txt`）；Google Sans Flex 为 SIL Open Font License 1.1，Material Icons 为 Apache License 2.0（见 `public/vendor/fonts/README.txt`）。汇率数据的版权和使用条款归各数据提供方所有。
+`public/vendor/` 中的第三方文件沿用各自的许可证：Google Sans Flex 为 SIL Open Font License 1.1，Material Symbols 为 Apache License 2.0（见 `public/vendor/fonts/README.txt`）。汇率数据的版权和使用条款归各数据提供方所有。
 
 ## 作者
 
@@ -151,9 +183,10 @@ npx wrangler dev
 - [欧洲中央银行（ECB）](https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html)：公开发布每日欧元参考汇率，是本站汇率数据的最终来源。
 - [Frankfurter](https://frankfurter.dev)（[lineofflight/frankfurter](https://github.com/lineofflight/frankfurter)，MIT）：把欧洲央行参考汇率整理成免费、开源、无需密钥的 API。
 - [currency-api / exchange-api](https://github.com/fawazahmed0/exchange-api)（fawazahmed0，CC0 1.0）：免费的汇率数据，作为本站的备用数据源。
-- [mdui](https://www.mdui.org)（[zdhxiong/mdui](https://github.com/zdhxiong/mdui)，MIT）：本站界面使用的 Material Design 3 Web Components 组件库。
+- [Jetpack Compose Material 3](https://github.com/androidx/androidx/tree/androidx-main/compose/material3)（Apache License 2.0）：本站的设计令牌和组件尺寸取自其源码。
+- [mdui](https://www.mdui.org)（[zdhxiong/mdui](https://github.com/zdhxiong/mdui)，MIT）：本站 2026-10 之前的界面组件库。
 - [Material Design 3 / M3 Expressive](https://m3.material.io)（Google）：本站遵循的设计规范，包括配色、弹簧动效、按钮组、进度指示器与形状库。
-- [Google Sans Flex](https://fonts.google.com/specimen/Google+Sans+Flex)、[Material Icons](https://github.com/google/material-design-icons)：页面使用的字体和图标。
+- [Google Sans Flex](https://fonts.google.com/specimen/Google+Sans+Flex)、[Material Symbols](https://fonts.google.com/icons)：页面使用的字体和图标。
 - [Cloudflare Workers](https://workers.cloudflare.com)：本站的托管与部署平台。
 - [jsDelivr](https://www.jsdelivr.com)、[shields.io](https://shields.io)：备用数据的 CDN 和本文档中的徽章。
 

@@ -5,7 +5,8 @@ compatibility_date = "2026-09-27"
 [assets]
 directory = "./public"
 binding = "ASSETS"
-run_worker_first = ["/api/*"]
+# "/" too: the Worker rewrites the page head for ?lang=ja / ?lang=en.
+run_worker_first = ["/api/*", "/"]
 
 # Keep Workers Logs on. Without this, a deploy can switch off logging that was
 # enabled in the dashboard (logs stopped after a deploy on 2026-09-29).

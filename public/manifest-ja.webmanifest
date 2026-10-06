@@ -1,8 +1,8 @@
 {
-  "name": "日元人民币汇率",
-  "short_name": "汇率板",
-  "description": "日元兑人民币每日中间汇率、换算计算器与历史走势",
-  "lang": "zh-CN",
+  "name": "円・人民元レート",
+  "short_name": "レートボード",
+  "description": "日本円と人民元の毎日の仲値、換算ツールとレートの推移",
+  "lang": "ja",
   "id": "/",
   "start_url": "/",
   "scope": "/",

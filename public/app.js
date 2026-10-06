@@ -1,6 +1,7 @@
+// All visible text comes from i18n.js (t(), locale()); see that file.
 const SOURCES = {
-  frankfurter: { label: "欧洲央行参考汇率", via: "Frankfurter", url: "https://frankfurter.dev" },
-  "currency-api": { label: "备用源", via: "currency-api", url: "https://github.com/fawazahmed0/exchange-api" },
+  frankfurter: { via: "Frankfurter", url: "https://frankfurter.dev" },
+  "currency-api": { via: "currency-api", url: "https://github.com/fawazahmed0/exchange-api" },
 };
 
 const state = {
@@ -20,14 +21,33 @@ const state = {
 
 const THEME_KEY = "theme-pref";
 
-// mdui motion tokens (see "设计令牌" in docs/llms-full.txt), for Web Animations
-// called from JS. CSS uses the --mdui-motion-* variables directly.
+// Motion for Web Animations called from JS: the Expressive spring tokens from
+// m3/tokens.css (CSS uses the --md-sys-motion-* variables directly).
 const EASE_STANDARD = "cubic-bezier(0.2, 0, 0, 1)";
 const EASE_EMPHASIZED_ACCELERATE = "cubic-bezier(0.3, 0, 0.8, 0.15)";
-// M3 Expressive springs converted to curves (m3.material.io, motion specs).
-const SPRING_FAST_SPATIAL = { easing: "cubic-bezier(0.42, 1.67, 0.21, 0.90)", duration: 350 };
-const SPRING_DEFAULT_SPATIAL = { easing: "cubic-bezier(0.38, 1.21, 0.22, 1.00)", duration: 500 };
-const SPRING_SLOW_SPATIAL = { easing: "cubic-bezier(0.39, 1.29, 0.35, 0.98)", duration: 650 };
+function springToken(name) {
+  const css = getComputedStyle(document.documentElement);
+  return {
+    easing: css.getPropertyValue(`--md-sys-motion-spring-${name}`).trim() || EASE_STANDARD,
+    duration: parseFloat(css.getPropertyValue(`--md-sys-motion-spring-${name}-duration`)) || 300,
+  };
+}
+const SPRING_FAST_SPATIAL = springToken("fast-spatial");
+const SPRING_DEFAULT_SPATIAL = springToken("default-spatial");
+const SPRING_SLOW_SPATIAL = springToken("slow-spatial");
+
+// Position of an under-damped spring released from 0 towards 1 (unit mass),
+// as a function of progress 0..1 over its settle time (as in tokens.css).
+function springCurve(stiffness, damping) {
+  const w0 = Math.sqrt(stiffness);
+  const wd = w0 * Math.sqrt(1 - damping * damping);
+  const settle = Math.log(1000) / (damping * w0);
+  return (p) => {
+    if (p >= 1) return 1;
+    const t = p * settle;
+    return 1 - Math.exp(-damping * w0 * t) * (Math.cos(wd * t) + (damping * w0 / wd) * Math.sin(wd * t));
+  };
+}
 
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 const motionOK = () => !reducedMotion.matches;
@@ -52,16 +72,9 @@ function debounce(fn, ms) {
   };
 }
 
-// In a single-select segmented group, clicking the selected segment deselects
-// it (value becomes ""). Put the selection back once the group has rendered;
-// setting it synchronously is coalesced away by the component's batched update.
-function keepSelection(group, value) {
-  group.updateComplete.then(() => { group.value = value; });
-}
-
 function fmt(n, maxDigits = 4) {
   if (!isFinite(n)) return "--";
-  return n.toLocaleString("zh-CN", { maximumFractionDigits: maxDigits });
+  return n.toLocaleString(locale(), { maximumFractionDigits: maxDigits });
 }
 
 function pctFmt(p) {
@@ -116,14 +129,15 @@ function odometer(node, text, animate = true) {
 // Count a number from its previous value to `to` (used by the calculator).
 function tweenNumber(node, from, to, format, duration) {
   cancelAnimationFrame(Number(node.dataset.raf || 0));
-  if (!motionOK() || !isFinite(from) || from === to) {
+  if (!motionOK() || !isFinite(from) || from === to || !(duration > 0)) {
     node.textContent = format(to);
     return;
   }
   const start = performance.now();
   const ease = (t) => 1 - Math.pow(1 - t, 3);
   const step = (now) => {
-    const t = Math.min((now - start) / duration, 1);
+    // A frame's timestamp can be slightly earlier than `start`.
+    const t = Math.min(Math.max((now - start) / duration, 0), 1);
     node.textContent = format(from + (to - from) * ease(t));
     if (t < 1) node.dataset.raf = String(requestAnimationFrame(step));
   };
@@ -154,9 +168,13 @@ async function exitLoading(container) {
   await Promise.race([exit, new Promise((resolve) => setTimeout(resolve, 250))]);
 }
 
-// mdui snackbar (see "# snackbar 函数" in docs/llms-full.txt).
 function notify(message) {
-  if (window.mdui && typeof window.mdui.snackbar === "function") window.mdui.snackbar({ message, placement: "bottom" });
+  M3.snackbar(message);
+}
+
+// The amount field's floating label ("金额（JPY）").
+function setAmountLabel(cur) {
+  M3.setLabel(el("amount-field"), t("calc.amount", { cur }));
 }
 
 /* ---------- scroll-triggered entrance ---------- */
@@ -203,19 +221,15 @@ function saveThemePref(mode) {
 // Keep the browser UI colour (mobile address bar) in sync with the page surface.
 function syncThemeColor() {
   const meta = document.querySelector('meta[name="theme-color"]');
-  const surface = getComputedStyle(document.documentElement).getPropertyValue("--mdui-color-surface").trim();
-  if (meta && surface) meta.content = `rgb(${surface})`;
+  const surface = getComputedStyle(document.documentElement).getPropertyValue("--md-sys-color-surface").trim();
+  if (meta && surface) meta.content = surface;
 }
 
 function applyTheme(mode) {
   const next = mode === "dark" || mode === "light" ? mode : "auto";
   saveThemePref(next);
-  if (window.mdui && typeof window.mdui.setTheme === "function") {
-    window.mdui.setTheme(next);
-  } else {
-    document.documentElement.classList.remove("mdui-theme-dark", "mdui-theme-light", "mdui-theme-auto");
-    document.documentElement.classList.add(`mdui-theme-${next}`);
-  }
+  document.documentElement.classList.remove("theme-dark", "theme-light", "theme-auto");
+  document.documentElement.classList.add(`theme-${next}`);
   syncThemeColor();
   const group = el("theme-group");
   if (group && String(group.value) !== next) group.value = next;
@@ -243,14 +257,11 @@ function switchTheme(mode) {
 }
 
 function initTheme() {
+  const group = M3.buttonGroup(el("theme-group"));
   const saved = readThemePref();
   applyTheme(saved === "light" || saved === "dark" ? saved : "auto");
-  const group = el("theme-group");
   group.addEventListener("pointerdown", (e) => { themeOrigin = { x: e.clientX, y: e.clientY }; });
-  group.addEventListener("change", (e) => {
-    if (e.target.value) switchTheme(e.target.value);
-    else keepSelection(e.target, readThemePref() || "auto");
-  });
+  group.addEventListener("change", () => switchTheme(group.value));
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", syncThemeColor);
 }
 
@@ -279,13 +290,13 @@ function nextEcbUpdate(now = new Date()) {
   return null;
 }
 
-// "今天 22:15" / "明天 22:15" / "周一 22:15", in the viewer's own time zone.
-function describeLocalTime(at, now = new Date()) {
+// "下次更新：今天 22:15 左右" etc., in the viewer's own time zone and language.
+function describeNextUpdate(at, now = new Date()) {
   const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
   const days = Math.round((startOfDay(at) - startOfDay(now)) / 86400000);
-  const day = days === 0 ? "今天" : days === 1 ? "明天" : WEEKDAYS[at.getDay()];
-  const time = at.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", hour12: false });
-  return `${day} ${time}`;
+  const day = days === 0 ? t("day.today") : days === 1 ? t("day.tomorrow") : t("day.weekday")[at.getDay()];
+  const time = at.toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit", hour12: false });
+  return t("board.next", { day, time });
 }
 
 /* ---------- live refresh ---------- */
@@ -338,8 +349,8 @@ let offlineDataDate = null;
 function setOffline(offline) {
   if (offline) {
     el("offline-text").textContent = offlineDataDate
-      ? `当前离线，显示的是 ${offlineDataDate} 的汇率`
-      : "当前离线，网络恢复后会自动更新";
+      ? t("offline.date", { date: offlineDataDate })
+      : t("offline.plain");
   }
   el("offline-banner").classList.toggle("is-shown", offline);
 }
@@ -357,7 +368,7 @@ function initOffline() {
     const wasShown = el("offline-banner").classList.contains("is-shown");
     offlineDataDate = null;
     setOffline(false);
-    if (wasShown) notify("已恢复联网");
+    if (wasShown) notify(t("notify.online"));
     // Reload whatever failed or came from the cache.
     if (!state.cnyToJpy) loadRate(); else loadRate({ refresh: true });
     loadHistory(state.historyDays, { refresh: Boolean(chart) });
@@ -389,13 +400,14 @@ async function copyResult() {
   let ok = true;
   try { await navigator.clipboard.writeText(text); } catch { ok = copyFallback(text); }
   const [, to] = currentPair();
-  notify(ok ? `已复制 ${text} ${to}` : "复制失败，请手动选择数字复制");
+  notify(ok ? t("notify.copied", { value: text, cur: to }) : t("notify.copyFail"));
   if (!ok) return;
   const btn = el("copy-btn");
-  btn.icon = "check";
+  const icon = btn.querySelector(".m3-icon");
+  icon.textContent = "check";
   pop(btn, 1.15);
   clearTimeout(copyResetTimer);
-  copyResetTimer = setTimeout(() => { btn.icon = "content_copy"; }, 1600);
+  copyResetTimer = setTimeout(() => { icon.textContent = "content_copy"; }, 1600);
 }
 
 /* ---------- share ---------- */
@@ -410,15 +422,18 @@ function readShareParams() {
   if (from === "CNY" || from === "JPY") state.direction = from === "CNY" ? "cny2jpy" : "jpy2cny";
   const amount = Number(params.get("amount"));
   if (params.has("amount") && Number.isFinite(amount) && amount >= 0 && amount <= 1e12) el("amount").value = String(amount);
-  history.replaceState(null, "", location.pathname + location.hash);
+  const clean = new URL(location.href);
+  clean.searchParams.delete("amount");
+  clean.searchParams.delete("from");
+  history.replaceState(null, "", clean.pathname + clean.search + clean.hash); // keeps ?lang=
 
   // Put the currencies in the shared order right away (before rates load).
   const [first, second] = currentPair();
   const line = el("rate-line");
   line.append(line.querySelector(".rate-one"), line.querySelector(`[data-cur="${first}"]`),
     line.querySelector(".eq"), el("rate-value"), line.querySelector(`[data-cur="${second}"]`));
-  el("amount").label = `金额（${first}）`;
-  el("calc-to-label").textContent = second;
+  setAmountLabel(first);
+  el("calc-result-label").textContent = t("calc.result", { cur: second });
 }
 
 function shareLink() {
@@ -426,6 +441,8 @@ function shareLink() {
   const url = new URL("/", location.origin);
   url.searchParams.set("amount", String(parseFloat(el("amount").value) || 0));
   url.searchParams.set("from", from);
+  // Same language as the shared text, so the link preview matches it too.
+  if (currentLang !== "zh") url.searchParams.set("lang", currentLang);
   return url.href;
 }
 
@@ -435,12 +452,12 @@ async function shareResult() {
   if (!currentMidRate()) return;
   const [from, to] = currentPair();
   const amount = parseFloat(el("amount").value) || 0;
-  const source = state.rateSource === "currency-api" ? "参考汇率" : "欧洲央行参考汇率";
-  const text = `${fmt(amount, 3)} ${from} ≈ ${fmt(state.calcShown, 3)} ${to}（${state.rateDate} ${source}）`;
+  const source = t(state.rateSource === "currency-api" ? "share.sourceFallback" : "share.source");
+  const text = t("share.text", { a: fmt(amount, 3), from, b: fmt(state.calcShown, 3), to, date: state.rateDate, source });
   const url = shareLink();
   if (navigator.share) {
     try {
-      await navigator.share({ title: "日元人民币汇率", text, url });
+      await navigator.share({ title: t("share.title"), text, url });
       return;
     } catch (e) {
       if (e.name === "AbortError") return; // the visitor closed the share sheet
@@ -449,7 +466,7 @@ async function shareResult() {
   const all = `${text}\n${url}`;
   let ok = true;
   try { await navigator.clipboard.writeText(all); } catch { ok = copyFallback(all); }
-  notify(ok ? "已复制分享文字和链接" : "分享失败，请手动复制地址栏中的链接");
+  notify(ok ? t("notify.shareCopied") : t("notify.shareFail"));
 }
 
 /* ---------- add to home screen ---------- */
@@ -472,9 +489,10 @@ function installDismissed() {
 function showInstall(mode) {
   if (isStandalone() || installDismissed()) return;
   if (mode === "ios") {
-    el("install-desc").textContent = "点浏览器的「分享」按钮，再选「添加到主屏幕」，就能像 App 一样从桌面打开。";
+    el("install-desc").dataset.i18n = "install.ios";
+    el("install-dismiss").dataset.i18n = "install.ok";
     el("install-btn").hidden = true;
-    el("install-dismiss").textContent = "知道了";
+    applyI18n(el("install-section"));
   }
   el("install-section").hidden = false;
 }
@@ -492,7 +510,7 @@ function initInstall() {
   window.addEventListener("appinstalled", () => {
     installPrompt = null;
     hideInstall();
-    notify("已添加到桌面");
+    notify(t("notify.installed"));
   });
   el("install-btn").addEventListener("click", async () => {
     if (!installPrompt) return;
@@ -528,15 +546,8 @@ async function loadRate({ refresh = false } = {}) {
     state.prevCnyToJpy = data.prev_cny_to_jpy;
     state.prevDate = data.prev_date;
 
-    const updated = el("updated");
-    const fallback = data.source === "currency-api";
-    updated.innerHTML = fallback
-      ? `数据日期 ${esc(data.date)} · 欧洲央行数据暂不可用，当前为备用源 ${sourceLink("currency-api")}`
-      : `数据日期 ${esc(data.date)} · ${SOURCES.frankfurter.label}（${sourceLink("frankfurter")}）`;
-    fadeIn(updated);
-
-    const next = nextEcbUpdate();
-    if (next) boardNote.textContent = `下次更新：${describeLocalTime(next)} 左右（当地时间）`;
+    renderBoardText();
+    fadeIn(el("updated"));
 
     if (!refresh) await exitLoading(el("rate-value"));
     renderRateLine(false);
@@ -553,7 +564,24 @@ async function loadRate({ refresh = false } = {}) {
     el("updated").textContent = "";
     el("rate-value").textContent = "--";
     el("calc-result").querySelector(".calc-visible").textContent = "--";
-    boardNote.textContent = "汇率获取失败，请稍后刷新页面重试。";
+    boardNote.dataset.i18n = "rate.error";
+    boardNote.textContent = t("rate.error");
+  }
+}
+
+// Data line ("数据日期 …") and the next-update note; re-run on language change.
+function renderBoardText() {
+  if (!state.rateDate) return;
+  const fallback = state.rateSource === "currency-api";
+  el("updated").innerHTML = t(fallback ? "updated.fallback" : "updated", {
+    date: esc(state.rateDate),
+    link: sourceLink(fallback ? "currency-api" : "frankfurter"),
+  });
+  const next = nextEcbUpdate();
+  const note = el("board-note");
+  if (next) {
+    delete note.dataset.i18n;
+    note.textContent = describeNextUpdate(next);
   }
 }
 
@@ -590,9 +618,8 @@ function renderRateLine(swapping) {
     });
   }
 
-  const amountField = el("amount");
-  if (amountField) amountField.label = `金额（${from}）`;
-  el("calc-to-label").textContent = to;
+  setAmountLabel(from);
+  el("calc-result-label").textContent = t("calc.result", { cur: to });
 }
 
 // "▲ 0.12% 较前一日 (10-01)", in the direction currently shown.
@@ -609,8 +636,8 @@ function renderChange({ flash = false } = {}) {
   const icon = { up: "arrow_upward", down: "arrow_downward", flat: "remove" }[dir];
   const wasEmpty = !box.firstElementChild;
   box.innerHTML =
-    `<span class="change-chip is-${dir}"><mdui-icon name="${icon}"></mdui-icon>${pctFmt(change).replace(/^[+−±]/, "")}</span>` +
-    `<span class="change-label">较前一日（${esc((state.prevDate || "").slice(5))}）</span>`;
+    `<span class="change-chip is-${dir}"><span class="m3-icon" aria-hidden="true">${icon}</span>${pctFmt(change).replace(/^[+−±]/, "")}</span>` +
+    `<span class="change-label">${esc(t("change.label", { date: (state.prevDate || "").slice(5) }))}</span>`;
   const chip = box.querySelector(".change-chip");
   if (flash) {
     chip.classList.add("is-flash");
@@ -647,8 +674,6 @@ function runCalculator(duration = 220, { fromInput = false } = {}) {
 
 /* ---------- history chart ---------- */
 
-const WEEKDAYS = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
-
 function axisFmt(v) {
   return v >= 10 ? v.toFixed(2) : v >= 1 ? v.toFixed(3) : v.toFixed(5);
 }
@@ -658,7 +683,7 @@ function pointFmt(v) {
 }
 
 function weekday(date) {
-  return WEEKDAYS[new Date(`${date}T00:00:00Z`).getUTCDay()];
+  return t("weekday.short")[new Date(`${date}T00:00:00Z`).getUTCDay()];
 }
 
 function setChartLoading(loading) {
@@ -693,7 +718,7 @@ async function loadHistory(days, { refresh = false } = {}) {
     hideTooltip();
     ["readout-latest", "readout-high", "readout-low"].forEach((id) => { el(id).textContent = ""; });
     const wrap = el("history-chart");
-    wrap.innerHTML = `<p class="chart-msg">历史走势暂时加载失败，请稍后刷新重试。</p>`;
+    wrap.innerHTML = `<p class="chart-msg" data-i18n="chart.error">${esc(t("chart.error"))}</p>`;
     fadeIn(wrap);
   }
 }
@@ -813,12 +838,12 @@ function renderChart({ draw = false, morph = false } = {}) {
   cancelAnimationFrame(morphRaf);
   wrap.innerHTML =
     `<svg class="${classes.join(" ")}" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" tabindex="0" role="img"` +
-    ` aria-label="1 ${from} 兑 ${to} 的历史走势。可用左右方向键查看每一天的汇率。">` +
+    ` aria-label="${esc(t("chart.aria", { from, to }))}">` +
     `<g class="chart-axes">${axes}</g>` +
     `<path class="chart-area" d="${areaOf(linePts)}"/>` +
     `<path class="chart-line" d="${line}" pathLength="1"/>` +
-    marker(maxIdx, "chart-high", "高", -9) +
-    marker(minIdx, "chart-low", "低", 17) +
+    marker(maxIdx, "chart-high", esc(t("chart.high")), -9) +
+    marker(minIdx, "chart-low", esc(t("chart.low")), 17) +
     latestMark +
     `<line class="chart-cursor" x1="0" x2="0" y1="${padT - 6}" y2="${base}"/>` +
     `<circle class="chart-dot" cx="0" cy="0" r="5"/>` +
@@ -826,12 +851,12 @@ function renderChart({ draw = false, morph = false } = {}) {
 
   const latest = values[n - 1];
   const change = (latest - values[0]) / values[0];
-  const fallbackNote = state.historySource === "currency-api" ? ` · 备用源 ${sourceLink("currency-api")}` : "";
+  const fallbackNote = state.historySource === "currency-api" ? ` · ${esc(t("readout.fallback"))} ${sourceLink("currency-api")}` : "";
   el("readout-latest").innerHTML =
-    `最新 ${esc(pts[n - 1].date)} · ${pointFmt(latest)}` +
-    ` · <span class="${change >= 0 ? "is-up" : "is-down"}">区间 ${pctFmt(change)}</span>${fallbackNote}`;
-  el("readout-high").textContent = `最高 ${pts[maxIdx].date} · ${pointFmt(values[maxIdx])}`;
-  el("readout-low").textContent = `最低 ${pts[minIdx].date} · ${pointFmt(values[minIdx])}`;
+    `${esc(t("readout.latest"))} ${esc(pts[n - 1].date)} · ${pointFmt(latest)}` +
+    ` · <span class="${change >= 0 ? "is-up" : "is-down"}">${esc(t("readout.range"))} ${pctFmt(change)}</span>${fallbackNote}`;
+  el("readout-high").textContent = `${t("readout.high")} ${pts[maxIdx].date} · ${pointFmt(values[maxIdx])}`;
+  el("readout-low").textContent = `${t("readout.low")} ${pts[minIdx].date} · ${pointFmt(values[minIdx])}`;
   if (draw || canMorph) el("chart-readout").querySelectorAll(".chart-readout-line").forEach((node) => fadeIn(node, 300));
 
   const svg = wrap.querySelector("svg");
@@ -881,8 +906,9 @@ function morphChart(svg, prev, linePts, areaOf, x0, x1) {
       .finished.then(() => ghost.remove()).catch(() => ghost.remove());
   }
 
-  const ease = cubicBezier(0.38, 1.21, 0.22, 1.0); // expressive default spatial
-  const duration = 550;
+  // Expressive default spatial spring (stiffness 380, damping ratio 0.8).
+  const ease = springCurve(380, 0.8);
+  const duration = SPRING_DEFAULT_SPATIAL.duration;
   const start = performance.now();
   const frame = (now) => {
     const t = Math.min((now - start) / duration, 1);
@@ -922,7 +948,7 @@ function showPoint(i) {
 
   el("tooltip-date").textContent = `${pts[i].date} ${weekday(pts[i].date)}`;
   el("tooltip-value").textContent = `1 ${from} = ${pointFmt(values[i])} ${to}`;
-  el("tooltip-diff").textContent = i === n - 1 ? "最新数据" : `至最新 ${pctFmt(diff)}`;
+  el("tooltip-diff").textContent = i === n - 1 ? t("tooltip.latest") : t("tooltip.toLatest", { pct: pctFmt(diff) });
 
   const tw = tip.offsetWidth;
   const th = tip.offsetHeight;
@@ -958,10 +984,34 @@ function hideTooltip(instant = false) {
   }
 }
 
+/* ---------- language ---------- */
+
+function initLanguage() {
+  const menu = M3.menu(el("lang-btn"), el("lang-menu"));
+  menu.value = langChoice();
+  menu.addEventListener("change", () => setLang(menu.value));
+  // Re-render everything built in JS; static text is handled by applyI18n().
+  document.addEventListener("langchange", () => {
+    renderBoardText();
+    if (state.cnyToJpy) {
+      renderRateLine(false);
+      renderChange();
+      runCalculator(0);
+    } else {
+      const [from, to] = currentPair();
+      setAmountLabel(from);
+      el("calc-result-label").textContent = t("calc.result", { cur: to });
+    }
+    if (chart) renderChart();
+    if (el("offline-banner").classList.contains("is-shown")) setOffline(true);
+  });
+}
+
 /* ---------- init ---------- */
 
 window.addEventListener("DOMContentLoaded", () => {
   initTheme();
+  initLanguage();
   initReveal();
   initOffline();
   initInstall();
@@ -971,10 +1021,8 @@ window.addEventListener("DOMContentLoaded", () => {
   el("calc-result").addEventListener("click", copyResult);
   el("swap-btn").addEventListener("click", toggleDirection);
   el("amount").addEventListener("input", () => runCalculator(220, { fromInput: true }));
-  el("range-group").addEventListener("change", (e) => {
-    if (e.target.value) loadHistory(Number(e.target.value));
-    else keepSelection(e.target, String(state.historyDays));
-  });
+  const range = M3.buttonGroup(el("range-group"));
+  range.addEventListener("change", () => loadHistory(Number(range.value)));
   // Touch: tapping anywhere outside the chart dismisses the tooltip.
   document.addEventListener("pointerdown", (e) => {
     if (chart && !chart.svg.contains(e.target)) hideTooltip();

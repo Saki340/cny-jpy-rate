@@ -1,6 +1,7 @@
 <!DOCTYPE html>
-<!-- Source for public/og-image.png (1200x630). Regenerate with headless Chrome/Edge:
-     msedge --headless --hide-scrollbars --window-size=1200,630 --screenshot=public/og-image.png docs/og-image.html
+<!-- Source for the share preview images (1200x630), one per language:
+     public/og-image.png (zh), og-image-ja.png, og-image-en.png. Pick the language
+     with ?lang=ja|en and regenerate with headless Chrome/Edge (commands in README).
      The chart is decorative and the card shows no live rate, so it never goes stale. -->
 <html lang="zh-CN">
 <head>
@@ -13,6 +14,10 @@
     background: #fef7ff;
     color: #1d1b20;
     font-family: "Google Sans Flex", "Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif;
+  }
+  /* Han characters in Japanese need Japanese fonts. */
+  html:lang(ja) body {
+    font-family: "Google Sans Flex", "Hiragino Sans", "Yu Gothic UI", "Yu Gothic", Meiryo, "Noto Sans JP", sans-serif;
     font-variation-settings: "ROND" 100;
   }
   .card {
@@ -59,13 +64,25 @@
           <rect width="48" height="48" rx="12" fill="#6750a4" />
           <path d="M15 11l9 12 9-12M24 23v15M16 26h16M16 32h16" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
-        <span>汇率板</span>
+        <span id="brand">汇率板</span>
       </div>
-      <h1>日元人民币汇率</h1>
+      <h1 id="title">日元人民币汇率</h1>
       <div class="pair"><span class="jpy">JPY</span><span class="arrow">⇄</span><span class="cny">CNY</span></div>
-      <div class="tags">每日参考汇率 · 换算计算器 · 历史走势</div>
+      <div class="tags" id="tags">每日参考汇率 · 换算计算器 · 历史走势</div>
     </div>
     <div class="domain">rate.anontokyo.vip</div>
   </div>
+<script>
+  // Same names as public/i18n.js (app.title) and worker.js (PAGE_META).
+  const TEXT = {
+    ja: { lang: "ja", brand: "レートボード", title: "円・人民元レート", tags: "毎日の参照レート · 通貨換算 · レートの推移" },
+    en: { lang: "en", brand: "Rate Board", title: "Yen–Yuan Rate", tags: "Daily reference rate · Converter · History" },
+  };
+  const text = TEXT[new URLSearchParams(location.search).get("lang")];
+  if (text) {
+    document.documentElement.lang = text.lang;
+    for (const key of ["brand", "title", "tags"]) document.getElementById(key).textContent = text[key];
+  }
+</script>
 </body>
 </html>

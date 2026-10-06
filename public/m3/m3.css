@@ -1,0 +1,498 @@
+/* ==========================================================================
+ * Material 3 (Expressive) components, hand-built for this page.
+ *
+ * System tokens (--md-sys-*) come from tokens.css, generated from Jetpack
+ * Compose Material 3. Component values below are copied from the Compose
+ * component tokens; each block names the token objects it follows
+ * (androidx compose/material3/.../tokens/*.kt). Behaviour lives in m3.js.
+ *
+ * Colours are full colours; translucent layers use color-mix().
+ * ========================================================================== */
+
+/* ---------- icons ----------
+ * Material Symbols Rounded (variable font, self-hosted subset, see
+ * style.css): ligatures, optical size matched to the icon size, weight 400.
+ * FILL is 0 (outlined) normally and 1 for selected states; it is a
+ * registered property, so the fill animates. */
+@property --m3-icon-fill {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+.m3-icon {
+  --m3-icon-opsz: 24;
+  display: inline-block;
+  flex: none;
+  width: 1em;
+  height: 1em;
+  overflow: hidden;
+  font-family: "Material Symbols Rounded";
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  font-variation-settings: "FILL" var(--m3-icon-fill), "wght" 400, "GRAD" 0, "opsz" var(--m3-icon-opsz);
+  transition: --m3-icon-fill var(--md-sys-motion-spring-default-effects-duration) var(--md-sys-motion-spring-default-effects);
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  direction: ltr;
+  font-feature-settings: "liga";
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+/* ---------- interaction: state layer, ripple, focus ----------
+ * StateTokens: hover 8%, focus 10%, pressed 10%. The layer takes the
+ * content colour (currentColor). The ripple wave is added by m3.js.
+ * Focus indicator: 3dp, secondary colour, 2dp outside the shape. */
+.m3-interactive {
+  position: relative;
+  isolation: isolate;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+.m3-interactive::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background-color: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
+}
+@media (hover: hover) {
+  .m3-interactive:hover::before { opacity: var(--md-sys-state-hover-state-layer-opacity); }
+}
+.m3-interactive:focus-visible::before { opacity: var(--md-sys-state-focus-state-layer-opacity); }
+.m3-interactive:focus-visible {
+  outline: 3px solid var(--md-sys-color-secondary);
+  outline-offset: 2px;
+}
+.m3-ripple {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.m3-ripple__wave {
+  position: absolute;
+  border-radius: 50%;
+  background-color: currentColor;
+  opacity: var(--md-sys-state-pressed-state-layer-opacity);
+  transform: scale(.2);
+  animation: m3-ripple-grow 450ms cubic-bezier(.2, 0, 0, 1) forwards;
+}
+.m3-ripple__wave.is-out {
+  animation:
+    m3-ripple-grow 450ms cubic-bezier(.2, 0, 0, 1) forwards,
+    m3-ripple-fade 150ms linear forwards;
+}
+@keyframes m3-ripple-grow { to { transform: scale(1); } }
+@keyframes m3-ripple-fade { to { opacity: 0; } }
+
+/* Registered so corner radii animate (shape morph on press / select).
+ * "Full" corners are written as half the 40dp height (20px) so the morph to
+ * 8dp is visible over the whole animation. */
+@property --m3-radius {
+  syntax: "<length-percentage>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+/* ---------- top app bar (small) ----------
+ * AppBarSmallTokens / AppBarTokens: 64dp, title-large, surface; when content
+ * scrolls under it the container becomes surface-container. Leading and
+ * trailing space 4dp; icon buttons 48dp touch targets. */
+.m3-top-app-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding-top: env(safe-area-inset-top, 0px);
+  background-color: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface);
+  transition: background-color var(--md-sys-motion-spring-default-effects-duration) var(--md-sys-motion-spring-default-effects);
+}
+.m3-top-app-bar.is-scrolled { background-color: var(--md-sys-color-surface-container); }
+.m3-top-app-bar__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 64px;
+  padding-inline: max(4px, env(safe-area-inset-left, 0px)) max(4px, env(safe-area-inset-right, 0px));
+}
+.m3-top-app-bar__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  padding-inline: 12px 4px;
+  overflow: hidden;
+  font-size: var(--md-sys-typescale-title-large-size);
+  font-weight: var(--md-sys-typescale-title-large-weight);
+  line-height: var(--md-sys-typescale-title-large-line-height);
+  letter-spacing: var(--md-sys-typescale-title-large-tracking);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.m3-top-app-bar__actions { display: flex; align-items: center; gap: 4px; flex: none; }
+
+/* ---------- buttons (small) ----------
+ * ButtonSmallTokens: 40dp high, 16dp side padding, 20dp icon 8dp from the
+ * label, label-large, round shape; pressed shape small (8dp), animated with
+ * the fast spatial spring. Colours: FilledButtonTokens (primary),
+ * TonalButtonTokens (secondary-container); text buttons use primary
+ * (ButtonDefaults.textButtonColors) and 12dp padding. */
+.m3-button {
+  --m3-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 58px;
+  height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--m3-radius);
+  background: none;
+  font-family: inherit;
+  font-size: var(--md-sys-typescale-label-large-size);
+  font-weight: var(--md-sys-typescale-label-large-weight);
+  line-height: var(--md-sys-typescale-label-large-line-height);
+  letter-spacing: var(--md-sys-typescale-label-large-tracking);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: --m3-radius var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial);
+}
+.m3-button:active { --m3-radius: var(--md-sys-shape-corner-small); }
+.m3-button .m3-icon { --m3-icon-opsz: 20; font-size: 20px; }
+.m3-button--filled { background-color: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); }
+.m3-button--tonal { background-color: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
+.m3-button--text { padding: 0 12px; color: var(--md-sys-color-primary); }
+@media (hover: hover) {
+  .m3-button--filled:hover, .m3-button--tonal:hover { box-shadow: var(--md-sys-elevation-level1); }
+}
+.m3-button[hidden] { display: none; }
+
+/* ---------- icon button (small, standard) ----------
+ * SmallIconButtonTokens / IconButtonTokens: 40dp container, 24dp icon,
+ * on-surface-variant, round; pressed shape small. 48dp touch target. */
+.m3-icon-button {
+  --m3-radius: 20px;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  margin: 4px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--m3-radius);
+  background: none;
+  color: var(--md-sys-color-on-surface-variant);
+  transition: --m3-radius var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial);
+}
+.m3-icon-button:active { --m3-radius: var(--md-sys-shape-corner-small); }
+.m3-icon-button::after { content: ""; position: absolute; inset: -4px; } /* 48dp target */
+.m3-icon-button[aria-expanded="true"] { --m3-icon-fill: 1; color: var(--md-sys-color-primary); }
+
+/* ---------- connected button group (toggle buttons) ----------
+ * ConnectedButtonGroupSmallTokens: 40dp, 2dp between buttons, outer corners
+ * full, inner corners small (8dp), pressed inner corners extra-small (4dp),
+ * selected button fully round (50%). Colours: FilledButtonTokens toggle
+ * (unselected surface-container / on-surface-variant, selected primary /
+ * on-primary). Pressing widens the button by 15% of its width, taken from
+ * its neighbours (ButtonGroupDefaults.ExpandedRatio), on the fast spatial
+ * spring. Keyboard: arrow keys move the selection (radio group). */
+.m3-button-group {
+  display: flex;
+  gap: 2px;
+}
+.m3-toggle {
+  --r-start: var(--md-sys-shape-corner-small);
+  --r-end: var(--md-sys-shape-corner-small);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--r-start) var(--r-end) var(--r-end) var(--r-start);
+  background-color: var(--md-sys-color-surface-container);
+  color: var(--md-sys-color-on-surface-variant);
+  font-family: inherit;
+  font-size: var(--md-sys-typescale-label-large-size);
+  font-weight: var(--md-sys-typescale-label-large-weight);
+  line-height: var(--md-sys-typescale-label-large-line-height);
+  letter-spacing: var(--md-sys-typescale-label-large-tracking);
+  white-space: nowrap;
+  transition:
+    border-radius var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial),
+    flex-grow var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial),
+    background-color var(--md-sys-motion-spring-default-effects-duration) var(--md-sys-motion-spring-default-effects),
+    color var(--md-sys-motion-spring-default-effects-duration) var(--md-sys-motion-spring-default-effects);
+}
+.m3-toggle:first-child { --r-start: 20px; }
+.m3-toggle:last-child { --r-end: 20px; }
+.m3-toggle:active { --r-start: var(--md-sys-shape-corner-extra-small); --r-end: var(--md-sys-shape-corner-extra-small); flex-grow: 1.21; }
+.m3-toggle:first-child:active { --r-start: 20px; }
+.m3-toggle:last-child:active { --r-end: 20px; }
+.m3-toggle[aria-checked="true"] {
+  --r-start: 20px;
+  --r-end: 20px;
+  background-color: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+}
+.m3-toggle .m3-icon { --m3-icon-opsz: 20; font-size: 20px; }
+.m3-toggle[aria-checked="true"] { --m3-icon-fill: 1; }
+
+/* ---------- card ----------
+ * FilledCardTokens: filled container, no elevation. Shape and colour role
+ * are set per card in style.css. */
+.m3-card {
+  display: block;
+  border-radius: var(--md-sys-shape-corner-medium);
+  background-color: var(--md-sys-color-surface-container-highest);
+  color: var(--md-sys-color-on-surface);
+}
+
+/* ---------- outlined text field ----------
+ * OutlinedTextFieldTokens: 56dp, extra-small corners (4dp), body-large input
+ * and label; outline 1dp outline colour, hover on-surface, focus 2dp primary
+ * (label primary too). The floating label shrinks to body-small and sits in
+ * a gap cut into the outline (fieldset/legend, so it works on any colour). */
+.m3-text-field {
+  position: relative;
+  display: block;
+  min-width: 0;
+  color: var(--md-sys-color-on-surface);
+}
+.m3-text-field__input {
+  display: block;
+  width: 100%;
+  height: 56px;
+  margin: 0;
+  padding: 0 16px;
+  border: 0;
+  background: none;
+  color: inherit;
+  caret-color: var(--md-sys-color-primary);
+  font-family: inherit;
+  font-size: var(--md-sys-typescale-body-large-size);
+  line-height: var(--md-sys-typescale-body-large-line-height);
+  letter-spacing: var(--md-sys-typescale-body-large-tracking);
+  font-variant-numeric: tabular-nums;
+  outline: none;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+.m3-text-field__input::-webkit-outer-spin-button,
+.m3-text-field__input::-webkit-inner-spin-button { margin: 0; -webkit-appearance: none; }
+.m3-text-field__outline {
+  position: absolute;
+  inset: -5px 0 0;
+  margin: 0;
+  padding: 0 12px;
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: var(--md-sys-shape-corner-extra-small);
+  pointer-events: none;
+  transition: border-color var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
+}
+.m3-text-field__outline legend {
+  max-width: .01px;
+  height: 11px;
+  padding: 0;
+  font-size: var(--md-sys-typescale-body-small-size);
+  letter-spacing: var(--md-sys-typescale-body-small-tracking);
+  white-space: nowrap;
+  visibility: hidden;
+}
+.m3-text-field__outline legend > span { display: inline-block; padding: 0 4px; }
+.m3-text-field__label {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  max-width: calc(100% - 32px);
+  overflow: hidden;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-body-large-size);
+  line-height: var(--md-sys-typescale-body-large-line-height);
+  letter-spacing: var(--md-sys-typescale-body-large-tracking);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  transform-origin: left top;
+  transition:
+    transform var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial),
+    color var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
+}
+/* Floating: body-small (12/16) on the outline. */
+.m3-text-field__input:focus ~ .m3-text-field__label,
+.m3-text-field__input:not(:placeholder-shown) ~ .m3-text-field__label {
+  transform: translate(0, -24px) scale(.75);
+}
+.m3-text-field__input:focus ~ .m3-text-field__outline legend,
+.m3-text-field__input:not(:placeholder-shown) ~ .m3-text-field__outline legend { max-width: 100%; }
+@media (hover: hover) {
+  .m3-text-field:hover .m3-text-field__outline { border-color: var(--md-sys-color-on-surface); }
+}
+.m3-text-field__input:focus ~ .m3-text-field__outline { border-width: 2px; border-color: var(--md-sys-color-primary); padding-inline: 11px; }
+.m3-text-field__input:focus ~ .m3-text-field__label { color: var(--md-sys-color-primary); }
+
+/* ---------- menu (Expressive vertical menu with groups) ----------
+ * SegmentedMenuTokens / StandardMenuTokens / MenuDefaults:
+ *   - groups are separate surface-container-low containers, 2dp apart
+ *     (GroupSpacing); 4dp padding inside; elevation level 2
+ *   - group corners: first 16dp top / 8dp bottom, last 8dp top / 16dp bottom,
+ *     a single group 16dp (leading/trailing/standaloneGroupShape)
+ *   - items 44dp, body-large, 20dp icon 8dp from the label, 12dp side
+ *     padding; corners 12dp at the top/bottom of a group, 4dp in between
+ *   - the selected item fills with tertiary-container and becomes 12dp all
+ *     round (selectedItemShape)
+ *   - min width 112dp, max 280dp
+ * Opening: scales from 80% and fades in (fast spatial / fast effects). */
+.m3-menu {
+  position: fixed;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: max(112px, 12.5rem);
+  max-width: 280px;
+  margin: 0;
+  padding: 0;
+  transform-origin: top right;
+  opacity: 0;
+  transform: scale(.8);
+  visibility: hidden;
+  transition:
+    transform var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial),
+    opacity var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects),
+    visibility 0s linear var(--md-sys-motion-spring-fast-spatial-duration);
+}
+.m3-menu.is-open {
+  opacity: 1;
+  transform: none;
+  visibility: visible;
+  transition:
+    transform var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial),
+    opacity var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects),
+    visibility 0s;
+}
+.m3-menu__group {
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  border-radius: var(--md-sys-shape-corner-small);
+  background-color: var(--md-sys-color-surface-container-low);
+  box-shadow: var(--md-sys-elevation-level2);
+}
+.m3-menu__group:first-child { border-top-left-radius: var(--md-sys-shape-corner-large); border-top-right-radius: var(--md-sys-shape-corner-large); }
+.m3-menu__group:last-child { border-bottom-left-radius: var(--md-sys-shape-corner-large); border-bottom-right-radius: var(--md-sys-shape-corner-large); }
+.m3-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--md-sys-shape-corner-extra-small);
+  background-color: transparent;
+  color: var(--md-sys-color-on-surface);
+  font-family: inherit;
+  font-size: var(--md-sys-typescale-body-large-size);
+  font-weight: var(--md-sys-typescale-body-large-weight);
+  line-height: var(--md-sys-typescale-body-large-line-height);
+  letter-spacing: var(--md-sys-typescale-body-large-tracking);
+  text-align: start;
+  white-space: nowrap;
+  transition:
+    border-radius var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial),
+    background-color var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects),
+    color var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
+}
+.m3-menu__item:first-child { border-top-left-radius: var(--md-sys-shape-corner-medium); border-top-right-radius: var(--md-sys-shape-corner-medium); }
+.m3-menu__item:last-child { border-bottom-left-radius: var(--md-sys-shape-corner-medium); border-bottom-right-radius: var(--md-sys-shape-corner-medium); }
+.m3-menu__item .m3-icon { --m3-icon-opsz: 20; font-size: 20px; color: var(--md-sys-color-on-surface-variant); }
+/* Selection mark: a check, kept as blank space when unchecked so labels align. */
+.m3-menu__item .m3-menu__check { visibility: hidden; }
+.m3-menu__item[aria-checked="true"] {
+  border-radius: var(--md-sys-shape-corner-medium);
+  background-color: var(--md-sys-color-tertiary-container);
+  color: var(--md-sys-color-on-tertiary-container);
+}
+.m3-menu__item[aria-checked="true"] .m3-menu__check {
+  visibility: visible;
+  color: inherit;
+  animation: m3-pop var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial) both;
+}
+.m3-menu__item:focus-visible { outline-offset: -3px; }
+@keyframes m3-pop { from { opacity: 0; transform: scale(0); } }
+
+/* ---------- plain tooltip ----------
+ * PlainTooltipTokens: inverse-surface, extra-small corners, body-small;
+ * 24dp min height, 8dp side padding, 4dp from the anchor. */
+.m3-tooltip {
+  position: fixed;
+  z-index: 30;
+  max-width: 200px;
+  min-height: 24px;
+  padding: 4px 8px;
+  border-radius: var(--md-sys-shape-corner-extra-small);
+  background-color: var(--md-sys-color-inverse-surface);
+  color: var(--md-sys-color-inverse-on-surface);
+  font-size: var(--md-sys-typescale-body-small-size);
+  line-height: var(--md-sys-typescale-body-small-line-height);
+  letter-spacing: var(--md-sys-typescale-body-small-tracking);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(.8);
+  transition:
+    opacity var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects),
+    transform var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial);
+}
+.m3-tooltip.is-visible { opacity: 1; transform: none; }
+
+/* ---------- snackbar ----------
+ * SnackbarTokens: inverse-surface, extra-small corners, elevation 3,
+ * body-medium, 48dp single line; 16dp from the edges, at most 672dp wide. */
+.m3-snackbar {
+  position: fixed;
+  left: 50%;
+  bottom: max(16px, env(safe-area-inset-bottom, 0px));
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  width: max-content;
+  min-width: min(344px, calc(100% - 32px));
+  max-width: min(672px, calc(100% - 32px));
+  min-height: 48px;
+  padding: 14px 16px;
+  border-radius: var(--md-sys-shape-corner-extra-small);
+  background-color: var(--md-sys-color-inverse-surface);
+  color: var(--md-sys-color-inverse-on-surface);
+  box-shadow: var(--md-sys-elevation-level3);
+  font-size: var(--md-sys-typescale-body-medium-size);
+  line-height: var(--md-sys-typescale-body-medium-line-height);
+  letter-spacing: var(--md-sys-typescale-body-medium-tracking);
+  opacity: 0;
+  transform: translateX(-50%) scale(.8);
+  transition:
+    opacity var(--md-sys-motion-spring-default-effects-duration) var(--md-sys-motion-spring-default-effects),
+    transform var(--md-sys-motion-spring-default-spatial-duration) var(--md-sys-motion-spring-default-spatial);
+}
+.m3-snackbar.is-visible { opacity: 1; transform: translateX(-50%); }
+
+/* ---------- divider ---------- DividerTokens: 1dp outline-variant. */
+.m3-divider { height: 1px; margin: 0; border: 0; background-color: var(--md-sys-color-outline-variant); }
+
+/* Reduced motion: the global rule in style.css shortens every transition. */

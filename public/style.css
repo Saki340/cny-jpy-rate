@@ -1,6 +1,10 @@
+/* Page styles. Components are in m3/m3.css; every colour, type size, shape
+ * and motion value comes from the Material 3 system tokens in m3/tokens.css
+ * (--md-sys-*), generated from Jetpack Compose Material 3. */
+
 /* Self-hosted fonts (see public/vendor/fonts/README.txt). One Latin family,
  * Google Sans Flex (variable: weight + roundness), covers text and numbers;
- * Chinese falls back to the system font, which keeps the download small. */
+ * Chinese and Japanese fall back to system fonts, keeping the download small. */
 @font-face {
   font-family: "Google Sans Flex";
   font-style: normal;
@@ -9,71 +13,84 @@
   /* ASCII + a few symbols (· − ± ⇄) only. */
   src: url(vendor/fonts/google-sans-flex-ascii.woff2) format("woff2");
 }
-/* mdui-icon renders ligatures with this exact family name. */
+/* Material Symbols Rounded, subset to the icons this page uses (variable:
+ * opsz 20–48, wght 400–700, FILL 0–1). Adding an icon means downloading a
+ * new subset (see vendor/fonts/README.txt). */
 @font-face {
-  font-family: "Material Icons";
+  font-family: "Material Symbols Rounded";
   font-style: normal;
-  font-weight: 400;
+  font-weight: 400 700;
   font-display: block;
-  src: url(vendor/fonts/material-icons.woff2) format("woff2");
+  src: url(vendor/fonts/material-symbols-rounded.woff2) format("woff2");
 }
 
-/* mdui colour tokens are "r, g, b" triplets and must be used as rgb(var(--x)).
- * The app's own colours follow the same convention, with a light and a dark
- * set picked the same way mdui picks its theme (class, or system for auto). */
+/* ---------- app colours ----------
+ * Extra colour roles, defined like the system ones: a light and a dark value.
+ * Currencies and high/low are tone 40 / tone 80 of their hues; the converter
+ * card is a teal role (container tone 90 / 30, on-container tone 10 / 90). */
 :root,
-.mdui-theme-light {
-  --page-width: 760px;
-  --font: "Google Sans Flex", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans", "Yu Gothic UI", system-ui, sans-serif;
-  /* Numbers use the same family with tabular figures (see .num below). */
-  --mono: var(--font);
-  --app-color-cny: 164, 59, 49;
-  --app-color-jpy: 40, 96, 146;
-  --app-color-high: 186, 26, 26;
-  --app-color-low: 21, 94, 180;
-  /* Custom M3 colour role for the converter card: a teal tonal palette
-   * (container = tone 90 / tone 30, on-container = tone 10 / tone 90). */
-  --app-color-calc-container: 198, 235, 232;
-  --app-color-on-calc-container: 0, 32, 31;
+.theme-light {
+  --app-color-cny: #a43b31;
+  --app-color-jpy: #286092;
+  --app-color-high: #ba1a1a;
+  --app-color-low: #155eb4;
+  --app-color-calc-container: #c6ebe8;
+  --app-color-on-calc-container: #00201f;
 }
-.mdui-theme-dark {
-  --app-color-cny: 255, 180, 168;
-  --app-color-jpy: 158, 202, 255;
-  --app-color-high: 255, 180, 171;
-  --app-color-low: 160, 202, 253;
-  --app-color-calc-container: 30, 77, 75;
-  --app-color-on-calc-container: 198, 235, 232;
+.theme-dark {
+  --app-color-cny: #ffb4a8;
+  --app-color-jpy: #9ecaff;
+  --app-color-high: #ffb4ab;
+  --app-color-low: #a0cafd;
+  --app-color-calc-container: #1e4d4b;
+  --app-color-on-calc-container: #c6ebe8;
 }
 @media (prefers-color-scheme: dark) {
-  .mdui-theme-auto {
-    --app-color-cny: 255, 180, 168;
-    --app-color-jpy: 158, 202, 255;
-    --app-color-high: 255, 180, 171;
-    --app-color-low: 160, 202, 253;
-    --app-color-calc-container: 30, 77, 75;
-    --app-color-on-calc-container: 198, 235, 232;
+  .theme-auto {
+    --app-color-cny: #ffb4a8;
+    --app-color-jpy: #9ecaff;
+    --app-color-high: #ffb4ab;
+    --app-color-low: #a0cafd;
+    --app-color-calc-container: #1e4d4b;
+    --app-color-on-calc-container: #c6ebe8;
   }
 }
 
+:root {
+  --page-width: 760px;
+  --font: "Google Sans Flex", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans", "Yu Gothic UI", system-ui, sans-serif;
+  /* Things that follow the pointer must not overshoot: the critically damped
+   * fast effects spring. */
+  --follow: var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
+}
+/* Han characters look different in Chinese and Japanese fonts, so Japanese
+ * pages put Japanese fonts first (Google Sans Flex still covers Latin). */
+:root:lang(ja) {
+  --font: "Google Sans Flex", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Yu Gothic", Meiryo, "Noto Sans JP", system-ui, sans-serif;
+}
+:root:lang(en) {
+  --font: "Google Sans Flex", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+/* Language names in the menu each use their own script's fonts. */
+.m3-menu__item[lang="ja"] { font-family: "Google Sans Flex", "Hiragino Sans", "Yu Gothic UI", "Yu Gothic", Meiryo, "Noto Sans JP", sans-serif; }
+.m3-menu__item[lang="zh-CN"] { font-family: "Google Sans Flex", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif; }
+
+/* ---------- base ---------- */
+
 * { box-sizing: border-box; }
 html { scroll-padding-top: 72px; }
-/* Per mdui's docs, <mdui-top-app-bar> inside <mdui-layout> does not pad the
- * page itself; <mdui-layout> measures the bar and offsets <mdui-layout-main>
- * once its JS has run. Until mdui-layout is defined, reserve that space here
- * so the fixed bar cannot cover the first heading. */
-mdui-layout:not(:defined) mdui-layout-main { display: block; padding-top: 64px; }
-@supports (padding-top: env(safe-area-inset-top)) {
-  mdui-layout:not(:defined) mdui-layout-main { padding-top: calc(64px + env(safe-area-inset-top, 0px)); }
-}
 body {
   margin: 0;
   min-height: 100vh;
+  background-color: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface);
   font-family: var(--font);
+  font-size: var(--md-sys-typescale-body-medium-size);
+  line-height: var(--md-sys-typescale-body-medium-line-height);
   font-variant-numeric: tabular-nums;
-  background-color: rgb(var(--mdui-color-background));
-  color: rgb(var(--mdui-color-on-background));
 }
-a { color: rgb(var(--mdui-color-primary)); text-underline-offset: 3px; }
+a { color: var(--md-sys-color-primary); text-underline-offset: 3px; }
+button, input, output { font-family: inherit; }
 /* Read by screen readers, invisible on screen. */
 .sr-only {
   position: absolute;
@@ -86,135 +103,266 @@ a { color: rgb(var(--mdui-color-primary)); text-underline-offset: 3px; }
   white-space: nowrap;
   border: 0;
 }
-.app-bar {
-  padding: 0 max(8px, env(safe-area-inset-right)) 0 max(8px, env(safe-area-inset-left));
-}
-.app-bar-inner {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: min(100%, var(--page-width));
-  margin: 0 auto;
-  min-height: 64px;
-}
-.app-bar-inner mdui-top-app-bar-title {
-  padding-inline: 0;
-}
-.app-bar-spacer { flex: 1; }
-.theme-group {
-  flex: 0 0 auto;
-  max-width: 100%;
-}
-.page {
-  width: min(100% - 32px, var(--page-width));
-  margin: 0 auto;
-  padding: 4px 0 max(40px, env(safe-area-inset-bottom));
-}
+
+/* Display text and the key numbers use the fully rounded end of Google Sans
+ * Flex's roundness axis, like Google's own Expressive type. */
+.eyebrow, .section-heading h2, .rate-line, .calc-result, .chart-tooltip-value, .install-text h2,
+.m3-top-app-bar__title { font-variation-settings: "ROND" 100; }
+
+/* ---------- layout ---------- */
+
+.page-width { width: min(100% - 32px, var(--page-width)); margin-inline: auto; }
+/* The bar is full width; its row lines the title up with the page content. */
+.m3-top-app-bar__row { max-width: calc(var(--page-width) + 32px); margin-inline: auto; }
+.page { padding: 4px 0 max(40px, env(safe-area-inset-bottom)); }
 .eyebrow {
-  margin: 20px 0 28px;
-  font-size: clamp(30px, 7vw, 40px);
-  font-weight: 700;
-  letter-spacing: .06em;
-  line-height: 1.25;
-  color: rgb(var(--mdui-color-primary));
-}
-section { margin-bottom: 24px; }
-.section-heading {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin: 0 2px 12px;
+  margin: 20px 0 28px;
+  color: var(--md-sys-color-primary);
+  font-size: clamp(30px, 7vw, 40px);
+  font-weight: 760;
+  line-height: 1.25;
+  letter-spacing: .01em;
 }
+/* The ⇄ in the headline is an icon: the font has no such glyph, and each
+ * language's fallback font drew it at a different weight. */
+.eyebrow-arrow { font-size: .9em; margin: 0 .22em; }
+section { margin-bottom: 24px; }
+.section-heading { display: flex; align-items: center; gap: 12px; margin: 0 2px 12px; }
 .section-heading h2 {
-  font-size: var(--mdui-typescale-title-medium-size);
-  line-height: 1.4;
-  font-weight: 600;
   margin: 0;
-  letter-spacing: -.02em;
-  color: rgb(var(--mdui-color-on-surface));
+  font-size: var(--md-sys-typescale-title-medium-emphasized-size);
+  font-weight: 650;
+  line-height: var(--md-sys-typescale-title-medium-emphasized-line-height);
+  letter-spacing: 0;
 }
+
+/* ---------- app bar contents ---------- */
+
+/* Theme buttons: labels on wide screens; icons on narrow ones, where three
+ * languages' labels would not fit beside the title and the language button. */
+.theme-group { flex: none; }
+.theme-group .m3-toggle { padding: 0 14px; }
+.theme-group .m3-toggle .m3-icon { display: none; }
+@media (max-width: 600px) {
+  .theme-group .m3-toggle { padding: 0 10px; }
+  .theme-group .m3-toggle .m3-icon { display: inline-block; }
+  .theme-group .m3-toggle__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}
+@media (max-width: 360px) {
+  .theme-group .m3-toggle { padding: 0 7px; }
+  .m3-top-app-bar__title { padding-inline: 8px 0; font-size: 18px; }
+}
+
+/* ---------- cards ----------
+ * Every card is a filled container in a colour role (--card-bg / --card-on):
+ * today's rate primary-container, the converter the teal app role, the chart
+ * secondary-container, the Mastercard note surface-container-highest.
+ * Shapes: the hero card extra-large (28dp), the others large (16dp). */
 .surface-card {
-  display: block;
   width: 100%;
   padding: clamp(16px, 3.5vw, 24px);
-  color: rgb(var(--mdui-color-on-surface));
+  border-radius: var(--md-sys-shape-corner-large);
+  background-color: var(--card-bg, var(--md-sys-color-surface-container-highest));
+  color: var(--card-on, var(--md-sys-color-on-surface));
 }
-/* Outlined text fields paint their floating label on --mdui-color-background;
- * point it at the card surface so the label never shows as a mismatched box. */
-/* Card colours ("--card-bg" / "--card-on", r,g,b triplets) are set per card in
- * expressive.css. Outlined text fields paint their floating label on
- * --mdui-color-background, so it follows the card colour. */
-mdui-card.surface-card {
-  background-color: rgb(var(--card-bg, var(--mdui-color-surface-container)));
-  color: rgb(var(--card-on, var(--mdui-color-on-surface)));
-  --mdui-color-background: var(--card-bg, var(--mdui-color-surface-container));
+.rate-card  { --card-bg: var(--md-sys-color-primary-container);   --card-on: var(--md-sys-color-on-primary-container); border-radius: var(--md-sys-shape-corner-extra-large); }
+.calc-card  { --card-bg: var(--app-color-calc-container);         --card-on: var(--app-color-on-calc-container); }
+.chart-card { --card-bg: var(--md-sys-color-secondary-container); --card-on: var(--md-sys-color-on-secondary-container); }
+.mc-panel   { --card-bg: var(--md-sys-color-surface-container-highest); --card-on: var(--md-sys-color-on-surface); }
+.install-card { --card-bg: var(--md-sys-color-surface-container-high); --card-on: var(--md-sys-color-on-surface); }
+/* Secondary text on a card: the card's "on" colour, slightly softened. */
+.surface-card { --card-on-variant: color-mix(in srgb, var(--card-on) 82%, transparent); }
+.meta-text {
+  margin: 0;
+  color: var(--card-on-variant, var(--md-sys-color-on-surface-variant));
+  font-size: var(--md-sys-typescale-body-small-size);
+  line-height: 1.65;
+  letter-spacing: var(--md-sys-typescale-body-small-tracking);
 }
-.meta-text { margin: 0; color: rgb(var(--mdui-color-on-surface-variant)); font-size: 12px; line-height: 1.65; }
+/* Text fields on a coloured card take the card's colours. */
+.surface-card .m3-text-field { color: var(--card-on); }
+.surface-card .m3-text-field__label { color: var(--card-on-variant); }
+.surface-card .m3-text-field__outline { border-color: color-mix(in srgb, var(--card-on) 55%, transparent); }
+@media (hover: hover) {
+  .surface-card .m3-text-field:hover .m3-text-field__outline { border-color: var(--card-on); }
+}
+.surface-card .m3-text-field__input:focus ~ .m3-text-field__outline { border-color: var(--md-sys-color-primary); }
+.surface-card .m3-icon-button { color: var(--card-on); }
+
+/* ---------- today's rate (hero card) ---------- */
+
+.rate-card { position: relative; overflow: hidden; }
+.rate-card > :not(.deco-shape) { position: relative; }
 .rate-line {
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
   gap: clamp(7px, 2vw, 14px);
   margin: 18px 0 14px;
-  font: 500 clamp(28px, 6.8vw, 48px)/1.2 var(--mono);
-  letter-spacing: -.055em;
+  color: var(--card-on);
+  font-size: clamp(28px, 6.8vw, 48px);
+  font-weight: 560;
+  line-height: 1.2;
+  letter-spacing: -.02em;
   overflow-wrap: anywhere;
-  color: rgb(var(--mdui-color-on-surface));
 }
 .rate-line .cur, .rate-line .rate-value { display: inline-block; }
-.rate-line .eq { color: rgb(var(--mdui-color-on-surface-variant)); font-size: .62em; }
-.rate-line .cur-cny { color: rgb(var(--app-color-cny)); }
-.rate-line .cur-jpy { color: rgb(var(--app-color-jpy)); }
+.rate-line .eq { font-size: .62em; opacity: .6; }
+.rate-line .cur-cny { color: var(--app-color-cny); }
+.rate-line .cur-jpy { color: var(--app-color-jpy); }
 .card-actions { display: flex; justify-content: flex-start; margin-top: 16px; }
+/* The swap icon turns half a circle on every click. */
+.swap-icon { transition: transform var(--md-sys-motion-spring-default-spatial-duration) var(--md-sys-motion-spring-default-spatial); }
+#swap-btn.is-flipped .swap-icon { transform: rotate(180deg); }
+
+/* Decorative shape from the M3 shape library, peeking in from the corner. It
+ * rotates slowly and morphs into another shape when the direction or theme
+ * changes (shapes from expressive.js). */
+.deco-shape {
+  position: absolute;
+  top: -70px;
+  right: -60px;
+  width: 240px;
+  height: 240px;
+  background-color: var(--md-sys-color-primary);
+  opacity: .12;
+  pointer-events: none;
+  clip-path: var(--shape);
+  transition: clip-path var(--md-sys-motion-spring-slow-spatial-duration) var(--md-sys-motion-spring-slow-spatial);
+  animation:
+    deco-spin 60s linear infinite,
+    deco-breathe 7s ease-in-out infinite alternate;
+}
+@keyframes deco-spin { to { rotate: 360deg; } }
+@keyframes deco-breathe { from { scale: .94; } to { scale: 1.06; } }
+@media (max-width: 560px) {
+  .deco-shape { width: 170px; height: 170px; top: -50px; right: -50px; }
+}
+
+/* Odometer digits: every digit is a 0–9 column that rolls to its value. The
+ * columns are kept out of text selection, so copying the rate yields the
+ * hidden plain copy (.sr-only) instead of "0 1 2 3 …". */
+.rate-value { white-space: nowrap; }
+.odo { display: inline-block; user-select: none; -webkit-user-select: none; }
+.odo-digit { position: relative; line-height: 1.2em; clip-path: inset(0 -0.1em); }
+.odo-ghost { visibility: hidden; }
+.odo-strip {
+  position: absolute;
+  inset: 0 0 auto 0;
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  transform: translateY(calc(var(--d) * -1.2em));
+  transition: transform var(--md-sys-motion-spring-slow-spatial-duration) var(--md-sys-motion-spring-default-spatial);
+  transition-delay: calc(var(--i, 0) * 40ms);
+}
+.odo-strip > span { height: 1.2em; line-height: 1.2em; }
+
+/* Day-over-day change: a small chip in the up/down colour. */
+.rate-change {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  margin: -4px 0 12px;
+  font-size: var(--md-sys-typescale-body-small-size);
+}
+.change-chip {
+  --chip: var(--app-color-high);
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 26px;
+  padding: 0 10px 0 6px;
+  border-radius: var(--md-sys-shape-corner-full);
+  background-color: color-mix(in srgb, var(--chip) 14%, transparent);
+  color: var(--chip);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.change-chip.is-down { --chip: var(--app-color-low); }
+.change-chip.is-flat { --chip: var(--card-on); }
+.change-chip .m3-icon { --m3-icon-opsz: 20; font-size: 16px; }
+.change-chip.is-flash { animation: chip-flash 1.6s var(--md-sys-motion-spring-default-effects) 1; }
+@keyframes chip-flash { 0%, 30% { background-color: color-mix(in srgb, var(--chip) 40%, transparent); } }
+.change-label { color: var(--card-on); opacity: .75; }
+
+/* ---------- converter ---------- */
+
 .calc-card { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 18px; }
-.calc-input { width: 100%; min-width: 0; }
-.calc-equals { font-size: 24px; color: rgb(var(--mdui-color-on-surface-variant)); }
+.calc-input { width: 100%; }
+.calc-equals { color: var(--card-on-variant); font-size: 24px; }
 .calc-field { min-width: 0; display: flex; flex-direction: column; gap: 10px; }
-.result-label { font-size: 13px; color: rgb(var(--mdui-color-on-surface-variant)); }
-.calc-result { display: block; font: 500 clamp(23px, 4.5vw, 34px)/1.2 var(--mono); color: rgb(var(--mdui-color-primary)); overflow-wrap: anywhere; }
-.range-tabs { display: flex; width: 100%; margin-bottom: 14px; }
+.result-label { color: var(--card-on-variant); font-size: 13px; }
+.calc-result-row { display: flex; align-items: center; gap: 0; min-width: 0; }
+/* The result takes all the free width so the buttons stay pinned at the end
+ * of the row; otherwise they would shift with every frame of the number tween. */
+.calc-result {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--card-on);
+  font-size: clamp(23px, 4.5vw, 34px);
+  font-weight: 560;
+  line-height: 1.2;
+  letter-spacing: -.01em;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ---------- history chart ---------- */
+
+.range-tabs { width: 100%; margin-bottom: 14px; }
+/* On the coloured chart card, unselected buttons use the lightest (darkest in
+ * dark mode) surface so they stand out from the card. */
+.chart-card .m3-toggle:not([aria-checked="true"]) { background-color: var(--md-sys-color-surface-container-lowest); }
 .chart-readout {
   display: flex;
   flex-direction: column;
   gap: 4px;
   margin: 0 0 10px;
-  font: 12px/1.55 var(--mono);
-  color: rgb(var(--mdui-color-on-surface-variant));
+  color: var(--card-on-variant);
+  font-size: var(--md-sys-typescale-body-small-size);
+  line-height: 1.55;
 }
 .chart-readout-line { display: block; min-height: 1.55em; }
-.chart-readout-hi { color: rgb(var(--app-color-high)); }
-.chart-readout-lo { color: rgb(var(--app-color-low)); }
-.is-up { color: rgb(var(--app-color-high)); }
-.is-down { color: rgb(var(--app-color-low)); }
+.chart-readout-hi, .is-up { color: var(--app-color-high); }
+.chart-readout-lo, .is-down { color: var(--app-color-low); }
 .chart-wrap { position: relative; }
-.chart { height: 220px; width: 100%; transition: opacity var(--mdui-motion-duration-medium2) var(--mdui-motion-easing-standard); }
-.chart-wrap.is-loading .chart:not(.is-loading) { opacity: .4; }
-.chart-svg { display: block; touch-action: pan-y; overflow: visible; outline: none; cursor: crosshair; }
-.chart-svg:focus-visible { outline: 2px solid rgb(var(--mdui-color-primary)); outline-offset: 4px; border-radius: 4px; }
-.chart-grid { stroke: rgb(var(--mdui-color-outline-variant)); stroke-width: 1; }
-.chart-text { fill: rgb(var(--mdui-color-on-surface-variant)); font: 11px var(--mono); }
-.chart-line { fill: none; stroke: rgb(var(--mdui-color-primary)); stroke-width: 2.25; stroke-linejoin: round; stroke-linecap: round; }
-.chart-area { fill: rgb(var(--mdui-color-primary)); opacity: .12; }
-.chart-extreme { stroke: rgb(var(--card-bg, var(--mdui-color-surface))); stroke-width: 2; }
-.chart-high .chart-extreme { fill: rgb(var(--app-color-high)); }
-.chart-low .chart-extreme { fill: rgb(var(--app-color-low)); }
-.chart-extreme-label { fill: rgb(var(--mdui-color-on-surface-variant)); font: 500 10px/1 var(--mono); }
-.chart-msg { color: rgb(var(--mdui-color-on-surface-variant)); font-size: 14px; margin: 0; padding: 90px 0; text-align: center; }
+.chart { width: 100%; height: 220px; transition: opacity var(--md-sys-motion-spring-default-effects-duration) var(--md-sys-motion-spring-default-effects); }
+.chart-wrap.is-loading .chart:not(.is-loading) { opacity: .4; transition-delay: 200ms; }
+.chart.is-loading { display: grid; place-items: center; }
+.chart-svg { display: block; overflow: visible; outline: none; cursor: crosshair; touch-action: pan-y; }
+.chart-svg:focus-visible { outline: 3px solid var(--md-sys-color-secondary); outline-offset: 4px; border-radius: 4px; }
+.chart-grid { stroke: var(--card-on); stroke-width: 1; opacity: .14; }
+.chart-text { fill: var(--card-on); opacity: .75; font: 11px var(--font); }
+.chart-line { fill: none; stroke: var(--md-sys-color-primary); stroke-width: 2.25; stroke-linejoin: round; stroke-linecap: round; }
+.chart-area { fill: var(--md-sys-color-primary); opacity: .12; transition: opacity var(--follow); }
+.chart-extreme { stroke: var(--card-bg); stroke-width: 2; }
+.chart-high .chart-extreme { fill: var(--app-color-high); }
+.chart-low .chart-extreme { fill: var(--app-color-low); }
+.chart-extreme-label { fill: var(--card-on); opacity: .75; font: 500 10px/1 var(--font); }
+.chart-msg { margin: 0; padding: 90px 0; color: var(--card-on-variant); font-size: 14px; text-align: center; }
 
-/* Hover cursor: a guide line and a dot, positioned by JS with transforms. */
-.chart-cursor, .chart-dot {
-  opacity: 0;
-  transition:
-    transform var(--mdui-motion-duration-short3) var(--mdui-motion-easing-standard),
-    opacity var(--mdui-motion-duration-short3) var(--mdui-motion-easing-standard);
-}
-.chart-cursor { stroke: rgb(var(--mdui-color-on-surface-variant)); stroke-dasharray: 3 3; }
-.chart-dot { fill: rgb(var(--mdui-color-primary)); stroke: rgb(var(--card-bg, var(--mdui-color-surface))); stroke-width: 2.5; }
+/* Hover cursor: a guide line and a dot, moved by JS with transforms. */
+.chart-cursor, .chart-dot { opacity: 0; transition: transform var(--follow), opacity var(--follow); }
+.chart-cursor { stroke: var(--card-on); stroke-dasharray: 3 3; }
+.chart-dot { fill: var(--md-sys-color-primary); stroke: var(--card-bg); stroke-width: 2.5; }
 .chart-svg.is-hovering .chart-cursor, .chart-svg.is-hovering .chart-dot { opacity: 1; }
 .chart-svg.is-hovering .chart-area { opacity: .18; }
-.chart-area { transition: opacity var(--mdui-motion-duration-short4) var(--mdui-motion-easing-standard); }
 
-/* Floating tooltip (MD3 plain-tooltip colours) that follows the hovered day. */
+/* Floating tooltip (plain-tooltip colours, medium corners) that follows the
+ * hovered day. Position follows without overshoot; it appears with the spring. */
 .chart-tooltip {
   --tx: 0px;
   --ty: 0px;
@@ -226,105 +374,219 @@ mdui-card.surface-card {
   flex-direction: column;
   gap: 2px;
   padding: 8px 12px;
-  border-radius: var(--mdui-shape-corner-small);
-  background-color: rgb(var(--mdui-color-inverse-surface));
-  color: rgb(var(--mdui-color-inverse-on-surface));
-  box-shadow: var(--mdui-elevation-level2);
-  font: 12px/1.45 var(--mono);
+  border-radius: var(--md-sys-shape-corner-medium);
+  background-color: var(--md-sys-color-inverse-surface);
+  color: var(--md-sys-color-inverse-on-surface);
+  box-shadow: var(--md-sys-elevation-level2);
+  font-size: var(--md-sys-typescale-body-small-size);
+  line-height: 1.45;
   white-space: nowrap;
   pointer-events: none;
   opacity: 0;
-  transform: translate(var(--tx), var(--ty)) scale(.9);
+  translate: var(--tx) var(--ty);
+  scale: .9;
   transform-origin: 50% 100%;
   transition:
-    transform var(--mdui-motion-duration-short4) var(--mdui-motion-easing-standard),
-    opacity var(--mdui-motion-duration-short3) var(--mdui-motion-easing-standard);
+    translate var(--follow),
+    scale var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial),
+    opacity var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
 }
-.chart-tooltip.is-visible { opacity: 1; transform: translate(var(--tx), var(--ty)) scale(1); }
-.chart-tooltip-date { opacity: .8; }
-.chart-tooltip-value { font-weight: 500; font-size: 13px; }
-.chart-tooltip-diff { opacity: .8; }
+.chart-tooltip.is-visible { opacity: 1; scale: 1; }
+.chart-tooltip-date, .chart-tooltip-diff { opacity: .8; }
+.chart-tooltip-value { font-size: 13px; font-weight: 600; }
+
+/* Latest point, with a slow "breathing" ring. */
+.chart-latest { fill: var(--md-sys-color-primary); stroke: var(--card-bg); stroke-width: 2; }
+.chart-pulse {
+  fill: var(--md-sys-color-primary);
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: chart-pulse 2.6s cubic-bezier(0, 0, .2, 1) infinite;
+}
+@keyframes chart-pulse {
+  0% { transform: scale(1); opacity: .45; }
+  70%, 100% { transform: scale(3.4); opacity: 0; }
+}
+
+/* First draw: the line draws itself, the area fades in, then the markers pop.
+ * Afterwards (range / direction / new data) the line morphs instead (app.js):
+ * markers hide while it reshapes and pop back once it settles. */
+.chart-svg.is-drawing .chart-line { stroke-dasharray: 1; animation: line-draw 1s cubic-bezier(.05, .7, .1, 1) both; }
+.chart-svg.is-drawing .chart-area { animation: fade-in 500ms var(--md-sys-motion-spring-default-effects) 300ms both; }
+.chart-svg.is-drawing .chart-extreme-g { animation: marker-pop var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial) 650ms both; }
+.chart-svg.is-drawing .chart-low { animation-delay: 750ms; }
+.chart-svg.is-drawing .chart-latest-g { animation: marker-pop var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial) 850ms both; }
+.chart-svg.is-morphing .chart-extreme-g,
+.chart-svg.is-morphing .chart-latest-g { opacity: 0; }
+.chart-svg.is-morphing .chart-axes { animation: fade-in 260ms var(--md-sys-motion-spring-default-effects) 80ms both; }
+.chart-svg.is-settled .chart-extreme-g,
+.chart-svg.is-settled .chart-latest-g { animation: marker-pop var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial) both; }
+.chart-svg.is-settled .chart-low { animation-delay: 60ms; }
+.chart-svg.is-settled .chart-latest-g { animation-delay: 120ms; }
+/* Drawn while still below the fold: hold until the chart is on screen. */
+.chart-svg.is-waiting * { animation-play-state: paused !important; }
+@keyframes line-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes fade-in { from { opacity: 0; } }
+@keyframes marker-pop { from { opacity: 0; transform: scale(0); } }
+
+/* Wavy linear progress, indeterminate (LinearProgressIndicatorTokens: 4dp
+ * thick, amplitude 3dp, wavelength 20dp, 10dp high; active primary, track
+ * secondary-container). Shown only if loading takes longer than 200ms. */
+.wavy-progress {
+  position: absolute;
+  inset: -8px 0 auto;
+  height: 10px;
+  overflow: hidden; /* the travelling segment starts and ends outside */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--md-sys-motion-spring-default-effects-duration) var(--md-sys-motion-spring-default-effects);
+}
+.chart-wrap.is-loading .wavy-progress { opacity: 1; transition-delay: 200ms; }
+.wavy-progress::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 3px;
+  height: 4px;
+  border-radius: 2px;
+  background-color: var(--md-sys-color-surface-container-lowest);
+}
+.wavy-progress__bar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 42%;
+  border-radius: 5px;
+  background-color: var(--md-sys-color-primary);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='10'%3E%3Cpath d='M-5 5 Q0 0 5 5 T15 5 T25 5' fill='none' stroke='black' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E") 0 0 / 20px 10px repeat-x;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='10'%3E%3Cpath d='M-5 5 Q0 0 5 5 T15 5 T25 5' fill='none' stroke='black' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E") 0 0 / 20px 10px repeat-x;
+  animation:
+    wavy-travel 1.8s cubic-bezier(.65, 0, .35, 1) infinite,
+    wavy-flow .6s linear infinite;
+}
+@keyframes wavy-travel { from { transform: translateX(-100%); } to { transform: translateX(240%); } }
+@keyframes wavy-flow { to { -webkit-mask-position: 20px 0; mask-position: 20px 0; } }
+
+/* Loading indicator (LoadingIndicatorTokens: 48dp container, 38dp active
+ * indicator in primary): a shape that morphs through the M3 shape sequence
+ * while spinning (keyframes generated by expressive.js). */
+.loading-indicator { display: inline-grid; place-items: center; width: 48px; height: 48px; vertical-align: middle; }
+.loading-indicator > span {
+  width: 38px;
+  height: 38px;
+  background-color: var(--md-sys-color-primary);
+  animation: ex-loading-morph 4.55s infinite, ex-loading-spin 4.55s linear infinite;
+}
+.loading-indicator--sm { width: 1em; height: 1em; }
+.loading-indicator--sm > span { width: .8em; height: .8em; }
+@keyframes ex-loading-spin { to { rotate: 1turn; } }
 
 /* Skeleton placeholders while the first data loads. */
 .skeleton {
   display: inline-block;
   color: transparent !important;
-  border-radius: var(--mdui-shape-corner-extra-small);
+  border-radius: var(--md-sys-shape-corner-extra-small);
   background: linear-gradient(90deg,
-    rgba(var(--mdui-color-on-surface), .06) 0%,
-    rgba(var(--mdui-color-on-surface), .13) 50%,
-    rgba(var(--mdui-color-on-surface), .06) 100%);
+    color-mix(in srgb, currentColor 6%, transparent) 0%,
+    color-mix(in srgb, currentColor 13%, transparent) 50%,
+    color-mix(in srgb, currentColor 6%, transparent) 100%);
   background-size: 200% 100%;
   animation: skeleton-shimmer 1.4s linear infinite;
   user-select: none;
 }
+/* currentColor is transparent on skeletons, so use the card's text colour. */
+.surface-card .skeleton { background-image: linear-gradient(90deg,
+    color-mix(in srgb, var(--card-on) 6%, transparent) 0%,
+    color-mix(in srgb, var(--card-on) 13%, transparent) 50%,
+    color-mix(in srgb, var(--card-on) 6%, transparent) 100%); }
 @keyframes skeleton-shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
 
-.mc-note { margin: 0 0 16px; color: rgb(var(--mdui-color-on-surface-variant)); font-size: 12px; line-height: 1.75; }
+/* ---------- Mastercard, install, footer ---------- */
+
+.mc-note { margin: 0 0 16px; color: var(--card-on-variant); font-size: var(--md-sys-typescale-body-small-size); line-height: 1.75; }
 .mc-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.install-row { display: flex; align-items: center; gap: 16px; }
+.install-icon { flex: none; width: 48px; height: 48px; border-radius: var(--md-sys-shape-corner-medium); }
+.install-text { min-width: 0; }
+.install-text h2 {
+  margin: 0 0 2px;
+  font-size: var(--md-sys-typescale-title-medium-size);
+  font-weight: 650;
+  line-height: var(--md-sys-typescale-title-medium-line-height);
+}
+.install-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+
 .site-footer {
   margin-top: 8px;
   padding: 18px 4px 0;
-  color: rgb(var(--mdui-color-on-surface-variant));
-  font-size: 12px;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-body-small-size);
   line-height: 1.8;
+  letter-spacing: var(--md-sys-typescale-body-small-tracking);
 }
 .site-footer p { margin: 0 0 12px; }
 .site-footer p:last-child { margin-bottom: 0; }
 
+/* ---------- offline banner ----------
+ * Collapses to zero height when online; expands with a spring when the page
+ * loses the network or is showing cached data. */
+.offline-banner {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows var(--md-sys-motion-spring-default-spatial-duration) var(--md-sys-motion-spring-default-spatial),
+    margin-top var(--md-sys-motion-spring-default-spatial-duration) var(--md-sys-motion-spring-default-spatial),
+    opacity var(--md-sys-motion-spring-default-effects-duration) var(--md-sys-motion-spring-default-effects);
+}
+.offline-banner.is-shown { grid-template-rows: 1fr; opacity: 1; margin-top: 16px; }
+.offline-banner-inner { min-height: 0; overflow: hidden; }
+.offline-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: var(--md-sys-shape-corner-full);
+  background-color: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+  font-size: var(--md-sys-typescale-body-medium-size);
+}
+.offline-pill .m3-icon { --m3-icon-opsz: 20; font-size: 20px; }
+
+/* ---------- narrow screens ---------- */
+
 @media (max-width: 560px) {
-  .page { width: min(100% - 24px, var(--page-width)); padding-top: 2px; }
+  .page-width { width: min(100% - 24px, var(--page-width)); }
+  .page { padding-top: 2px; }
   .eyebrow { margin: 16px 0 22px; }
   .surface-card { padding: 16px; }
   .calc-card { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .calc-equals { display: none; }
   .calc-field { order: -1; padding: 0 2px 4px; }
-  .calc-input { order: 0; }
   .calc-result { font-size: 30px; }
   .rate-line { gap: 7px; }
   .chart { height: 205px; }
-}
-/* Very narrow phones (e.g. 320px): keep the full app-bar title beside the theme switch. */
-@media (max-width: 360px) {
-  .app-bar-inner { gap: 8px; }
-  .app-bar-inner mdui-top-app-bar-title { font-size: 18px; }
 }
 
 /* Kept after every rule that uses the `font:` shorthand, which resets
  * font-variant: numbers line up in columns (tabular figures). */
 .rate-line, .calc-result, .chart-readout, .chart-text, .chart-extreme-label, .chart-tooltip { font-variant-numeric: tabular-nums; }
 
-/* ---------- motion ----------
- * Durations and easings come from mdui's motion tokens. Everything here is
- * decorative and is switched off under prefers-reduced-motion (bottom). */
+/* ---------- motion ---------- */
 
-/* Page entrance: title and sections rise in one after another. */
+/* Page entrance: the title and sections rise in one after another, once they
+ * scroll into view (app.js adds .in-view; only with JS, see html.js). */
 .page > .eyebrow,
 .page > section {
-  animation: rise-in var(--mdui-motion-duration-long2) var(--mdui-motion-easing-emphasized-decelerate) both;
+  animation: rise-in var(--md-sys-motion-spring-slow-spatial-duration) var(--md-sys-motion-spring-slow-spatial) both;
 }
 .page > section:nth-of-type(1) { animation-delay: 60ms; }
 .page > section:nth-of-type(2) { animation-delay: 120ms; }
 .page > section:nth-of-type(3) { animation-delay: 180ms; }
 .page > section:nth-of-type(4) { animation-delay: 240ms; }
+html.js .page > section:not(.in-view) { animation-play-state: paused; }
 @keyframes rise-in { from { opacity: 0; transform: translateY(16px); } }
-
-/* Swap button: the icon turns half a circle on every click. */
-#swap-btn::part(icon) { transition: transform var(--mdui-motion-duration-medium4) var(--mdui-motion-easing-emphasized-decelerate); }
-#swap-btn.is-flipped::part(icon) { transform: rotate(180deg); }
-
-/* Chart: the line draws itself from left to right, the area fades in, then
- * the high/low markers pop. */
-.chart-svg.is-drawing .chart-line {
-  stroke-dasharray: 1;
-  animation: line-draw var(--mdui-motion-duration-extra-long2) var(--mdui-motion-easing-emphasized-decelerate) both;
-}
-.chart-svg.is-drawing .chart-area { animation: fade-in var(--mdui-motion-duration-long2) var(--mdui-motion-easing-standard) 300ms both; }
-.chart-svg.is-drawing .chart-extreme-g { animation: marker-pop var(--mdui-motion-duration-medium4) var(--mdui-motion-easing-emphasized-decelerate) 650ms both; }
-.chart-svg.is-drawing .chart-low { animation-delay: 750ms; }
-@keyframes line-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
-@keyframes fade-in { from { opacity: 0; } }
-@keyframes marker-pop { from { opacity: 0; transform: scale(0); } }
 
 /* Theme switch: the default cross-fade is replaced by a circle that grows
  * from the click point (animated from app.js). */
