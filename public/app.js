@@ -476,6 +476,15 @@ let installPrompt = null;
 
 const isStandalone = () => window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
 const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const isSamsungBrowser = () => /SamsungBrowser/i.test(navigator.userAgent);
+
+// Android intent link that opens the current page (with its ?lang=) in
+// Chrome; without Chrome the browser falls back to the same page.
+function chromeIntentUrl() {
+  const url = new URL(location.href);
+  return `intent://${url.host}${url.pathname}${url.search}#Intent;scheme=https;package=com.android.chrome;` +
+    `S.browser_fallback_url=${encodeURIComponent(url.href)};end`;
+}
 
 function installDismissed() {
   try {
@@ -486,6 +495,9 @@ function installDismissed() {
 
 // Chromium browsers fire beforeinstallprompt, so the card gets a real
 // "安装" button; iOS has no such API, so it explains the Share-sheet steps.
+// Samsung Internet: installs trigger a Play Protect "older version of
+// Android" warning, so the card suggests installing from Chrome instead
+// (its own install button is kept only if it offers a prompt).
 function showInstall(mode) {
   if (isStandalone() || installDismissed()) return;
   if (mode === "ios") {
@@ -493,6 +505,12 @@ function showInstall(mode) {
     el("install-dismiss").dataset.i18n = "install.ok";
     el("install-btn").hidden = true;
     applyI18n(el("install-section"));
+  }
+  if (isSamsungBrowser()) {
+    el("install-samsung").hidden = false;
+    el("install-chrome").href = chromeIntentUrl();
+    el("install-chrome").hidden = false;
+    el("install-btn").hidden = !installPrompt;
   }
   el("install-section").hidden = false;
 }
@@ -524,6 +542,7 @@ function initInstall() {
     hideInstall();
   });
   if (isIOS() && !isStandalone()) showInstall("ios");
+  else if (isSamsungBrowser()) showInstall("samsung");
 }
 
 /* ---------- rate board + calculator ---------- */
@@ -1004,6 +1023,7 @@ function initLanguage() {
     }
     if (chart) renderChart();
     if (el("offline-banner").classList.contains("is-shown")) setOffline(true);
+    if (!el("install-chrome").hidden) el("install-chrome").href = chromeIntentUrl(); // ?lang= changed
   });
 }
 
