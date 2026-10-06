@@ -21,7 +21,7 @@ JPY ⇄ CNY 汇率板。单个 Cloudflare Worker + 静态资源，无构建步�
 - 提示信息统一用 `M3.snackbar()`（`app.js` 的 `notify()`）。
 - 分享链接参数 `?amount=…&from=JPY|CNY`（`readShareParams()`），读取后从地址栏移除。
 - 里程表数字的滚动列设了 `user-select: none`，复制时取 `.sr-only` 里的纯文本；不要去掉，否则复制出来是 0–9 一串。
-- `public/vendor/fonts/` — 自托管的字体（Google Sans Flex ASCII 子集、Material Icons）。**不要改用 Google Fonts 等外部 CDN**（大陆访问不稳定），也不要再引入 UI 组件库。
+- `public/vendor/fonts/` — 自托管的字体（Google Sans Flex ASCII 子集、Material Symbols Rounded 子集）。**图标字体只含页面用到的图标，新增图标要按 `vendor/fonts/README.txt` 重新下载子集**，否则显示成英文单词。**不要改用 Google Fonts 等外部 CDN**（大陆访问不稳定），也不要再引入 UI 组件库。
 - `tools/m3-tokens.py` — 从 GitHub androidx/androidx（固定提交）读取 Compose Material 3 的 `tokens/*.kt`，生成 `public/m3/tokens.css`。
 
 ## 界面规范：Material 3（数值以 Jetpack Compose Material 3 源码为准）

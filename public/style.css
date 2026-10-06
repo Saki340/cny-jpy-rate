@@ -13,12 +13,15 @@
   /* ASCII + a few symbols (· − ± ⇄) only. */
   src: url(vendor/fonts/google-sans-flex-ascii.woff2) format("woff2");
 }
+/* Material Symbols Rounded, subset to the icons this page uses (variable:
+ * opsz 20–48, wght 400–700, FILL 0–1). Adding an icon means downloading a
+ * new subset (see vendor/fonts/README.txt). */
 @font-face {
-  font-family: "Material Icons";
+  font-family: "Material Symbols Rounded";
   font-style: normal;
-  font-weight: 400;
+  font-weight: 400 700;
   font-display: block;
-  src: url(vendor/fonts/material-icons.woff2) format("woff2");
+  src: url(vendor/fonts/material-symbols-rounded.woff2) format("woff2");
 }
 
 /* ---------- app colours ----------
@@ -288,7 +291,7 @@ section { margin-bottom: 24px; }
 }
 .change-chip.is-down { --chip: var(--app-color-low); }
 .change-chip.is-flat { --chip: var(--card-on); }
-.change-chip .m3-icon { font-size: 16px; }
+.change-chip .m3-icon { --m3-icon-opsz: 20; font-size: 16px; }
 .change-chip.is-flash { animation: chip-flash 1.6s var(--md-sys-motion-spring-default-effects) 1; }
 @keyframes chip-flash { 0%, 30% { background-color: color-mix(in srgb, var(--chip) 40%, transparent); } }
 .change-label { color: var(--card-on); opacity: .75; }
@@ -549,7 +552,7 @@ section { margin-bottom: 24px; }
   color: var(--md-sys-color-on-secondary-container);
   font-size: var(--md-sys-typescale-body-medium-size);
 }
-.offline-pill .m3-icon { font-size: 20px; }
+.offline-pill .m3-icon { --m3-icon-opsz: 20; font-size: 20px; }
 
 /* ---------- narrow screens ---------- */
 

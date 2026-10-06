@@ -107,7 +107,7 @@ npx wrangler dev
   python tools/m3-tokens.py <androidx 提交 SHA>
   ```
 
-- **静态资源自托管**：`public/vendor/fonts/` 为 Google Sans Flex（可变字体，ASCII 子集）和 Material Icons；中文、日文使用系统字体。
+- **静态资源自托管**：`public/vendor/fonts/` 为 Google Sans Flex（可变字体，ASCII 子集）和 Material Symbols Rounded（可变字体，只含用到的图标，新增图标的方法见该目录的 README.txt）；中文、日文使用系统字体。
 - **日志**：`wrangler.toml` 中开启了 Workers Logs（`[observability]`）。请不要删除这一项，否则部署会把控制台中开启的日志关闭。
 - **预览图**：编辑 `docs/og-image.html` 后，用无头浏览器重新生成三种语言（文件路径需为绝对路径的 `file:///` 网址，才能带上 `?lang=`）：
 
@@ -126,6 +126,7 @@ npx wrangler dev
 - 移除 mdui，全部组件改为自己实现（`public/m3/`），设计规范完全以 Jetpack Compose Material 3 的源码为准。
 - 配色、字号、形状、状态层和动效令牌由脚本从 Compose 源码生成；动效直接使用 Compose 的弹簧参数（刚度、阻尼比），转换为 CSS `linear()` 曲线。
 - 按钮按下时变形为小圆角；连接式按钮组按下的按钮会变宽 15%，并挤压相邻按钮；文本框、菜单、提示、snackbar、顶部应用栏均按 Compose 的组件令牌实现。
+- 图标改为 Material Symbols Rounded（可变字体，选中状态的图标会填充），只保留用到的图标，图标字体从 128 KB 减到 14 KB。
 - 页面不再加载约 380 KB 的组件库脚本和样式。
 
 ### 2026-10-06：多语言
@@ -169,7 +170,7 @@ npx wrangler dev
 
 本项目代码以 [MIT License](LICENSE) 发布。
 
-`public/vendor/` 中的第三方文件沿用各自的许可证：Google Sans Flex 为 SIL Open Font License 1.1，Material Icons 为 Apache License 2.0（见 `public/vendor/fonts/README.txt`）。汇率数据的版权和使用条款归各数据提供方所有。
+`public/vendor/` 中的第三方文件沿用各自的许可证：Google Sans Flex 为 SIL Open Font License 1.1，Material Symbols 为 Apache License 2.0（见 `public/vendor/fonts/README.txt`）。汇率数据的版权和使用条款归各数据提供方所有。
 
 ## 作者
 
@@ -185,7 +186,7 @@ npx wrangler dev
 - [Jetpack Compose Material 3](https://github.com/androidx/androidx/tree/androidx-main/compose/material3)（Apache License 2.0）：本站的设计令牌和组件尺寸取自其源码。
 - [mdui](https://www.mdui.org)（[zdhxiong/mdui](https://github.com/zdhxiong/mdui)，MIT）：本站 2026-10 之前的界面组件库。
 - [Material Design 3 / M3 Expressive](https://m3.material.io)（Google）：本站遵循的设计规范，包括配色、弹簧动效、按钮组、进度指示器与形状库。
-- [Google Sans Flex](https://fonts.google.com/specimen/Google+Sans+Flex)、[Material Icons](https://github.com/google/material-design-icons)：页面使用的字体和图标。
+- [Google Sans Flex](https://fonts.google.com/specimen/Google+Sans+Flex)、[Material Symbols](https://fonts.google.com/icons)：页面使用的字体和图标。
 - [Cloudflare Workers](https://workers.cloudflare.com)：本站的托管与部署平台。
 - [jsDelivr](https://www.jsdelivr.com)、[shields.io](https://shields.io)：备用数据的 CDN 和本文档中的徽章。
 

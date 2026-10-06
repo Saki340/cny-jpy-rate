@@ -25,7 +25,7 @@ const L = {
   m3: link("https://m3.material.io", "Material 3 Expressive"),
   compose: link("https://github.com/androidx/androidx/tree/androidx-main/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens", "Jetpack Compose Material 3"),
   font: link("https://fonts.google.com/specimen/Google+Sans+Flex", "Google Sans Flex"),
-  icons: link("https://github.com/google/material-design-icons", "Material Icons"),
+  icons: link("https://fonts.google.com/icons", "Material Symbols"),
   github: link("https://github.com/Saki340/cny-jpy-rate", "GitHub"),
 };
 
