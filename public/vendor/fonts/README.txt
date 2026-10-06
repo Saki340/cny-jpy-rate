@@ -12,7 +12,7 @@ To add an icon, request a new subset with every icon name (comma-separated,
 in alphabetical order) and save the woff2 linked from the returned CSS. Send
 a desktop Chrome User-Agent, or the CSS will not point to a woff2 file:
 
-  https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..700,0..1,0&display=block&icon_names=add_to_home_screen,arrow_downward,arrow_upward,brightness_auto,check,cloud_off,content_copy,dark_mode,light_mode,open_in_new,remove,share,swap_horiz,sync_alt,translate
+  https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..700,0..1,0&display=block&icon_names=add,add_to_home_screen,arrow_downward,arrow_upward,brightness_auto,check,cloud_off,content_copy,dark_mode,edit,light_mode,open_in_new,remove,share,swap_horiz,sync_alt,translate
 
 https://fonts.google.com/specimen/Google+Sans+Flex
 https://fonts.google.com/icons

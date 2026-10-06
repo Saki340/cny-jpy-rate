@@ -17,6 +17,8 @@ const state = {
   historySource: "frankfurter",
   historyReq: 0,
   calcShown: 0,
+  tax: 0, // Japan tax-free: 0, 10 or 8 (%)
+  year: [], // past year of { date, rate }, for renderRank()
 };
 
 const THEME_KEY = "theme-pref";
@@ -326,6 +328,7 @@ async function refreshNow() {
   if (state.rateDate && state.rateDate !== before) {
     refreshRetries = 0;
     loadHistory(state.historyDays, { refresh: true });
+    loadYear();
     scheduleRefresh();
   } else if (refreshRetries++ < 8) {
     scheduleRefresh(15 * 60000);
@@ -421,7 +424,10 @@ function readShareParams() {
   const from = (params.get("from") || "").toUpperCase();
   if (from === "CNY" || from === "JPY") state.direction = from === "CNY" ? "cny2jpy" : "jpy2cny";
   const amount = Number(params.get("amount"));
-  if (params.has("amount") && Number.isFinite(amount) && amount >= 0 && amount <= 1e12) el("amount").value = String(amount);
+  if (params.has("amount") && Number.isFinite(amount) && amount >= 0 && amount <= 1e12) {
+    el("amount").value = String(amount);
+    readAmount();
+  }
   const clean = new URL(location.href);
   clean.searchParams.delete("amount");
   clean.searchParams.delete("from");
@@ -434,12 +440,13 @@ function readShareParams() {
     line.querySelector(".eq"), el("rate-value"), line.querySelector(`[data-cur="${second}"]`));
   setAmountLabel(first);
   el("calc-result-label").textContent = t("calc.result", { cur: second });
+  renderTax();
 }
 
 function shareLink() {
   const [from] = currentPair();
   const url = new URL("/", location.origin);
-  url.searchParams.set("amount", String(parseFloat(el("amount").value) || 0));
+  url.searchParams.set("amount", String(Number(effectiveAmount().toFixed(2))));
   url.searchParams.set("from", from);
   // Same language as the shared text, so the link preview matches it too.
   if (currentLang !== "zh") url.searchParams.set("lang", currentLang);
@@ -451,7 +458,7 @@ function shareLink() {
 async function shareResult() {
   if (!currentMidRate()) return;
   const [from, to] = currentPair();
-  const amount = parseFloat(el("amount").value) || 0;
+  const amount = effectiveAmount();
   const source = t(state.rateSource === "currency-api" ? "share.sourceFallback" : "share.source");
   const text = t("share.text", { a: fmt(amount, 3), from, b: fmt(state.calcShown, 3), to, date: state.rateDate, source });
   const url = shareLink();
@@ -576,6 +583,8 @@ async function loadRate({ refresh = false } = {}) {
     renderRateLine(false);
     renderChange({ flash: refresh });
     runCalculator(refresh ? 600 : 700);
+    renderRank();
+    renderSaved();
     if (!refresh) scheduleRefresh();
     // The chart may still end a day earlier (it is cached longer); keep the
     // two in step by letting the chart pick up the newer rate.
@@ -674,15 +683,19 @@ function toggleDirection() {
   state.direction = state.direction === "cny2jpy" ? "jpy2cny" : "cny2jpy";
   el("swap-btn").classList.toggle("is-flipped");
   if (typeof morphDecoShape === "function" && motionOK()) morphDecoShape();
+  renderTax();
   if (!state.cnyToJpy) return;
   renderRateLine(true);
   renderChange();
+  renderRank();
   runCalculator(450);
   renderChart({ morph: true });
 }
 
 function runCalculator(duration = 220, { fromInput = false } = {}) {
-  const amount = parseFloat(el("amount").value) || 0;
+  readAmount();
+  const amount = effectiveAmount();
+  renderTax();
   const rate = currentMidRate();
   if (!rate) return;
   const value = amount * rate;
@@ -1007,6 +1020,334 @@ function hideTooltip(instant = false) {
   }
 }
 
+/* ---------- amount field: simple expressions ---------- */
+
+// The amount field accepts simple arithmetic ("1980*3", "85000+12000",
+// "(1200+800)/2"), including full-width characters typed with Chinese or
+// Japanese input methods. Returns the value, or null if it cannot be worked
+// out (or is negative / too large).
+function evaluateAmount(text) {
+  const src = String(text)
+    .replace(/[（）＊＋－．／０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
+    .replace(/[×xX]/g, "*")
+    .replace(/÷/g, "/")
+    .replace(/[−–]/g, "-")
+    .replace(/[,，\s]/g, "");
+  if (!src) return 0;
+  const tokens = src.match(/\d+(?:\.\d*)?|\.\d+|[-+*/()]/g);
+  if (!tokens || tokens.join("") !== src) return null;
+  let pos = 0;
+  const peek = () => tokens[pos];
+  // expr = term (("+" | "-") term)*; term = factor (("*" | "/") factor)*;
+  // factor = ("+" | "-") factor | number | "(" expr ")"
+  const expr = () => {
+    let v = term();
+    while (peek() === "+" || peek() === "-") v = tokens[pos++] === "+" ? v + term() : v - term();
+    return v;
+  };
+  const term = () => {
+    let v = factor();
+    while (peek() === "*" || peek() === "/") v = tokens[pos++] === "*" ? v * factor() : v / factor();
+    return v;
+  };
+  const factor = () => {
+    const tok = tokens[pos++];
+    if (tok === "+") return factor();
+    if (tok === "-") return -factor();
+    if (tok === "(") {
+      const v = expr();
+      if (tokens[pos++] !== ")") throw new Error("unclosed");
+      return v;
+    }
+    if (tok !== undefined && /^[\d.]/.test(tok)) return Number(tok);
+    throw new Error("unexpected");
+  };
+  try {
+    const v = expr();
+    if (pos !== tokens.length || !Number.isFinite(v) || v < 0 || v > 1e12) return null;
+    return v;
+  } catch {
+    return null;
+  }
+}
+
+// True if the text is more than a plain number (worth showing "= result").
+const isExpression = (text) => /\d.*[-+*/×÷xX−＋－＊／()（）]|[()（）]/.test(String(text).trim().replace(/^[-+]/, ""));
+
+// The amount used for converting: the field's value; while an expression is
+// unfinished ("1980*"), the last value that could be worked out.
+let lastAmount = 100;
+
+// Reads the field and updates its supporting text: "= 5,940" under an
+// expression; an error only when `strict` (on Enter / leaving the field),
+// so it does not flash while the visitor is still typing.
+function readAmount({ strict = false } = {}) {
+  const text = el("amount").value;
+  const value = evaluateAmount(text);
+  const field = el("amount-field");
+  const support = el("amount-support");
+  const error = value === null && strict;
+  field.classList.toggle("is-error", error);
+  if (error) support.textContent = t("amount.invalid");
+  else if (value !== null && isExpression(text)) support.textContent = t("amount.preview", { v: fmt(value, 3) });
+  else support.textContent = "";
+  if (value !== null) lastAmount = value;
+  return lastAmount;
+}
+
+// Enter: an expression is replaced by its result.
+function settleAmount() {
+  const input = el("amount");
+  const value = evaluateAmount(input.value);
+  if (value !== null && isExpression(input.value)) {
+    input.value = String(Number(value.toFixed(6)));
+    runCalculator(220, { fromInput: true });
+  }
+  readAmount({ strict: true });
+}
+
+// Inserts an operator from the on-screen keys at the caret.
+function insertIntoAmount(text) {
+  const input = el("amount");
+  const start = input.selectionStart ?? input.value.length;
+  const end = input.selectionEnd ?? start;
+  input.setRangeText(text, start, end, "end");
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+function initAmountField() {
+  const input = el("amount");
+  input.addEventListener("input", () => runCalculator(220, { fromInput: true }));
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); settleAmount(); }
+  });
+  input.addEventListener("change", () => readAmount({ strict: true }));
+  for (const key of document.querySelectorAll(".calc-keys [data-insert]")) {
+    // Keep the focus (and the phone keyboard) in the field.
+    key.addEventListener("pointerdown", (e) => e.preventDefault());
+    key.addEventListener("click", () => insertIntoAmount(key.dataset.insert));
+  }
+  readAmount();
+}
+
+/* ---------- Japan tax-free ---------- */
+
+// Prices in Japan include consumption tax (10%, or 8% on food and drinks);
+// tax-free shopping removes it. Applies only when converting from JPY.
+function effectiveAmount() {
+  const [from] = currentPair();
+  return from === "JPY" && state.tax ? lastAmount / (1 + state.tax / 100) : lastAmount;
+}
+
+function renderTax() {
+  const [from] = currentPair();
+  el("calc-tax").hidden = from !== "JPY";
+  const note = el("calc-tax-note");
+  const on = from === "JPY" && state.tax > 0;
+  note.hidden = !on;
+  if (on) note.textContent = t("tax.applied", { v: fmt(effectiveAmount(), 0), r: state.tax });
+}
+
+function initTax() {
+  const group = M3.buttonGroup(el("tax-group"));
+  group.addEventListener("change", () => {
+    state.tax = Number(group.value);
+    runCalculator(300, { fromInput: true });
+  });
+}
+
+/* ---------- where today's rate stands in the past year ---------- */
+
+// "JPY 换 CNY：比较划算 · 高于近一年 77% 的日子": today's rate ranked among the
+// past year's daily rates, in the direction shown (a higher rate means more
+// of the second currency for the first).
+async function loadYear() {
+  try {
+    const res = await fetch("/api/history?days=365");
+    const data = await res.json();
+    if (Array.isArray(data.points) && data.points.length >= 20) {
+      state.year = data.points;
+      renderRank();
+    }
+  } catch { /* the indicator just stays hidden */ }
+}
+
+function renderRank() {
+  const box = el("rate-rank");
+  if (!state.year.length || !state.cnyToJpy) return;
+  const pts = state.year.slice();
+  if (state.rateDate && pts[pts.length - 1].date < state.rateDate) pts.push({ date: state.rateDate, rate: state.cnyToJpy });
+  const inverse = state.direction === "jpy2cny";
+  const values = pts.map((p) => (inverse ? 1 / p.rate : p.rate));
+  const now = currentMidRate();
+  const pct = Math.round((values.filter((v) => v < now).length / values.length) * 100);
+  const level = pct >= 67 ? "good" : pct >= 34 ? "avg" : "poor";
+  const [from, to] = currentPair();
+  el("rank-verdict").textContent = t("rank.verdict", { from, to, level: t(`rank.${level}`) });
+  el("rank-pct").textContent = t("rank.pct", { p: pct });
+  el("rank-low").textContent = t("rank.low", { v: pointFmt(Math.min(...values)) });
+  el("rank-high").textContent = t("rank.high", { v: pointFmt(Math.max(...values)) });
+  const meter = el("rank-meter");
+  meter.setAttribute("aria-valuenow", String(pct));
+  meter.setAttribute("aria-valuetext", `${el("rank-verdict").textContent}, ${el("rank-pct").textContent}`);
+  if (box.hidden) {
+    box.hidden = false;
+    fadeIn(box, 300);
+    // Grow from 0 on first appearance.
+    requestAnimationFrame(() => requestAnimationFrame(() => box.style.setProperty("--rank-p", pct / 100)));
+  } else {
+    box.style.setProperty("--rank-p", pct / 100);
+  }
+}
+
+/* ---------- saved amounts ---------- */
+
+// Amounts the visitor converts often (rent, tuition, …), kept in this
+// browser only and shown converted at the latest rate on every visit.
+// Tapping one puts it into the converter.
+const SAVED_KEY = "saved-amounts";
+const SAVED_MAX = 10;
+let saved = readSaved();
+let savedDialog = null;
+let editingId = null;
+
+function readSaved() {
+  try {
+    const list = JSON.parse(localStorage.getItem(SAVED_KEY) || "[]");
+    if (!Array.isArray(list)) return [];
+    return list
+      .filter((i) => i && typeof i.id === "string" && Number.isFinite(i.amount) && i.amount > 0 && (i.cur === "JPY" || i.cur === "CNY"))
+      .map((i) => ({ id: i.id, name: String(i.name || "").slice(0, 20), amount: i.amount, cur: i.cur }))
+      .slice(0, SAVED_MAX);
+  } catch {
+    return [];
+  }
+}
+
+function writeSaved() {
+  try { localStorage.setItem(SAVED_KEY, JSON.stringify(saved)); } catch { /* ignore */ }
+}
+
+function convertAmount(amount, from) {
+  if (!state.cnyToJpy) return null;
+  return amount * (from === "CNY" ? state.cnyToJpy : state.jpyToCny);
+}
+
+function renderSaved() {
+  const list = el("saved-list");
+  el("saved-empty").hidden = saved.length > 0;
+  list.hidden = saved.length === 0;
+  list.innerHTML = saved.map((item) => {
+    const to = item.cur === "CNY" ? "JPY" : "CNY";
+    const value = convertAmount(item.amount, item.cur);
+    const amountText = `${fmt(item.amount, 2)} ${item.cur}`;
+    const name = item.name || amountText;
+    const editLabel = esc(t("saved.edit", { name }));
+    return `<li class="m3-list-item saved-item">` +
+      `<button type="button" class="m3-list-item__main m3-interactive" data-use="${esc(item.id)}">` +
+      `<span class="m3-list-item__text"><span class="m3-list-item__headline">${esc(name)}</span>` +
+      (item.name ? `<span class="m3-list-item__supporting">${esc(amountText)}</span>` : "") + `</span>` +
+      `<span class="saved-result"><span class="sr-only">≈</span><span class="saved-result-value">${value === null ? "--" : esc(fmt(value, 2))}</span> <span class="saved-result-cur">${to}</span></span>` +
+      `</button>` +
+      `<button type="button" class="m3-icon-button m3-interactive" data-edit="${esc(item.id)}" aria-label="${editLabel}" data-tooltip="${editLabel}"><span class="m3-icon" aria-hidden="true">edit</span></button>` +
+      `</li>`;
+  }).join("");
+}
+
+function useSaved(item) {
+  if (currentPair()[0] !== item.cur) toggleDirection();
+  el("amount").value = String(item.amount);
+  state.tax = 0;
+  el("tax-group").value = "0";
+  runCalculator(450, { fromInput: true });
+  el("calc-heading").scrollIntoView({ behavior: motionOK() ? "smooth" : "auto", block: "start" });
+}
+
+function setSavedError(message) {
+  el("saved-amount-field").classList.toggle("is-error", Boolean(message));
+  el("saved-amount-support").textContent = message || "";
+}
+
+function openSavedDialog(item = null) {
+  editingId = item ? item.id : null;
+  el("saved-dialog-title").textContent = t(item ? "saved.dialogEdit" : "saved.dialogAdd");
+  el("saved-name").value = item ? item.name : "";
+  el("saved-amount").value = item ? String(item.amount) : (lastAmount > 0 ? String(Number(lastAmount.toFixed(2))) : "");
+  el("saved-cur").value = item ? item.cur : currentPair()[0];
+  el("saved-delete").hidden = !item;
+  setSavedError("");
+  savedDialog.open();
+  el("saved-name").focus();
+}
+
+function submitSaved() {
+  const amount = evaluateAmount(el("saved-amount").value);
+  if (!amount) {
+    setSavedError(t("saved.invalid"));
+    el("saved-amount").focus();
+    return;
+  }
+  const entry = {
+    id: editingId || `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+    name: el("saved-name").value.trim().slice(0, 20),
+    amount: Number(amount.toFixed(6)),
+    cur: el("saved-cur").value,
+  };
+  const at = saved.findIndex((i) => i.id === editingId);
+  if (at >= 0) {
+    saved[at] = entry;
+  } else if (saved.length >= SAVED_MAX) {
+    notify(t("saved.full", { n: SAVED_MAX }));
+    return;
+  } else {
+    saved.push(entry);
+  }
+  writeSaved();
+  renderSaved();
+  savedDialog.close("save");
+  notify(t("saved.done"));
+}
+
+function deleteSaved() {
+  const at = saved.findIndex((i) => i.id === editingId);
+  if (at < 0) return;
+  const [removed] = saved.splice(at, 1);
+  writeSaved();
+  renderSaved();
+  savedDialog.close("delete");
+  M3.snackbar(t("saved.deleted", { name: removed.name || `${fmt(removed.amount, 2)} ${removed.cur}` }), {
+    action: t("saved.undo"),
+    onAction: () => {
+      saved.splice(Math.min(at, saved.length), 0, removed);
+      writeSaved();
+      renderSaved();
+    },
+  });
+}
+
+function initSaved() {
+  savedDialog = M3.dialog(el("saved-dialog"));
+  M3.buttonGroup(el("saved-cur"));
+  el("saved-add").addEventListener("click", () => openSavedDialog());
+  el("saved-list").addEventListener("click", (e) => {
+    const use = e.target.closest("[data-use]");
+    const edit = e.target.closest("[data-edit]");
+    const item = saved.find((i) => i.id === (use || edit)?.dataset[use ? "use" : "edit"]);
+    if (!item) return;
+    if (use) useSaved(item);
+    else openSavedDialog(item);
+  });
+  el("saved-form").addEventListener("submit", (e) => { e.preventDefault(); submitSaved(); });
+  el("saved-cancel").addEventListener("click", () => savedDialog.close());
+  el("saved-delete").addEventListener("click", deleteSaved);
+  el("saved-amount").addEventListener("input", () => setSavedError(""));
+  // Another tab changed the list.
+  window.addEventListener("storage", (e) => {
+    if (e.key === SAVED_KEY) { saved = readSaved(); renderSaved(); }
+  });
+  renderSaved();
+}
+
 /* ---------- language ---------- */
 
 function initLanguage() {
@@ -1020,6 +1361,7 @@ function initLanguage() {
       renderRateLine(false);
       renderChange();
       runCalculator(0);
+      renderRank();
     } else {
       const [from, to] = currentPair();
       setAmountLabel(from);
@@ -1028,6 +1370,9 @@ function initLanguage() {
     if (chart) renderChart();
     if (el("offline-banner").classList.contains("is-shown")) setOffline(true);
     if (!el("install-chrome").hidden) el("install-chrome").href = chromeIntentUrl(); // ?lang= changed
+    readAmount();
+    renderTax();
+    renderSaved();
   });
 }
 
@@ -1039,12 +1384,14 @@ window.addEventListener("DOMContentLoaded", () => {
   initReveal();
   initOffline();
   initInstall();
+  initAmountField();
+  initTax();
+  initSaved();
   readShareParams();
   el("copy-btn").addEventListener("click", copyResult);
   el("share-btn").addEventListener("click", shareResult);
   el("calc-result").addEventListener("click", copyResult);
   el("swap-btn").addEventListener("click", toggleDirection);
-  el("amount").addEventListener("input", () => runCalculator(220, { fromInput: true }));
   const range = M3.buttonGroup(el("range-group"));
   range.addEventListener("change", () => loadHistory(Number(range.value)));
   // Touch: tapping anywhere outside the chart dismisses the tooltip.
@@ -1055,6 +1402,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
   loadRate();
   loadHistory(90);
+  loadYear();
 });
 
 // Offline support and "add to home screen" (see sw.js).

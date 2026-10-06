@@ -107,6 +107,12 @@
         <p class="meta-text" id="updated"><span class="skeleton skeleton-text">数据日期 0000-00-00 · 欧洲央行参考汇率</span></p>
         <div class="rate-line" id="rate-line" aria-live="polite"><span class="rate-one">1</span><span class="cur cur-jpy" data-cur="JPY">JPY</span><span class="eq">=</span><span class="rate-value" id="rate-value"><span class="loading-indicator loading-indicator--sm" role="progressbar" aria-label="加载中" data-i18n-attr="aria-label:loading"><span></span></span></span><span class="cur cur-cny" data-cur="CNY">CNY</span></div>
         <div class="rate-change" id="rate-change" aria-live="polite"></div>
+        <!-- Where today's rate stands among the past year's days (app.js renderRank). -->
+        <div class="rate-rank" id="rate-rank" hidden>
+          <div class="rate-rank-head"><span class="rate-rank-verdict" id="rank-verdict"></span><span class="rate-rank-pct" id="rank-pct"></span></div>
+          <div class="rate-rank-meter" id="rank-meter" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="今日汇率在近一年中的位置" data-i18n-attr="aria-label:rank.label"><span class="rate-rank-active"></span><span class="rate-rank-track"></span></div>
+          <div class="rate-rank-ends" aria-hidden="true"><span id="rank-low"></span><span id="rank-high"></span></div>
+        </div>
         <p class="meta-text" id="board-note" data-i18n="board.note">欧洲央行每个工作日公布一次参考汇率，周末和节假日沿用上一个工作日的数据。</p>
         <div class="card-actions">
           <button type="button" class="m3-button m3-button--filled m3-interactive" id="swap-btn"><span class="m3-icon swap-icon" aria-hidden="true">swap_horiz</span><span data-i18n="swap">切换兑换方向</span></button>
@@ -119,10 +125,21 @@
         <h2 id="calc-heading" data-i18n="section.calc">换算计算器</h2>
       </div>
       <div class="m3-card surface-card calc-card">
-        <div class="m3-text-field calc-input" id="amount-field">
-          <input class="m3-text-field__input" id="amount" type="number" inputmode="decimal" value="100" min="0" step="any" placeholder=" " autocomplete="off" />
-          <label class="m3-text-field__label" for="amount">金额（JPY）</label>
-          <fieldset class="m3-text-field__outline" aria-hidden="true"><legend><span>金额（JPY）</span></legend></fieldset>
+        <div class="calc-input">
+          <!-- Accepts simple expressions ("1980*3"); see evaluateAmount() in app.js. -->
+          <div class="m3-text-field" id="amount-field">
+            <input class="m3-text-field__input" id="amount" type="text" inputmode="decimal" enterkeyhint="done" value="100" placeholder=" " autocomplete="off" spellcheck="false" aria-describedby="amount-support" />
+            <label class="m3-text-field__label" for="amount">金额（JPY）</label>
+            <fieldset class="m3-text-field__outline" aria-hidden="true"><legend><span>金额（JPY）</span></legend></fieldset>
+            <span class="m3-text-field__supporting" id="amount-support" aria-live="polite"></span>
+          </div>
+          <!-- Phone number pads have no operator keys; these appear while typing on touch screens. -->
+          <div class="calc-keys" role="toolbar" aria-label="运算符" data-i18n-attr="aria-label:keys.label">
+            <button type="button" class="m3-chip m3-interactive" tabindex="-1" data-insert="+">+</button>
+            <button type="button" class="m3-chip m3-interactive" tabindex="-1" data-insert="−">−</button>
+            <button type="button" class="m3-chip m3-interactive" tabindex="-1" data-insert="×">×</button>
+            <button type="button" class="m3-chip m3-interactive" tabindex="-1" data-insert="÷">÷</button>
+          </div>
         </div>
         <div class="calc-equals" aria-hidden="true">＝</div>
         <div class="calc-field">
@@ -132,8 +149,33 @@
             <button type="button" class="m3-icon-button m3-interactive" id="copy-btn" aria-label="复制换算结果" data-tooltip="复制换算结果" data-i18n-attr="aria-label:calc.copy;data-tooltip:calc.copy"><span class="m3-icon" aria-hidden="true">content_copy</span></button>
             <button type="button" class="m3-icon-button m3-interactive" id="share-btn" aria-label="分享换算结果" data-tooltip="分享换算结果" data-i18n-attr="aria-label:calc.share;data-tooltip:calc.share"><span class="m3-icon" aria-hidden="true">share</span></button>
           </div>
+          <p class="calc-tax-note" id="calc-tax-note" hidden></p>
+        </div>
+        <!-- Japanese consumption tax, only when converting from JPY. -->
+        <div class="calc-tax" id="calc-tax">
+          <div class="calc-tax-row">
+            <span class="calc-tax-label" id="tax-label" data-i18n="tax.label">日本购物免税</span>
+            <div class="m3-button-group calc-tax-group" id="tax-group" role="radiogroup" data-value="0" aria-labelledby="tax-label">
+              <button type="button" class="m3-toggle m3-interactive" role="radio" data-value="0" data-i18n="tax.none">不免税</button>
+              <button type="button" class="m3-toggle m3-interactive" role="radio" data-value="10" data-i18n="tax.free10">10%</button>
+              <button type="button" class="m3-toggle m3-interactive" role="radio" data-value="8" data-i18n="tax.free8">8% 食品</button>
+            </div>
+          </div>
+          <p class="calc-tax-hint" data-i18n="tax.note">免税购物时不付消费税：一般商品 10%，食品饮料 8%（酒类和堂食除外）。能否免税以店铺规定为准。</p>
         </div>
       </div>
+    </section>
+
+    <section aria-labelledby="saved-heading">
+      <div class="section-heading">
+        <h2 id="saved-heading" data-i18n="section.saved">常用金额</h2>
+        <button type="button" class="m3-button m3-button--text m3-interactive section-action" id="saved-add"><span class="m3-icon" aria-hidden="true">add</span><span data-i18n="saved.add">添加</span></button>
+      </div>
+      <!-- Saved amounts (localStorage), converted at the latest rate on every visit. -->
+      <div class="m3-card surface-card saved-empty" id="saved-empty">
+        <p class="meta-text" data-i18n="saved.empty">把每月房租、学费等常用金额保存在这里，每次打开网站都会按最新汇率算好。数据只保存在这台设备的浏览器里。</p>
+      </div>
+      <ul class="m3-list saved-list" id="saved-list" aria-labelledby="saved-heading" hidden></ul>
     </section>
 
     <section aria-labelledby="chart-heading">
@@ -209,6 +251,33 @@
       <p class="disclaimer" data-i18n="footer.disclaimer">本网站仅提供汇率查询与换算参考功能，不构成任何金融、投资或法律建议，也不对因使用本站数据造成的任何损失承担责任；具体交易请以银行、支付机构或万事达官方渠道公布的汇率为准。</p>
     </footer>
   </main>
+<dialog class="m3-dialog" id="saved-dialog" aria-labelledby="saved-dialog-title">
+  <form class="m3-dialog__container" id="saved-form" novalidate>
+    <h2 class="m3-dialog__headline" id="saved-dialog-title">添加常用金额</h2>
+    <div class="m3-dialog__content">
+      <div class="m3-text-field" id="saved-name-field">
+        <input class="m3-text-field__input" id="saved-name" type="text" maxlength="20" placeholder=" " autocomplete="off" />
+        <label class="m3-text-field__label" for="saved-name" data-i18n="saved.name">名称（可选，如：房租）</label>
+        <fieldset class="m3-text-field__outline" aria-hidden="true"><legend><span data-i18n="saved.name">名称（可选，如：房租）</span></legend></fieldset>
+      </div>
+      <div class="m3-text-field" id="saved-amount-field">
+        <input class="m3-text-field__input" id="saved-amount" type="text" inputmode="decimal" placeholder=" " autocomplete="off" spellcheck="false" aria-describedby="saved-amount-support" />
+        <label class="m3-text-field__label" for="saved-amount" data-i18n="saved.amount">金额</label>
+        <fieldset class="m3-text-field__outline" aria-hidden="true"><legend><span data-i18n="saved.amount">金额</span></legend></fieldset>
+        <span class="m3-text-field__supporting" id="saved-amount-support" aria-live="polite"></span>
+      </div>
+      <div class="m3-button-group saved-cur-group" id="saved-cur" role="radiogroup" data-value="JPY" aria-label="币种" data-i18n-attr="aria-label:saved.currency">
+        <button type="button" class="m3-toggle m3-interactive" role="radio" data-value="JPY">JPY</button>
+        <button type="button" class="m3-toggle m3-interactive" role="radio" data-value="CNY">CNY</button>
+      </div>
+    </div>
+    <div class="m3-dialog__actions">
+      <button type="button" class="m3-button m3-button--text m3-interactive m3-dialog__start" id="saved-delete" data-i18n="saved.delete" hidden>删除</button>
+      <button type="button" class="m3-button m3-button--text m3-interactive" id="saved-cancel" data-i18n="saved.cancel">取消</button>
+      <button type="submit" class="m3-button m3-button--text m3-interactive" id="saved-save" data-i18n="saved.save">保存</button>
+    </div>
+  </form>
+</dialog>
 <script src="m3/m3.js"></script>
 <script src="i18n.js"></script>
 <script src="expressive.js"></script>

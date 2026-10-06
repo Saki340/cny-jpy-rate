@@ -1,6 +1,9 @@
 // Behaviour for the Material 3 components in m3.css (no dependencies).
 //
-//   M3.snackbar(message)               show a snackbar (4 s, like SnackbarDuration.Short)
+//   M3.snackbar(message, { action, onAction })
+//                                      show a snackbar (4 s, like SnackbarDuration.Short;
+//                                      10 s with an action, like SnackbarDuration.Long)
+//   M3.dialog(el)                      modal dialog on <dialog>; returns { open, close }
 //   M3.buttonGroup(el)                 connected button group as a radio group;
 //                                      el.value, "change" event
 //   M3.menu(trigger, menu)             menu anchored to a button; menu.value,
@@ -53,7 +56,7 @@ const M3 = (() => {
   /* ---------- snackbar ---------- */
 
   let snackTimer = 0;
-  function snackbar(message) {
+  function snackbar(message, { action, onAction } = {}) {
     let bar = document.querySelector(".m3-snackbar");
     if (!bar) {
       bar = document.createElement("div");
@@ -62,12 +65,43 @@ const M3 = (() => {
       bar.setAttribute("aria-live", "polite");
       document.body.append(bar);
     }
-    bar.textContent = message;
+    const hide = () => bar.classList.remove("is-visible");
+    bar.replaceChildren();
+    const text = document.createElement("span");
+    text.className = "m3-snackbar__text";
+    text.textContent = message;
+    bar.append(text);
+    if (action) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "m3-snackbar__action m3-interactive";
+      button.textContent = action;
+      button.addEventListener("click", () => { hide(); onAction?.(); });
+      bar.append(button);
+    }
     bar.classList.remove("is-visible");
     void bar.offsetWidth;
     bar.classList.add("is-visible");
     clearTimeout(snackTimer);
-    snackTimer = setTimeout(() => bar.classList.remove("is-visible"), 4000);
+    snackTimer = setTimeout(hide, action ? 10000 : 4000);
+  }
+
+  /* ---------- dialog ----------
+   * Native <dialog> (modal, focus trap, Escape) with the M3 open/close
+   * motion; clicking the scrim closes it. */
+
+  function dialog(d) {
+    const close = (value = "") => {
+      if (!d.open || d.classList.contains("is-closing")) return;
+      const done = () => { d.classList.remove("is-closing"); d.close(value); };
+      if (reduced()) { done(); return; }
+      d.classList.add("is-closing");
+      d.addEventListener("animationend", done, { once: true });
+      setTimeout(() => { if (d.open) done(); }, 400);
+    };
+    d.addEventListener("cancel", (e) => { e.preventDefault(); close(); });
+    d.addEventListener("click", (e) => { if (e.target === d) close(); });
+    return { open: () => { hideTooltip(); d.showModal(); }, close };
   }
 
   /* ---------- connected button group (single selection) ---------- */
@@ -250,5 +284,5 @@ const M3 = (() => {
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initAppBars);
   else initAppBars();
 
-  return { snackbar, buttonGroup, menu, setLabel, hideTooltip };
+  return { snackbar, dialog, buttonGroup, menu, setLabel, hideTooltip };
 })();

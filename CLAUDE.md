@@ -19,7 +19,9 @@ JPY ⇄ CNY 汇率板。单个 Cloudflare Worker + 静态资源，无构建步�
 - `public/manifest.webmanifest` / `sw.js` / `icons/` — 可安装（添加到主屏幕）与离线；`sw.js` 全部网络优先，失败才用缓存，不要改成缓存优先。缓存返回的响应带 `X-From-Cache: 1`，页面据此显示离线提示（`noteCached()`）。
 - 安装卡片（`initInstall()`）：Chromium 用 `beforeinstallprompt` 显示「安装」按钮，iOS 显示「分享 → 添加到主屏幕」说明；安卓上 Chrome 以外的浏览器（按 `userAgentData.brands` 判断）另显示「建议用 Chrome 安装」的提示和「用 Chrome 打开」（intent 链接）：三星浏览器等自己打包的 APK 可能被 Play Protect 警告「为旧版 Android 设计」，Chrome 由 Google 生成的 WebAPK 不会。已安装或 30 天内点过「不用了」则不显示。
 - 提示信息统一用 `M3.snackbar()`（`app.js` 的 `notify()`）。
-- 分享链接参数 `?amount=…&from=JPY|CNY`（`readShareParams()`），读取后从地址栏移除。
+- 分享链接参数 `?amount=…&from=JPY|CNY`（`readShareParams()`），读取后从地址栏移除；manifest 的 shortcuts 也用 `?from=`。
+- 金额框是文本框，支持简单算式（`evaluateAmount()`，手写递归下降解析，不要用 `eval`）；换算一律用 `effectiveAmount()`（已按日本免税扣除消费税），不要直接读输入框。
+- 常用金额（`saved-amounts`，localStorage，最多 10 个）；今日汇率在近一年的位置（`renderRank()`，单独取 365 天数据）。
 - 里程表数字的滚动列设了 `user-select: none`，复制时取 `.sr-only` 里的纯文本；不要去掉，否则复制出来是 0–9 一串。
 - `public/vendor/fonts/` — 自托管的字体（Google Sans Flex ASCII 子集、Material Symbols Rounded 子集）。**图标字体只含页面用到的图标，新增图标要按 `vendor/fonts/README.txt` 重新下载子集**，否则显示成英文单词。**不要改用 Google Fonts 等外部 CDN**（大陆访问不稳定），也不要再引入 UI 组件库。
 - `tools/m3-tokens.py` — 从 GitHub androidx/androidx（固定提交）读取 Compose Material 3 的 `tokens/*.kt`，生成 `public/m3/tokens.css`。
@@ -31,7 +33,7 @@ JPY ⇄ CNY 汇率板。单个 Cloudflare Worker + 静态资源，无构建步�
 - 组件写在 `m3/m3.css` / `m3.js`，每个组件的注释写明对应的 Compose 令牌对象；新增组件也照此办理。状态层用 `.m3-interactive`（悬停 8%、聚焦 10%、按下 10% + 涟漪），聚焦环 3px secondary。
 - 动效：Compose 的弹簧（刚度 / 阻尼比）被采样成 CSS `linear()`，即 `--md-sys-motion-spring-{fast,default,slow}-{spatial,effects}` 及 `-duration`。位置/尺寸/形状用 spatial（有回弹），颜色/透明度用 effects（无回弹）；**跟随指针移动的东西（悬浮提示、光标）用 `--follow`（不回弹）**。JS 里的 Web Animations 用 `app.js` 的 `SPRING_*`（从 CSS 令牌读取），自绘动画用 `springCurve()`。
 - 主题：`<html>` 上的 `theme-light|dark|auto`，用户选择存在 `localStorage`（键 `theme-pref`）。
-- 组件 API：`M3.buttonGroup(el)`（单选按钮组，`value` + `change` 事件，方向键切换）、`M3.menu(trigger, panel)`（`value` + `change`）、`M3.setLabel(field, text)`（文本框标签）、`M3.snackbar(text)`；提示框写 `data-tooltip`（触屏和菜单打开时不显示）。
+- 组件 API：`M3.buttonGroup(el)`（单选按钮组，`value` + `change` 事件，方向键切换）、`M3.menu(trigger, panel)`（`value` + `change`）、`M3.setLabel(field, text)`（文本框标签）、`M3.snackbar(text, { action, onAction })`、`M3.dialog(el)`（`<dialog>`，返回 `{ open, close }`）；列表用 `.m3-list` / `.m3-list-item`（Expressive 分段列表），小标签用 `.m3-chip`；文本框错误态加 `.is-error`，说明文字放 `.m3-text-field__supporting`；提示框写 `data-tooltip`（触屏和菜单打开时不显示）。
 
 ## 页面细节
 

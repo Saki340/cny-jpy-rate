@@ -13,5 +13,23 @@
     { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
     { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Convert CNY to JPY",
+      "short_name": "CNY → JPY",
+      "url": "/?from=CNY",
+      "icons": [
+        { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }
+      ]
+    },
+    {
+      "name": "Convert JPY to CNY",
+      "short_name": "JPY → CNY",
+      "url": "/?from=JPY",
+      "icons": [
+        { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }
+      ]
+    }
   ]
 }

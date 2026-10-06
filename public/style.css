@@ -296,10 +296,95 @@ section { margin-bottom: 24px; }
 @keyframes chip-flash { 0%, 30% { background-color: color-mix(in srgb, var(--chip) 40%, transparent); } }
 .change-label { color: var(--card-on); opacity: .75; }
 
+/* Where today's rate stands among the past year's days: a determinate
+ * linear indicator (LinearProgressIndicatorTokens: active primary, 4dp gap
+ * to the track, 4dp stop at the end; the thick 8dp Expressive variant). The
+ * track is the card's own colour, since secondary-container would vanish on
+ * the primary-container card. */
+@property --rank-p {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+.rate-rank {
+  --rank-p: 0;
+  margin: 0 0 14px;
+  color: var(--card-on);
+  transition: --rank-p var(--md-sys-motion-spring-slow-spatial-duration) var(--md-sys-motion-spring-slow-spatial);
+}
+.rate-rank-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 12px;
+}
+.rate-rank-verdict {
+  font-size: var(--md-sys-typescale-title-small-size);
+  font-weight: 650;
+  line-height: var(--md-sys-typescale-title-small-line-height);
+}
+.rate-rank-pct { color: var(--card-on-variant); font-size: var(--md-sys-typescale-body-small-size); }
+.rate-rank-meter { display: flex; gap: 4px; height: 8px; margin: 8px 0 4px; }
+.rate-rank-active {
+  flex: 0 0 auto;
+  width: max(8px, calc(var(--rank-p) * (100% - 12px)));
+  border-radius: 4px;
+  background-color: var(--md-sys-color-primary);
+}
+.rate-rank-track {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 8px;
+  border-radius: 4px;
+  background-color: color-mix(in srgb, var(--card-on) 16%, transparent);
+}
+.rate-rank-track::after { /* stop indicator */
+  content: "";
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: var(--md-sys-color-primary);
+}
+.rate-rank-ends {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--card-on-variant);
+  font-size: 11px;
+  line-height: 16px;
+}
+
 /* ---------- converter ---------- */
 
 .calc-card { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 18px; }
-.calc-input { width: 100%; }
+.calc-input { width: 100%; min-width: 0; }
+/* Operator keys for expressions: only on touch screens, while typing. */
+.calc-keys { display: none; gap: 8px; margin-top: 8px; }
+@media (pointer: coarse) {
+  .calc-input:focus-within .calc-keys { display: flex; }
+}
+.calc-keys .m3-chip {
+  flex: 1 1 0;
+  padding: 0;
+  border-color: color-mix(in srgb, var(--card-on) 30%, transparent);
+  color: var(--card-on);
+  font-size: 18px;
+}
+.calc-tax-note { margin: -4px 0 0; color: var(--card-on-variant); font-size: var(--md-sys-typescale-body-small-size); }
+
+/* Japan tax-free row, across the whole converter card. */
+.calc-tax { grid-column: 1 / -1; }
+.calc-tax[hidden] { display: none; }
+.calc-tax-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; }
+.calc-tax-label { color: var(--card-on); font-size: var(--md-sys-typescale-title-small-size); font-weight: 600; }
+.calc-tax-group { flex: 1 1 260px; max-width: 420px; }
+.calc-tax-group .m3-toggle { padding: 0 8px; }
+.calc-tax-group .m3-toggle:not([aria-checked="true"]) { background-color: color-mix(in srgb, var(--md-sys-color-surface-container-lowest) 70%, transparent); }
+.calc-tax-hint { margin: 8px 0 0; color: var(--card-on-variant); font-size: var(--md-sys-typescale-body-small-size); line-height: 1.6; }
 .calc-equals { color: var(--card-on-variant); font-size: 24px; }
 .calc-field { min-width: 0; display: flex; flex-direction: column; gap: 10px; }
 .result-label { color: var(--card-on-variant); font-size: 13px; }
@@ -500,6 +585,30 @@ section { margin-bottom: 24px; }
     color-mix(in srgb, var(--card-on) 13%, transparent) 50%,
     color-mix(in srgb, var(--card-on) 6%, transparent) 100%); }
 @keyframes skeleton-shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+
+/* ---------- saved amounts ---------- */
+
+.section-heading .section-action { margin: -8px 0 -8px auto; }
+.saved-empty { --card-bg: var(--md-sys-color-surface-container); }
+/* Segmented list on the page background (surface): items take the
+ * surface-container colour, as Compose's surface items would on a
+ * surface-container screen. */
+.saved-list { --list-item-bg: var(--md-sys-color-surface-container); }
+.saved-list[hidden], .saved-empty[hidden] { display: none; }
+.saved-result {
+  flex: none;
+  color: var(--md-sys-color-on-surface);
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+.saved-result-value {
+  font-size: var(--md-sys-typescale-title-medium-size);
+  font-weight: 600;
+  font-variation-settings: "ROND" 100;
+}
+.saved-result-cur { color: var(--md-sys-color-on-surface-variant); font-size: var(--md-sys-typescale-body-small-size); }
+.saved-cur-group { width: 100%; }
+.saved-cur-group .m3-toggle:not([aria-checked="true"]) { background-color: var(--md-sys-color-surface-container-highest); }
 
 /* ---------- Mastercard, install, footer ---------- */
 
