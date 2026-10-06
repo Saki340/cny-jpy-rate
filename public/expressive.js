@@ -1,4 +1,4 @@
-// Material 3 Expressive helpers (experimental branch). Loaded before app.js.
+// Material 3 Expressive shapes. Loaded before app.js.
 //
 // Shapes: the M3 shape library (cookie, sunny, soft burst, pill, ...) is
 // approximated with polar functions sampled at the same number of points, so
@@ -53,10 +53,11 @@ const ExpressiveShapes = (() => {
 
   // Loading indicator: soft burst -> cookie 9 -> pentagon -> pill -> sunny ->
   // cookie 4 -> oval -> back, each step on the "expressive default spatial"
-  // spring curve (overshoot included), as in the M3 loading indicator.
+  // spring (overshoot included), as in Compose's LoadingIndicator.
   function installLoadingKeyframes() {
     const order = ["softBurst", "cookie9", "pentagon", "pill", "sunny", "cookie4", "oval", "softBurst"];
-    const easing = "cubic-bezier(0.38, 1.21, 0.22, 1.00)";
+    const easing = getComputedStyle(document.documentElement)
+      .getPropertyValue("--md-sys-motion-spring-default-spatial").trim() || "ease";
     const frames = order.map((name, i) => {
       const pct = ((i / (order.length - 1)) * 100).toFixed(3);
       return `${pct}% { clip-path: ${polygon(name, i * 51)}; animation-timing-function: ${easing}; }`;
@@ -81,25 +82,6 @@ function morphDecoShape() {
   if (!node) return;
   decoIndex = (decoIndex + 1) % decoShapes.length;
   node.style.setProperty("--shape", ExpressiveShapes.polygon(...decoShapes[decoIndex]));
-}
-
-// Spring curves for JS-driven animation (chart morph), evaluated like CSS
-// cubic-bezier(): solve x(t) = progress for t, return y(t).
-function cubicBezier(x1, y1, x2, y2) {
-  const coord = (t, a, b) => 3 * a * t * (1 - t) ** 2 + 3 * b * t * t * (1 - t) + t ** 3;
-  const slope = (t, a, b) => 3 * a * (1 - t) ** 2 + 6 * (b - a) * t * (1 - t) + 3 * (1 - b) * t * t;
-  return (p) => {
-    if (p <= 0) return 0;
-    if (p >= 1) return 1;
-    let t = p;
-    for (let i = 0; i < 8; i++) {
-      const err = coord(t, x1, x2) - p;
-      const d = slope(t, x1, x2);
-      if (Math.abs(err) < 1e-5 || Math.abs(d) < 1e-6) break;
-      t -= err / d;
-    }
-    return coord(Math.min(Math.max(t, 0), 1), y1, y2);
-  };
 }
 
 (function initExpressive() {
