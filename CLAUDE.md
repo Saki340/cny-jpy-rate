@@ -68,6 +68,7 @@ JPY ⇄ CNY 汇率板。单个 Cloudflare Worker + 静态资源，无构建步�
 - 页面开着时会在欧洲央行下次公布后自动刷新（`scheduleRefresh()`）；走势图若比今日汇率旧一天，前端会把今日汇率补为最后一点（`chartPoints()`），保证两处一致。
 - 改了 `docs/og-image.html` 后用 README 中的 Edge 命令重新生成三张预览图（`og-image.png`、`og-image-ja.png`、`og-image-en.png`）。
 - 提交说明用中文。
+- README 有三种语言：`README.md`（简体中文，主版本）、`README.ja.md`、`README.en.md`，顶部互相链接；改功能列表、更新日志等内容时三份同步更新。
 
 ## 多语言（`public/i18n.js`）
 

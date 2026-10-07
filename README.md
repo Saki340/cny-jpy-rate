@@ -1,5 +1,7 @@
 # 人民币 ⇄ 日元 汇率板
 
+**简体中文** | [日本語](README.ja.md) | [English](README.en.md)
+
 [![汇率板：日元人民币汇率](public/og-image.png)](https://rate.anontokyo.vip)
 
 一个简洁的日元 / 人民币汇率查询网站：每日中间汇率、金额换算、30 天至 1 年的历史走势。
@@ -66,7 +68,9 @@ cny-jpy-rate/
 │   └── m3-tokens.py     # 从 Compose Material 3 源码生成 tokens.css
 ├── CLAUDE.md            # 给 Claude Code 的项目说明
 ├── LICENSE
-└── README.md
+├── README.md            # 说明文档（简体中文）
+├── README.ja.md         # 日本語
+└── README.en.md         # English
 ```
 
 ## 本地开发
