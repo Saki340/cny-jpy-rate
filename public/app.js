@@ -193,7 +193,7 @@ function setAmountLabel(cur) {
 let chartInView = false;
 
 function initReveal() {
-  const sections = document.querySelectorAll(".page > section");
+  const sections = document.querySelectorAll(".page section");
   if (!("IntersectionObserver" in window)) {
     sections.forEach((s) => s.classList.add("in-view"));
     chartInView = true;
@@ -214,6 +214,37 @@ function initReveal() {
   }, { threshold: 0.35 });
   chartWatch.observe(el("history-chart"));
 }
+
+/* ---------- panes (wide screens) ---------- */
+
+// From the expanded width class (840dp) the tools (converter, saved amounts,
+// Mastercard, install) move into the supporting pane next to today's rate and
+// the chart; below it they go back between them, in reading order. Moving the
+// elements (rather than reordering them with CSS) keeps the keyboard and
+// screen-reader order the same as what is on screen.
+const wideQuery = window.matchMedia("(min-width: 840px)");
+
+function layoutPanes() {
+  const main = el("pane-main");
+  const side = el("pane-side");
+  if (!main || !side) return;
+  const focused = document.activeElement;
+  const tools = [...document.querySelectorAll(".sec-side")];
+  if (wideQuery.matches) {
+    side.append(...tools);
+  } else {
+    // calc and saved between the rate and the chart; the rest after the chart
+    main.querySelector(".sec-rate").after(...tools.filter((s) => s.matches(".sec-calc, .sec-saved")));
+    main.querySelector(".sec-chart").after(...tools.filter((s) => !s.matches(".sec-calc, .sec-saved")));
+  }
+  if (focused && focused !== document.activeElement && document.contains(focused)) focused.focus({ preventScroll: true });
+}
+
+layoutPanes(); // before the first paint (this script runs at the end of <body>)
+wideQuery.addEventListener("change", () => {
+  layoutPanes();
+  if (chart) renderChart();
+});
 
 /* ---------- theme ---------- */
 
@@ -857,7 +888,7 @@ function renderChart({ draw = false, morph = false } = {}) {
   // so longer ranges label the axis with YYYY-MM instead.
   const spanDays = (Date.parse(pts[n - 1].date) - Date.parse(pts[0].date)) / 86400000;
   const tickLabel = (date) => (spanDays > 200 ? date.slice(0, 7) : date.slice(5));
-  const ticks = Math.min(5, n);
+  const ticks = Math.min(W >= 640 ? 7 : 5, n); // more dates on a wide chart
   for (let k = 0; k < ticks; k++) {
     const i = Math.round((k * (n - 1)) / (ticks - 1));
     const anchor = k === 0 ? "start" : k === ticks - 1 ? "end" : "middle";

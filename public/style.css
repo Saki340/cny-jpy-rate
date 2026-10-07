@@ -113,9 +113,16 @@ button, input, output { font-family: inherit; }
 
 /* ---------- layout ---------- */
 
-.page-width { width: min(100% - 32px, var(--page-width)); margin-inline: auto; }
-/* The bar is full width; its row lines the title up with the page content. */
-.m3-top-app-bar__row { max-width: calc(var(--page-width) + 32px); margin-inline: auto; }
+/* Window margins: 16dp on phones (12 on very narrow ones), 24dp from the
+ * medium width class (600dp) up, as in Compose's adaptive scaffolds. */
+:root { --gutter: 16px; }
+.page-width { width: min(100% - 2 * var(--gutter), var(--page-width)); margin-inline: auto; }
+/* The bar is full width; its row lines the title up with the page content
+ * (the title sits 16px into the row). */
+.m3-top-app-bar__row {
+  width: min(100%, 100% - 2 * (var(--gutter) - 16px), var(--page-width) + 32px);
+  margin-inline: auto;
+}
 .page { padding: 4px 0 max(40px, env(safe-area-inset-bottom)); }
 .eyebrow {
   display: flex;
@@ -705,10 +712,38 @@ section { margin-bottom: 24px; }
 }
 .offline-pill .m3-icon { --m3-icon-opsz: 20; font-size: 20px; }
 
+/* ---------- wide screens: main pane + supporting pane ----------
+ * Compose adaptive (WindowSizeClass, PaneScaffoldDirective): from the
+ * medium width class (600dp) the margins are 24dp; from expanded (840dp)
+ * two panes with a 24dp spacer and a 360dp supporting pane; from large
+ * (1200dp) the supporting pane is 412dp. Content is capped at 1280px. */
+@media (min-width: 600px) {
+  :root { --gutter: 24px; }
+}
+@media (min-width: 840px) {
+  :root { --page-width: 1280px; }
+  .panes {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: 24px;
+    align-items: start;
+  }
+  .chart { height: 300px; }
+  /* The converter in the narrow pane: stacked, like on phones. */
+  .pane-side .calc-card { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .pane-side .calc-equals { display: none; }
+  .pane-side .calc-field { order: -1; padding: 0 2px 4px; }
+  .pane-side .calc-result { font-size: 30px; }
+}
+@media (min-width: 1200px) {
+  .panes { grid-template-columns: minmax(0, 1fr) 412px; }
+  .chart { height: 320px; }
+}
+
 /* ---------- narrow screens ---------- */
 
 @media (max-width: 560px) {
-  .page-width { width: min(100% - 24px, var(--page-width)); }
+  :root { --gutter: 12px; }
   .page { padding-top: 2px; }
   .eyebrow { margin: 16px 0 22px; }
   .surface-card { padding: 16px; }
@@ -729,14 +764,14 @@ section { margin-bottom: 24px; }
 /* Page entrance: the title and sections rise in one after another, once they
  * scroll into view (app.js adds .in-view; only with JS, see html.js). */
 .page > .eyebrow,
-.page > section {
+.page section {
   animation: rise-in var(--md-sys-motion-spring-slow-spatial-duration) var(--md-sys-motion-spring-slow-spatial) both;
 }
-.page > section:nth-of-type(1) { animation-delay: 60ms; }
-.page > section:nth-of-type(2) { animation-delay: 120ms; }
-.page > section:nth-of-type(3) { animation-delay: 180ms; }
-.page > section:nth-of-type(4) { animation-delay: 240ms; }
-html.js .page > section:not(.in-view) { animation-play-state: paused; }
+.pane > section:nth-of-type(1) { animation-delay: 60ms; }
+.pane > section:nth-of-type(2) { animation-delay: 120ms; }
+.pane > section:nth-of-type(3) { animation-delay: 180ms; }
+.pane > section:nth-of-type(4) { animation-delay: 240ms; }
+html.js .page section:not(.in-view) { animation-play-state: paused; }
 @keyframes rise-in { from { opacity: 0; transform: translateY(16px); } }
 
 /* Theme switch: the default cross-fade is replaced by a circle that grows
