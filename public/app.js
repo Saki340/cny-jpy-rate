@@ -264,13 +264,13 @@ function saveThemePref(mode) {
 // theme-color metas (light / dark, for the first paint) get the same value.
 let barScrolled = null;
 function syncThemeColor() {
-  barScrolled = window.scrollY > 0;
+  barScrolled = el("app-bar").classList.contains("is-scrolled");
   const token = barScrolled ? "--md-sys-color-surface-container" : "--md-sys-color-surface";
   const color = getComputedStyle(document.documentElement).getPropertyValue(token).trim();
   if (color) document.querySelectorAll('meta[name="theme-color"]').forEach((meta) => { meta.content = color; });
 }
 window.addEventListener("scroll", () => {
-  if ((window.scrollY > 0) !== barScrolled) syncThemeColor();
+  if (el("app-bar").classList.contains("is-scrolled") !== barScrolled) syncThemeColor();
 }, { passive: true });
 
 function applyTheme(mode) {
@@ -753,6 +753,7 @@ function runCalculator(duration = 220, { fromInput = false } = {}) {
   node.querySelector(".sr-only").textContent = fmt(value, 3);
   if (fromInput && value !== state.calcShown) pop(node, 1.03);
   state.calcShown = value;
+  renderDate(); // "rate on a date" converts the same amount
 }
 
 /* ---------- history chart ---------- */
@@ -834,6 +835,26 @@ function resample(points, count, x0, x1) {
   return out;
 }
 
+// 30-day moving average (calendar days) for each day shown, in the direction
+// shown; uses the year of data when loaded, so short ranges get a full window.
+// null where fewer than 30 days of data lie behind a day. Statistics only.
+function movingAverage(pts, inverse, days = 30) {
+  const byDate = new Map();
+  for (const p of [...state.year, ...state.history, ...pts]) byDate.set(p.date, p.rate);
+  const src = [...byDate].sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([date, rate]) => ({ t: Date.parse(date), v: inverse ? 1 / rate : rate }));
+  const span = days * 86400000;
+  const out = [];
+  let lo = 0, hi = 0, sum = 0;
+  for (const p of pts) {
+    const time = Date.parse(p.date);
+    while (hi < src.length && src[hi].t <= time) sum += src[hi++].v;
+    while (lo < hi && src[lo].t <= time - span) sum -= src[lo++].v;
+    out.push(src.length && time - span >= src[0].t && hi > lo ? sum / (hi - lo) : null);
+  }
+  return out;
+}
+
 const pathOf = (points) => points.map(([px, py], i) => `${i ? "L" : "M"}${px.toFixed(1)} ${py.toFixed(1)}`).join(" ");
 
 // Chart geometry and the hover handlers live here between renders.
@@ -851,6 +872,8 @@ function renderChart({ draw = false, morph = false } = {}) {
   const [from, to] = currentPair();
   const inverse = state.direction === "jpy2cny";
   const values = pts.map((p) => (inverse ? 1 / p.rate : p.rate));
+  const ma = movingAverage(pts, inverse);
+  const maValues = ma.filter((v) => v !== null);
 
   // The SVG is drawn 1:1 in CSS pixels so the HTML tooltip can be placed
   // with the same coordinates.
@@ -859,8 +882,8 @@ function renderChart({ draw = false, morph = false } = {}) {
   const padL = 58, padR = 12, padT = 20, padB = 24;
   const n = pts.length;
 
-  const min = Math.min(...values);
-  const max = Math.max(...values);
+  const min = Math.min(...values, ...maValues);
+  const max = Math.max(...values, ...maValues);
   const span = max - min || max * 0.01 || 1;
   const yMin = min - span * 0.12;
   const yMax = max + span * 0.16;
@@ -925,6 +948,7 @@ function renderChart({ draw = false, morph = false } = {}) {
     `<g class="chart-axes">${axes}</g>` +
     `<path class="chart-area" d="${areaOf(linePts)}"/>` +
     `<path class="chart-line" d="${line}" pathLength="1"/>` +
+    (maValues.length > 1 ? `<path class="chart-ma" d="${pathOf(ma.map((v, i) => (v === null ? null : [x(i), y(v)])).filter(Boolean))}"/>` : "") +
     marker(maxIdx, "chart-high", esc(t("chart.high")), -9) +
     marker(minIdx, "chart-low", esc(t("chart.low")), 17) +
     latestMark +
@@ -940,10 +964,11 @@ function renderChart({ draw = false, morph = false } = {}) {
     ` · <span class="${change >= 0 ? "is-up" : "is-down"}">${esc(t("readout.range"))} ${pctFmt(change)}</span>${fallbackNote}`;
   el("readout-high").textContent = `${t("readout.high")} ${pts[maxIdx].date} · ${pointFmt(values[maxIdx])}`;
   el("readout-low").textContent = `${t("readout.low")} ${pts[minIdx].date} · ${pointFmt(values[minIdx])}`;
+  el("readout-ma").textContent = ma[n - 1] === null ? "" : t("readout.ma", { v: pointFmt(ma[n - 1]) });
   if (draw || canMorph) el("chart-readout").querySelectorAll(".chart-readout-line").forEach((node) => fadeIn(node, 300));
 
   const svg = wrap.querySelector("svg");
-  chart = { svg, pts, values, x, y, W, H, n, from, to, step, padL, linePts, active: -1 };
+  chart = { svg, pts, values, ma, x, y, W, H, n, from, to, step, padL, linePts, active: -1 };
   hideTooltip(true);
 
   if (canMorph) morphChart(svg, prev, linePts, areaOf, padL, W - padR);
@@ -1032,6 +1057,7 @@ function showPoint(i) {
   el("tooltip-date").textContent = `${pts[i].date} ${weekday(pts[i].date)}`;
   el("tooltip-value").textContent = `1 ${from} = ${pointFmt(values[i])} ${to}`;
   el("tooltip-diff").textContent = i === n - 1 ? t("tooltip.latest") : t("tooltip.toLatest", { pct: pctFmt(diff) });
+  el("tooltip-ma").textContent = chart.ma[i] === null ? "" : t("tooltip.ma", { v: pointFmt(chart.ma[i]) });
 
   const tw = tip.offsetWidth;
   const th = tip.offsetHeight;
@@ -1189,6 +1215,7 @@ async function loadYear() {
     if (Array.isArray(data.points) && data.points.length >= 20) {
       state.year = data.points;
       renderRank();
+      if (chart) renderChart(); // the 30-day average needs the days before the range
     }
   } catch { /* the indicator just stays hidden */ }
 }
@@ -1367,6 +1394,155 @@ function initSaved() {
   renderSaved();
 }
 
+/* ---------- rate on a date ---------- */
+
+// Any day since 2005 (/api/day): that day's rate in the current direction and
+// the converter's amount converted at it. A weekend or holiday gets the
+// previous working day, and the note says so.
+const dayCache = new Map();
+let dayReq = 0;
+let dayData = null;
+
+function localToday() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function setDateMessage(text) {
+  el("date-result").innerHTML = `<p class="meta-text">${esc(text)}</p>`;
+}
+
+async function lookupDate() {
+  const value = el("date-input").value;
+  const token = ++dayReq;
+  if (!value) {
+    dayData = null;
+    renderDate();
+    return;
+  }
+  if (!dayCache.has(value)) {
+    setDateMessage(t("date.loading"));
+    try {
+      const res = await fetch(`/api/day?date=${encodeURIComponent(value)}`);
+      const data = await res.json();
+      if (!res.ok || data.error || !(data.cny_to_jpy > 0)) throw new Error(data.error || "failed");
+      dayCache.set(value, data);
+    } catch {
+      if (token === dayReq) setDateMessage(t("date.error"));
+      return;
+    }
+  }
+  if (token !== dayReq) return;
+  dayData = dayCache.get(value);
+  renderDate();
+  fadeIn(el("date-result"), 250);
+}
+
+function renderDate() {
+  const box = el("date-result");
+  if (!box) return;
+  if (!dayData) {
+    box.innerHTML = `<p class="meta-text">${esc(t("date.hint"))}</p>`;
+    return;
+  }
+  const [from, to] = currentPair();
+  const rate = state.direction === "cny2jpy" ? dayData.cny_to_jpy : 1 / dayData.cny_to_jpy;
+  const day = { date: dayData.date, weekday: weekday(dayData.date) };
+  let note = dayData.date !== dayData.requested
+    ? t("date.fallback", { asked: dayData.requested, ...day })
+    : t("date.on", day);
+  if (dayData.source === "currency-api") note += ` · ${t("readout.fallback")} currency-api`;
+  box.innerHTML =
+    `<p class="date-rate">1 ${from} = ${esc(pointFmt(rate))} ${to}</p>` +
+    `<p class="date-amount">${esc(t("calc.pair", { a: fmt(lastAmount, 3), from, b: fmt(lastAmount * rate, 3), to }))}</p>` +
+    `<p class="meta-text">${esc(note)}</p>`;
+}
+
+function initDateLookup() {
+  const input = el("date-input");
+  input.max = localToday();
+  input.addEventListener("change", lookupDate);
+}
+
+/* ---------- keyboard shortcuts ---------- */
+
+// For wide screens with a keyboard: / amount, S swap, 1–4 chart range,
+// D date lookup, ? the list. Ignored while typing, with modifier keys, or
+// while a dialog or the menu is open.
+let shortcutsDialog = null;
+
+function initShortcuts() {
+  const help = M3.dialog(el("shortcuts-dialog"));
+  shortcutsDialog = help;
+  el("shortcuts-close").addEventListener("click", () => help.close());
+  const ranges = { 1: "30", 2: "90", 3: "180", 4: "365" };
+  document.addEventListener("keydown", (e) => {
+    if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
+    if (e.target.closest?.("input, textarea, select, [contenteditable]")) return;
+    if (document.querySelector("dialog[open]") || el("lang-menu").open || el("more-menu").open) return;
+    if (e.key === "/") {
+      e.preventDefault();
+      el("amount").focus();
+      el("amount").select();
+    } else if (e.key === "s" || e.key === "S") {
+      toggleDirection();
+    } else if (e.key in ranges) {
+      const group = el("range-group");
+      if (group.value !== ranges[e.key]) {
+        group.value = ranges[e.key];
+        loadHistory(Number(ranges[e.key]));
+      }
+    } else if (e.key === "d" || e.key === "D") {
+      e.preventDefault();
+      el("date-input").focus();
+    } else if (e.key === "?") {
+      e.preventDefault();
+      help.open();
+    }
+  });
+}
+
+/* ---------- pull to refresh ---------- */
+
+// Phones: pull down at the top of the page to fetch the rate and the charts
+// again. Rates change once per working day, so "already up to date" is the
+// usual answer.
+async function pullRefresh() {
+  const before = state.rateDate;
+  await Promise.all([
+    loadRate(state.cnyToJpy ? { refresh: true } : undefined),
+    loadHistory(state.historyDays, { refresh: Boolean(chart) }),
+    loadYear(),
+  ]);
+  if (!navigator.onLine) notify(t("offline.plain"));
+  else if (state.rateDate && state.rateDate === before) notify(t("refresh.latest", { date: state.rateDate }));
+}
+
+/* ---------- more menu ---------- */
+
+// Keyboard shortcuts (devices with a mouse), add to home screen (when the
+// install card applies), data sources and notes (the footer), GitHub.
+const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)");
+
+function initMoreMenu() {
+  const menu = M3.menu(el("more-btn"), el("more-menu"));
+  menu.addEventListener("beforeopen", () => {
+    el("more-shortcuts").hidden = !finePointer.matches;
+    el("more-install").hidden = el("install-section").hidden;
+  });
+  menu.addEventListener("select", (e) => {
+    const item = e.detail;
+    if (item.id === "more-shortcuts") {
+      shortcutsDialog.open();
+    } else if (item.id === "more-install") {
+      if (installPrompt) el("install-btn").click();
+      else el("install-section").scrollIntoView({ behavior: motionOK() ? "smooth" : "auto", block: "center" });
+    } else if (item.id === "more-about") {
+      el("site-footer").scrollIntoView({ behavior: motionOK() ? "smooth" : "auto", block: "start" });
+    }
+  });
+}
+
 /* ---------- language ---------- */
 
 function initLanguage() {
@@ -1391,6 +1567,7 @@ function initLanguage() {
     if (!el("install-chrome").hidden) el("install-chrome").href = chromeIntentUrl(); // ?lang= changed
     readAmount();
     renderSaved();
+    renderDate();
   });
 }
 
@@ -1404,6 +1581,10 @@ window.addEventListener("DOMContentLoaded", () => {
   initInstall();
   initAmountField();
   initSaved();
+  initDateLookup();
+  initShortcuts();
+  initMoreMenu();
+  M3.pullToRefresh(pullRefresh);
   readShareParams();
   placeCurrencies();
   el("copy-btn").addEventListener("click", copyResult);

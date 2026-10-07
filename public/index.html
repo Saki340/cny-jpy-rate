@@ -59,16 +59,18 @@
 <!-- Fonts are self-hosted (public/vendor) so the page does not depend on
      Google Fonts, which is slow or blocked in mainland China. Components are
      this site's own Material 3 implementation (public/m3), no UI library. -->
-<link rel="preload" href="vendor/fonts/google-sans-flex-ascii.woff2?v=2" as="font" type="font/woff2" crossorigin />
-<link rel="preload" href="vendor/fonts/material-symbols-rounded.woff2?v=2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="vendor/fonts/google-sans-flex-ascii.woff2?v=3" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="vendor/fonts/material-symbols-rounded.woff2?v=3" as="font" type="font/woff2" crossorigin />
 <link rel="stylesheet" href="m3/tokens.css" />
 <link rel="stylesheet" href="m3/m3.css" />
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <!-- M3 Expressive medium flexible top app bar: the large title and subtitle
+       (below the bar) scroll away while the small title fades in (m3.js). -->
   <header class="m3-top-app-bar" id="app-bar">
     <div class="m3-top-app-bar__row">
-      <div class="m3-top-app-bar__title" data-i18n="app.title">日元人民币汇率</div>
+      <div class="m3-top-app-bar__title" id="app-bar-title" aria-hidden="true">JPY<span class="m3-icon m3-top-app-bar__arrow" data-icon="sync_alt" aria-hidden="true"></span>CNY</div>
       <div class="m3-top-app-bar__actions">
         <!-- Theme: connected button group. Labels on wide screens, icons on narrow
              ones (the label stays for screen readers). -->
@@ -79,9 +81,14 @@
         </div>
         <!-- Language: icon button + Expressive menu (two groups). -->
         <button type="button" class="m3-icon-button m3-interactive" id="lang-btn" aria-controls="lang-menu" aria-label="语言" data-tooltip="语言" data-i18n-attr="aria-label:lang.label;data-tooltip:lang.label"><span class="m3-icon" data-icon="translate" aria-hidden="true"></span></button>
+        <button type="button" class="m3-icon-button m3-interactive" id="more-btn" aria-controls="more-menu" aria-label="更多选项" data-tooltip="更多选项" data-i18n-attr="aria-label:more.label;data-tooltip:more.label"><span class="m3-icon" data-icon="more_vert" aria-hidden="true"></span></button>
       </div>
     </div>
   </header>
+  <div class="m3-top-app-bar__expanded page-width" id="app-bar-expanded">
+    <h1 class="m3-top-app-bar__headline">JPY<span class="m3-icon m3-top-app-bar__arrow" data-icon="sync_alt" aria-hidden="true"></span><span class="sr-only">⇄</span>CNY</h1>
+    <p class="m3-top-app-bar__subtitle" data-i18n="app.title">日元人民币汇率</p>
+  </div>
   <div class="m3-menu" id="lang-menu" role="menu" aria-labelledby="lang-btn" data-value="auto">
     <div class="m3-menu__group" role="group">
       <button type="button" class="m3-menu__item m3-interactive" role="menuitemradio" data-value="auto"><span class="m3-icon m3-menu__check" data-icon="check" aria-hidden="true"></span><span data-i18n="lang.auto">跟随设备语言</span></button>
@@ -93,12 +100,23 @@
     </div>
   </div>
 
+  <!-- More: actions (menuitem). Items that do not apply are hidden, and so is a group left empty. -->
+  <div class="m3-menu" id="more-menu" role="menu" aria-labelledby="more-btn">
+    <div class="m3-menu__group" role="group">
+      <button type="button" class="m3-menu__item m3-interactive" role="menuitem" id="more-shortcuts"><span class="m3-icon" data-icon="keyboard" aria-hidden="true"></span><span data-i18n="more.shortcuts">键盘快捷键</span></button>
+      <button type="button" class="m3-menu__item m3-interactive" role="menuitem" id="more-install" hidden><span class="m3-icon" data-icon="add_to_home_screen" aria-hidden="true"></span><span data-i18n="more.install">添加到桌面</span></button>
+    </div>
+    <div class="m3-menu__group" role="group">
+      <button type="button" class="m3-menu__item m3-interactive" role="menuitem" id="more-about"><span class="m3-icon" data-icon="info" aria-hidden="true"></span><span data-i18n="more.about">数据来源与说明</span></button>
+      <a class="m3-menu__item m3-interactive" role="menuitem" id="more-github" href="https://github.com/Saki340/cny-jpy-rate" target="_blank" rel="noopener noreferrer"><span class="m3-icon" data-icon="code" aria-hidden="true"></span><span data-i18n="more.github">GitHub 源码</span></a>
+    </div>
+  </div>
+
   <main class="page page-width">
     <!-- Shown while offline; app.js fills in which day's data is on screen. -->
     <div class="offline-banner" id="offline-banner" role="status" aria-live="polite">
       <div class="offline-banner-inner"><div class="offline-pill"><span class="m3-icon" data-icon="cloud_off" aria-hidden="true"></span><span id="offline-text"></span></div></div>
     </div>
-    <h1 class="eyebrow">JPY<span class="m3-icon eyebrow-arrow" data-icon="sync_alt" aria-hidden="true"></span><span class="sr-only">⇄</span>CNY</h1>
 
     <!-- Two panes on wide screens (M3 supporting-pane layout, app.js layoutPanes()):
          today's rate and the chart in the main pane, the tools in the supporting
@@ -188,6 +206,7 @@
           <span class="chart-readout-line" id="readout-latest"><span class="skeleton skeleton-text">最新 0000-00-00 · 0.000000 · 区间 +0.00%</span></span>
           <span class="chart-readout-line chart-readout-hi" id="readout-high"><span class="skeleton skeleton-text">最高 0000-00-00 · 0.000000</span></span>
           <span class="chart-readout-line chart-readout-lo" id="readout-low"><span class="skeleton skeleton-text">最低 0000-00-00 · 0.000000</span></span>
+          <span class="chart-readout-line chart-readout-ma" id="readout-ma"></span>
         </div>
         <div class="chart-wrap">
           <div class="wavy-progress" role="progressbar" aria-label="加载中" data-i18n-attr="aria-label:loading"><div class="wavy-progress__bar"></div></div>
@@ -196,7 +215,25 @@
             <span class="chart-tooltip-date" id="tooltip-date"></span>
             <span class="chart-tooltip-value" id="tooltip-value"></span>
             <span class="chart-tooltip-diff" id="tooltip-diff"></span>
+            <span class="chart-tooltip-ma" id="tooltip-ma"></span>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="sec-side sec-date" aria-labelledby="date-heading">
+      <div class="section-heading">
+        <h2 id="date-heading" data-i18n="section.date">按日期查汇率</h2>
+      </div>
+      <!-- The rate on any day since 2005 (/api/day), and the converter's amount on that day. -->
+      <div class="m3-card surface-card date-card">
+        <div class="m3-text-field" id="date-field">
+          <input class="m3-text-field__input" id="date-input" type="date" min="2005-01-03" />
+          <label class="m3-text-field__label" for="date-input" data-i18n="date.label">日期</label>
+          <fieldset class="m3-text-field__outline" aria-hidden="true"><legend><span data-i18n="date.label">日期</span></legend></fieldset>
+        </div>
+        <div class="date-result" id="date-result" aria-live="polite">
+          <p class="meta-text" id="date-hint" data-i18n="date.hint">选择一个日期，查看当天的欧洲央行参考汇率，以及计算器中的金额在当天折合多少。可查 2005 年以来的任意一天。</p>
         </div>
       </div>
     </section>
@@ -242,7 +279,7 @@
     </div>
 
     <hr class="m3-divider" />
-    <footer class="site-footer">
+    <footer class="site-footer" id="site-footer">
       <p data-i18n-html="footer.data">今日汇率、换算和历史走势使用同一数据源：欧洲央行（ECB）参考汇率，经 <a href="https://frankfurter.dev" target="_blank" rel="noopener noreferrer">Frankfurter</a> 提供，每个工作日更新一次。Frankfurter 暂时不可用时，改用社区维护的 <a href="https://github.com/fawazahmed0/exchange-api" target="_blank" rel="noopener noreferrer">currency-api</a> 作为备用，页面会注明。以上均为中间汇率，不含任何机构的实际买卖点差。</p>
       <p data-i18n-html="footer.ui">界面按 Material Design 3 Expressive 规范实现。</p>
       <p data-i18n-html="footer.github">本项目开源于 <a href="https://github.com/Saki340/cny-jpy-rate" target="_blank" rel="noopener noreferrer">GitHub</a>，欢迎提交 Issue 反馈问题。</p>
@@ -276,6 +313,21 @@
       <button type="submit" class="m3-button m3-button--text m3-interactive" id="saved-save" data-i18n="saved.save">保存</button>
     </div>
   </form>
+</dialog>
+<dialog class="m3-dialog" id="shortcuts-dialog" aria-labelledby="shortcuts-title">
+  <div class="m3-dialog__container">
+    <h2 class="m3-dialog__headline" id="shortcuts-title" data-i18n="shortcut.title">键盘快捷键</h2>
+    <dl class="m3-dialog__content shortcut-list">
+      <div><dt><kbd>/</kbd></dt><dd data-i18n="shortcut.amount">输入金额</dd></div>
+      <div><dt><kbd>S</kbd></dt><dd data-i18n="shortcut.swap">切换兑换方向</dd></div>
+      <div><dt><kbd>1</kbd>–<kbd>4</kbd></dt><dd data-i18n="shortcut.range">切换走势范围（30 天 / 90 天 / 180 天 / 1 年）</dd></div>
+      <div><dt><kbd>D</kbd></dt><dd data-i18n="shortcut.date">按日期查汇率</dd></div>
+      <div><dt><kbd>?</kbd></dt><dd data-i18n="shortcut.help">显示快捷键说明</dd></div>
+    </dl>
+    <div class="m3-dialog__actions">
+      <button type="button" class="m3-button m3-button--text m3-interactive" id="shortcuts-close" data-i18n="shortcut.close">知道了</button>
+    </div>
+  </div>
 </dialog>
 <script src="m3/m3.js"></script>
 <script src="i18n.js"></script>

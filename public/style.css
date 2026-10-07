@@ -11,7 +11,7 @@
   font-weight: 300 800;
   font-display: swap;
   /* ASCII + a few symbols (· − ± ⇄) only. */
-  src: url(vendor/fonts/google-sans-flex-ascii.woff2?v=2) format("woff2");
+  src: url(vendor/fonts/google-sans-flex-ascii.woff2?v=3) format("woff2");
 }
 /* Material Symbols Rounded, subset to the icons this page uses (variable:
  * opsz 20–48, wght 400–700, FILL 0–1). Adding an icon means downloading a
@@ -23,7 +23,7 @@
   font-style: normal;
   font-weight: 400 700;
   font-display: block;
-  src: url(vendor/fonts/material-symbols-rounded.woff2?v=2) format("woff2");
+  src: url(vendor/fonts/material-symbols-rounded.woff2?v=3) format("woff2");
 }
 
 /* ---------- app colours ----------
@@ -108,7 +108,7 @@ button, input, output { font-family: inherit; }
 
 /* Display text and the key numbers use the fully rounded end of Google Sans
  * Flex's roundness axis, like Google's own Expressive type. */
-.eyebrow, .section-heading h2, .rate-line, .calc-result, .chart-tooltip-value, .install-text h2,
+.m3-top-app-bar__headline, .section-heading h2, .rate-line, .calc-result, .chart-tooltip-value, .install-text h2,
 .m3-top-app-bar__title { font-variation-settings: "ROND" 100; }
 
 /* ---------- layout ---------- */
@@ -124,27 +124,14 @@ button, input, output { font-family: inherit; }
   margin-inline: auto;
 }
 .page { padding: 4px 0 max(40px, env(safe-area-inset-bottom)); }
-.eyebrow {
-  display: flex;
-  align-items: center;
-  margin: 20px 0 28px;
-  color: var(--md-sys-color-primary);
-  font-size: clamp(30px, 7vw, 40px);
-  font-weight: 760;
-  line-height: 1.25;
-  letter-spacing: .01em;
-}
-/* The ⇄ in the headline is an icon: the font has no such glyph, and each
- * language's fallback font drew it at a different weight. */
-.eyebrow-arrow { font-size: .9em; margin: 0 .22em; }
 section { margin-bottom: 24px; }
 .section-heading { display: flex; align-items: center; gap: 12px; margin: 0 2px 12px; }
 .section-heading h2 {
   margin: 0;
   font-size: var(--md-sys-typescale-title-medium-emphasized-size);
-  font-weight: 650;
+  font-weight: var(--md-sys-typescale-title-medium-emphasized-weight);
   line-height: var(--md-sys-typescale-title-medium-emphasized-line-height);
-  letter-spacing: 0;
+  letter-spacing: var(--md-sys-typescale-title-medium-emphasized-tracking);
 }
 
 /* ---------- app bar contents ---------- */
@@ -169,6 +156,7 @@ section { margin-bottom: 24px; }
 @media (max-width: 360px) {
   .theme-group .m3-toggle { padding: 0 7px; }
   .m3-top-app-bar__title { padding-inline: 8px 0; font-size: 18px; }
+  .m3-top-app-bar__actions { gap: 0; }
 }
 
 /* ---------- cards ----------
@@ -219,10 +207,12 @@ section { margin-bottom: 24px; }
   gap: clamp(7px, 2vw, 14px);
   margin: 18px 0 14px;
   color: var(--card-on);
-  font-size: clamp(28px, 6.8vw, 48px);
-  font-weight: 560;
-  line-height: 1.2;
-  letter-spacing: -.02em;
+  /* M3 emphasized roles by window width: headline-medium on phones,
+   * display-small from 600dp, display-medium from 1200dp (see below). */
+  font-size: var(--md-sys-typescale-headline-medium-emphasized-size);
+  font-weight: var(--md-sys-typescale-headline-medium-emphasized-weight);
+  line-height: var(--md-sys-typescale-headline-medium-emphasized-line-height);
+  letter-spacing: var(--md-sys-typescale-headline-medium-emphasized-tracking);
   overflow-wrap: anywhere;
 }
 .rate-line .cur, .rate-line .rate-value { display: inline-block; }
@@ -296,7 +286,10 @@ section { margin-bottom: 24px; }
   border-radius: var(--md-sys-shape-corner-full);
   background-color: color-mix(in srgb, var(--chip) 14%, transparent);
   color: var(--chip);
-  font-weight: 650;
+  font-size: var(--md-sys-typescale-label-medium-emphasized-size);
+  font-weight: var(--md-sys-typescale-label-medium-emphasized-weight);
+  line-height: var(--md-sys-typescale-label-medium-emphasized-line-height);
+  letter-spacing: var(--md-sys-typescale-label-medium-emphasized-tracking);
   font-variant-numeric: tabular-nums;
 }
 .change-chip.is-down { --chip: var(--app-color-low); }
@@ -330,9 +323,10 @@ section { margin-bottom: 24px; }
   gap: 2px 12px;
 }
 .rate-rank-verdict {
-  font-size: var(--md-sys-typescale-title-small-size);
-  font-weight: 650;
-  line-height: var(--md-sys-typescale-title-small-line-height);
+  font-size: var(--md-sys-typescale-title-small-emphasized-size);
+  font-weight: var(--md-sys-typescale-title-small-emphasized-weight);
+  line-height: var(--md-sys-typescale-title-small-emphasized-line-height);
+  letter-spacing: var(--md-sys-typescale-title-small-emphasized-tracking);
 }
 .rate-rank-pct { color: var(--card-on-variant); font-size: var(--md-sys-typescale-body-small-size); }
 .rate-rank-meter { display: flex; gap: 4px; height: 8px; margin: 8px 0 4px; }
@@ -395,16 +389,34 @@ section { margin-bottom: 24px; }
   flex: 1 1 auto;
   min-width: 0;
   color: var(--card-on);
-  font-size: clamp(23px, 4.5vw, 34px);
-  font-weight: 560;
-  line-height: 1.2;
-  letter-spacing: -.01em;
+  /* headline-large-emphasized; headline-medium on phones and in the narrow pane. */
+  font-size: var(--md-sys-typescale-headline-large-emphasized-size);
+  font-weight: var(--md-sys-typescale-headline-large-emphasized-weight);
+  line-height: var(--md-sys-typescale-headline-large-emphasized-line-height);
+  letter-spacing: var(--md-sys-typescale-headline-large-emphasized-tracking);
   overflow-wrap: anywhere;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
 
-/* ---------- history chart ---------- */
+/* ---------- rate on a date ---------- */
+
+.date-card { --card-bg: var(--md-sys-color-tertiary-container); --card-on: var(--md-sys-color-on-tertiary-container); }
+.date-card .m3-text-field__input { color-scheme: inherit; }
+.date-result { margin-top: 12px; color: var(--card-on); }
+.date-result p { margin: 0; }
+.date-rate {
+  font-size: var(--md-sys-typescale-title-large-emphasized-size);
+  font-weight: var(--md-sys-typescale-title-large-emphasized-weight);
+  line-height: var(--md-sys-typescale-title-large-emphasized-line-height);
+  letter-spacing: var(--md-sys-typescale-title-large-emphasized-tracking);
+  font-variation-settings: "ROND" 100;
+  font-variant-numeric: tabular-nums;
+}
+.date-amount { margin-top: 2px !important; font-size: var(--md-sys-typescale-body-large-size); font-variant-numeric: tabular-nums; }
+.date-result .meta-text { margin-top: 6px; }
+
+/* ---------- history chart ---------- *//* ---------- history chart ---------- */
 
 .range-tabs { width: 100%; margin-bottom: 14px; }
 /* On the coloured chart card, unselected buttons use the lightest (darkest in
@@ -422,7 +434,21 @@ section { margin-bottom: 24px; }
 .chart-readout-line { display: block; min-height: 1.55em; }
 .chart-readout-hi, .is-up { color: var(--app-color-high); }
 .chart-readout-lo, .is-down { color: var(--app-color-low); }
-.chart-wrap { position: relative; }
+/* 30-day moving average: a dashed tertiary line (statistics only). */
+.chart-readout-ma { display: flex; align-items: center; gap: 6px; }
+.chart-readout-ma:empty { display: none; }
+.chart-readout-ma::before {
+  content: "";
+  width: 16px;
+  border-top: 2px dashed var(--md-sys-color-tertiary);
+}
+.chart-ma { fill: none; stroke: var(--md-sys-color-tertiary); stroke-width: 1.5; stroke-dasharray: 5 4; stroke-linecap: round; opacity: .9; }
+.chart-svg.is-drawing .chart-ma { animation: fade-in 500ms var(--md-sys-motion-spring-default-effects) 900ms both; }
+.chart-svg.is-morphing .chart-ma { opacity: 0; }
+.chart-svg.is-settled .chart-ma { animation: fade-in 300ms var(--md-sys-motion-spring-default-effects) both; }
+.chart-tooltip-ma:empty { display: none; }
+.chart-tooltip-ma { opacity: .8; }
+.chart-wrap { position: relative; overflow-x: clip; } /* a hidden tooltip left at a wide position must not widen the page */
 .chart { width: 100%; height: 220px; transition: opacity var(--md-sys-motion-spring-default-effects-duration) var(--md-sys-motion-spring-default-effects); }
 .chart-wrap.is-loading .chart:not(.is-loading) { opacity: .4; transition-delay: 200ms; }
 .chart.is-loading { display: grid; place-items: center; }
@@ -477,7 +503,12 @@ section { margin-bottom: 24px; }
 }
 .chart-tooltip.is-visible { opacity: 1; scale: 1; }
 .chart-tooltip-date, .chart-tooltip-diff { opacity: .8; }
-.chart-tooltip-value { font-size: 13px; font-weight: 600; }
+.chart-tooltip-value {
+  font-size: var(--md-sys-typescale-body-medium-emphasized-size);
+  font-weight: var(--md-sys-typescale-body-medium-emphasized-weight);
+  line-height: var(--md-sys-typescale-body-medium-emphasized-line-height);
+  letter-spacing: var(--md-sys-typescale-body-medium-emphasized-tracking);
+}
 
 /* Latest point, with a slow "breathing" ring. */
 .chart-latest { fill: var(--md-sys-color-primary); stroke: var(--card-bg); stroke-width: 2; }
@@ -605,13 +636,32 @@ section { margin-bottom: 24px; }
   font-variant-numeric: tabular-nums;
 }
 .saved-result-value {
-  font-size: var(--md-sys-typescale-title-medium-size);
-  font-weight: 600;
+  font-size: var(--md-sys-typescale-title-medium-emphasized-size);
+  font-weight: var(--md-sys-typescale-title-medium-emphasized-weight);
+  line-height: var(--md-sys-typescale-title-medium-emphasized-line-height);
+  letter-spacing: var(--md-sys-typescale-title-medium-emphasized-tracking);
   font-variation-settings: "ROND" 100;
 }
 .saved-result-cur { color: var(--md-sys-color-on-surface-variant); font-size: var(--md-sys-typescale-body-small-size); }
 .saved-cur-group { width: 100%; }
 .saved-cur-group .m3-toggle:not([aria-checked="true"]) { background-color: var(--md-sys-color-surface-container-highest); }
+
+/* ---------- keyboard shortcuts dialog ---------- */
+
+.shortcut-list { display: flex; flex-direction: column; gap: 10px; margin: 0; }
+.shortcut-list > div { display: flex; align-items: baseline; gap: 16px; }
+.shortcut-list dt { flex: 0 0 72px; color: var(--md-sys-color-on-surface); }
+.shortcut-list dd { margin: 0; }
+kbd {
+  display: inline-block;
+  min-width: 24px;
+  padding: 1px 6px;
+  border-radius: var(--md-sys-shape-corner-extra-small);
+  background-color: var(--md-sys-color-surface-container-highest);
+  color: var(--md-sys-color-on-surface);
+  font: 600 13px/20px var(--font);
+  text-align: center;
+}
 
 /* ---------- Mastercard, install, footer ---------- */
 
@@ -623,9 +673,10 @@ section { margin-bottom: 24px; }
 .install-text { min-width: 0; }
 .install-text h2 {
   margin: 0 0 2px;
-  font-size: var(--md-sys-typescale-title-medium-size);
-  font-weight: 650;
-  line-height: var(--md-sys-typescale-title-medium-line-height);
+  font-size: var(--md-sys-typescale-title-medium-emphasized-size);
+  font-weight: var(--md-sys-typescale-title-medium-emphasized-weight);
+  line-height: var(--md-sys-typescale-title-medium-emphasized-line-height);
+  letter-spacing: var(--md-sys-typescale-title-medium-emphasized-tracking);
 }
 .install-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 .install-note {
@@ -673,16 +724,18 @@ section { margin-bottom: 24px; }
 .not-found-code {
   position: relative;
   color: var(--md-sys-color-on-primary-container);
-  font-size: 64px;
-  font-weight: 760;
-  line-height: 1;
+  font-size: var(--md-sys-typescale-display-large-emphasized-size);
+  font-weight: var(--md-sys-typescale-display-large-emphasized-weight);
+  line-height: var(--md-sys-typescale-display-large-emphasized-line-height);
+  letter-spacing: var(--md-sys-typescale-display-large-emphasized-tracking);
   font-variation-settings: "ROND" 100;
 }
 .not-found-title {
   margin: 0;
-  font-size: var(--md-sys-typescale-headline-small-size);
-  font-weight: 650;
-  line-height: var(--md-sys-typescale-headline-small-line-height);
+  font-size: var(--md-sys-typescale-headline-small-emphasized-size);
+  font-weight: var(--md-sys-typescale-headline-small-emphasized-weight);
+  line-height: var(--md-sys-typescale-headline-small-emphasized-line-height);
+  letter-spacing: var(--md-sys-typescale-headline-small-emphasized-tracking);
 }
 .not-found-text { margin: 0 0 12px; color: var(--md-sys-color-on-surface-variant); }
 
@@ -719,6 +772,12 @@ section { margin-bottom: 24px; }
  * (1200dp) the supporting pane is 412dp. Content is capped at 1280px. */
 @media (min-width: 600px) {
   :root { --gutter: 24px; }
+  .rate-line {
+    font-size: var(--md-sys-typescale-display-small-emphasized-size);
+    font-weight: var(--md-sys-typescale-display-small-emphasized-weight);
+    line-height: var(--md-sys-typescale-display-small-emphasized-line-height);
+    letter-spacing: var(--md-sys-typescale-display-small-emphasized-tracking);
+  }
 }
 @media (min-width: 840px) {
   :root { --page-width: 1280px; }
@@ -733,10 +792,21 @@ section { margin-bottom: 24px; }
   .pane-side .calc-card { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .pane-side .calc-equals { display: none; }
   .pane-side .calc-field { order: -1; padding: 0 2px 4px; }
-  .pane-side .calc-result { font-size: 30px; }
+  .pane-side .calc-result {
+    font-size: var(--md-sys-typescale-headline-medium-emphasized-size);
+    font-weight: var(--md-sys-typescale-headline-medium-emphasized-weight);
+    line-height: var(--md-sys-typescale-headline-medium-emphasized-line-height);
+    letter-spacing: var(--md-sys-typescale-headline-medium-emphasized-tracking);
+  }
 }
 @media (min-width: 1200px) {
   .panes { grid-template-columns: minmax(0, 1fr) 412px; }
+  .rate-line {
+    font-size: var(--md-sys-typescale-display-medium-emphasized-size);
+    font-weight: var(--md-sys-typescale-display-medium-emphasized-weight);
+    line-height: var(--md-sys-typescale-display-medium-emphasized-line-height);
+    letter-spacing: var(--md-sys-typescale-display-medium-emphasized-tracking);
+  }
   .chart { height: 320px; }
 }
 
@@ -745,12 +815,16 @@ section { margin-bottom: 24px; }
 @media (max-width: 560px) {
   :root { --gutter: 12px; }
   .page { padding-top: 2px; }
-  .eyebrow { margin: 16px 0 22px; }
   .surface-card { padding: 16px; }
   .calc-card { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .calc-equals { display: none; }
   .calc-field { order: -1; padding: 0 2px 4px; }
-  .calc-result { font-size: 30px; }
+  .calc-result {
+    font-size: var(--md-sys-typescale-headline-medium-emphasized-size);
+    font-weight: var(--md-sys-typescale-headline-medium-emphasized-weight);
+    line-height: var(--md-sys-typescale-headline-medium-emphasized-line-height);
+    letter-spacing: var(--md-sys-typescale-headline-medium-emphasized-tracking);
+  }
   .rate-line { gap: 7px; }
   .chart { height: 205px; }
 }
@@ -763,7 +837,6 @@ section { margin-bottom: 24px; }
 
 /* Page entrance: the title and sections rise in one after another, once they
  * scroll into view (app.js adds .in-view; only with JS, see html.js). */
-.page > .eyebrow,
 .page section {
   animation: rise-in var(--md-sys-motion-spring-slow-spatial-duration) var(--md-sys-motion-spring-slow-spatial) both;
 }

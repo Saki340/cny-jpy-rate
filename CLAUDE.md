@@ -21,6 +21,9 @@ JPY ⇄ CNY 汇率板。单个 Cloudflare Worker + 静态资源，无构建步�
 - 提示信息统一用 `M3.snackbar()`（`app.js` 的 `notify()`）。
 - 分享链接参数 `?amount=…&from=JPY|CNY`（`readShareParams()`），读取后从地址栏移除；manifest 的 shortcuts 也用 `?from=`。
 - 金额框是文本框，支持简单算式（`evaluateAmount()`，手写递归下降解析，不要用 `eval`）；换算用 `readAmount()` / `lastAmount`（算式写到一半时保留上一个可计算的值），不要直接读输入框。
+- 按日期查汇率：`/api/day?date=`（2005-01-03 起，周末节假日由 Frankfurter 返回之前最近的工作日，过去的日期缓存 30 天）；前端 `lookupDate()` / `renderDate()`。
+- 走势图的 30 日均线（`movingAverage()`，按日历日、用近一年数据补足窗口），只作统计展示。
+- 键盘快捷键（`initShortcuts()`）：`/` `S` `1`–`4` `D` `?`；输入框中、对话框或菜单打开时不响应；说明对话框只在宽屏、有鼠标的设备上提供入口。
 - 记住上次的换算方向（`direction-pref`，只在点切换时保存；分享链接的 `?from=` 优先但不保存）。
 - 浏览器地址栏颜色（两个 `theme-color`，分浅色/深色）跟随顶部应用栏：滚动后为 surface-container（`syncThemeColor()`）。
 - 常用金额（`saved-amounts`，localStorage，最多 10 个）；今日汇率在近一年的位置（`renderRank()`，单独取 365 天数据）：只陈述统计（较高 / 中间 / 较低水平），**不要写「划算」「建议换钱」之类的判断**，避免被视为投资建议。
@@ -42,6 +45,8 @@ JPY ⇄ CNY 汇率板。单个 Cloudflare Worker + 静态资源，无构建步�
 
 ## 页面细节
 
+- **顶部应用栏**：M3 Expressive 可折叠中型顶栏（`AppBarMediumFlexibleTokens` / `TwoRowsTopAppBar`）：64dp 的栏 + 下方 72dp 的大标题行（`#app-bar-expanded`，h1「JPY ⇄ CNY」+ 副标题），滚动时大标题行滚走、小标题按 `cubic-bezier(.8,0,.8,.15)` 淡入、背景随折叠比例变为 surface-container（`m3.js` 的 `initAppBars()`，`--collapsed` 等变量）；完全折叠后加 `.is-scrolled`，地址栏颜色据此切换。
+- **「更多」菜单**（`#more-menu`，`initMoreMenu()`）：动作项用 `role="menuitem"`，`M3.menu` 派发 `select`；打开前（`beforeopen`）隐藏不适用的项，空组自动隐藏。主题按钮组保留在顶栏，不要收进菜单。
 - **宽屏布局**（M3 自适应，数值来自 Compose `WindowSizeClass` / `PaneScaffoldDirective`）：600dp 起页边距 24dp；840dp 起分为主区（今日汇率、走势）和辅助区（360dp，1200dp 起 412dp；计算器、常用金额、万事达、安装），间距 24dp，内容最宽 1280px。区块由 `layoutPanes()` 在两栏之间移动（DOM 顺序 = 显示顺序），新增区块时加 `sec-side` 类即可进辅助区。
 - **卡片圆角**：页面上所有色块（卡片和常用金额列表的外角）统一为 medium 12dp，即 Compose `FilledCardTokens.ContainerShape`。
 - **卡片色块**：每张卡片都是 filled 容器，用 `--card-bg` / `--card-on` 指定：今日汇率 primary-container、计算器自定义青绿色（`--app-color-calc-container`，style.css 顶部浅/深两套）、走势 secondary-container、万事达、常用金额、安装卡片等中性色块统一为 surface-container-highest（`FilledCardTokens.ContainerColor`）。卡片内文字、文本框、图表描边都从这两个变量取色，换色只改这一处。
@@ -49,6 +54,8 @@ JPY ⇄ CNY 汇率板。单个 Cloudflare Worker + 静态资源，无构建步�
 - **走势图**：首次出现用画线动画（`draw`），之后切换范围/方向/新数据都用 `morph`（旧线变形为新线，不重画）；在屏幕外时动画暂停到可见（`is-waiting`）。
 - **区块入场**：`html.js` 下各 section 滚动到可见才播放入场动画。
 - **形状**：由 `ExpressiveShapes.polygon(name)` 生成同点数的 `polygon()`，可直接用 clip-path 过渡变形；新形状加在 `radius` 表里。
+- **字号**：一律用 M3 字号角色（`--md-sys-typescale-*`，关键数字和标题用 `*-emphasized`），不要再写自定义的字号 / 字重。今日汇率：手机 headline-medium、600dp 起 display-small、1200dp 起 display-medium；计算结果：headline-large（手机与窄栏 headline-medium）。
+- **下拉刷新**（`M3.pullToRefresh()`，仅触屏、页面在最顶部时）：数值来自 Compose `PullToRefreshDefaults`（拉动距离 ×0.5、80dp 触发）；指示器是含容器的加载指示器，`html.has-pull-refresh` 关掉浏览器自带的下拉刷新。
 - **字体**：Google Sans Flex 是唯一的拉丁字体（数字用 tabular-nums）；显示文字和关键数字用 `font-variation-settings: "ROND" 100`。子集只含 ASCII 和 · − ± ⇄，新增符号需重新下载子集。
 - 所有装饰性动画都受 `prefers-reduced-motion` 控制（`style.css` 末尾）。
 

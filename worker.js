@@ -159,6 +159,39 @@ async function history(url) {
   }
 }
 
+/* ---------- /api/day ---------- */
+
+// The rate on one day, for the "rate on a date" lookup. The ECB publishes on
+// working days only; for a weekend or holiday Frankfurter answers with the
+// previous working day, and `date` says which day that was. Past days never
+// change, so they are cached for a long time.
+const DAY_MIN = "2005-01-03";
+
+async function day(url) {
+  const asked = url.searchParams.get("date") || "";
+  const tomorrow = new Date();
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1); // the visitor's "today" may be ahead of UTC
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(asked) || Number.isNaN(Date.parse(asked)) || asked < DAY_MIN || asked > isoDate(tomorrow)) {
+    return json({ error: "invalid date" }, 400);
+  }
+  const past = asked < isoDate(new Date(Date.now() - 3 * 86400000));
+  const ttl = past ? 30 * 86400 : RATE_TTL;
+  const headers = { "cache-control": `public, max-age=${ttl}` };
+  try {
+    const data = await firstOk(FRANKFURTER.map((f) => async () =>
+      checkFrankfurter(await getJson(`${f.root}/${asked}?${f.query}`, ttl))));
+    const rate = data.rates?.JPY;
+    if (typeof rate !== "number" || rate <= 0) throw new Error("unexpected response shape");
+    return json({ requested: asked, date: data.date, cny_to_jpy: rate, source: "frankfurter" }, 200, headers);
+  } catch { /* fall back */ }
+  try {
+    const r = await currencyApiOn(asked);
+    return json({ requested: asked, date: r.date, cny_to_jpy: r.rate, source: "currency-api" }, 200, headers);
+  } catch {
+    return json({ error: "rate unavailable" }, 502);
+  }
+}
+
 /* ---------- per-language page head ---------- */
 
 // The page text is translated in the browser (public/i18n.js), but search
@@ -237,6 +270,7 @@ export default {
       if (request.method !== "GET") return json({ error: "Method not allowed" }, 405, { allow: "GET, OPTIONS" });
       if (url.pathname === "/api/rate") return rate();
       if (url.pathname === "/api/history") return history(url);
+      if (url.pathname === "/api/day") return day(url);
       return json({ error: "Not found" }, 404);
     }
     const response = await env.ASSETS.fetch(request);

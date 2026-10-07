@@ -4,10 +4,14 @@
 //                                      show a snackbar (4 s, like SnackbarDuration.Short;
 //                                      10 s with an action, like SnackbarDuration.Long)
 //   M3.dialog(el)                      modal dialog on <dialog>; returns { open, close }
+//   M3.pullToRefresh(onRefresh)        pull down at the top of the page (touch) to
+//                                      refresh; onRefresh returns a promise
 //   M3.buttonGroup(el)                 connected button group as a radio group;
 //                                      el.value, "change" event
-//   M3.menu(trigger, menu)             menu anchored to a button; menu.value,
-//                                      "change" event, menu.open / close()
+//   M3.menu(trigger, menu)             menu anchored to a button. Radio items
+//                                      (menuitemradio): menu.value, "change";
+//                                      action items (menuitem): "select" event
+//                                      with the item; "beforeopen" event
 //   M3.setLabel(field, text)           outlined text field label
 //
 // Ripples and tooltips are wired up automatically for .m3-interactive and
@@ -44,12 +48,46 @@ const M3 = (() => {
   }
   document.addEventListener("pointerdown", ripple);
 
-  /* ---------- top app bar: container colour while content is under it ---------- */
+  /* ---------- top app bar: medium flexible, collapsing on scroll ---------- */
+
+  // CSS cubic-bezier() as a function of progress (for TopTitleAlphaEasing).
+  function cubicBezier(x1, y1, x2, y2) {
+    const at = (t, a, b) => 3 * a * t * (1 - t) ** 2 + 3 * b * t * t * (1 - t) + t ** 3;
+    return (p) => {
+      if (p <= 0) return 0;
+      if (p >= 1) return 1;
+      let lo = 0, hi = 1, t = p;
+      for (let i = 0; i < 20; i++) {
+        t = (lo + hi) / 2;
+        if (at(t, x1, x2) < p) lo = t; else hi = t;
+      }
+      return at(t, y1, y2);
+    };
+  }
+  const topTitleEasing = cubicBezier(0.8, 0, 0.8, 0.15);
 
   function initAppBars() {
-    const bars = document.querySelectorAll(".m3-top-app-bar");
-    const update = () => bars.forEach((bar) => bar.classList.toggle("is-scrolled", window.scrollY > 0));
+    const bar = document.querySelector(".m3-top-app-bar");
+    if (!bar) return;
+    const expanded = document.querySelector(".m3-top-app-bar__expanded");
+    const small = bar.querySelector(".m3-top-app-bar__title");
+    let last = -1;
+    const update = () => {
+      const range = expanded ? expanded.offsetHeight : 0;
+      const f = range ? Math.min(Math.max(window.scrollY / range, 0), 1) : window.scrollY > 0 ? 1 : 0;
+      if (f === last) return;
+      last = f;
+      const topAlpha = expanded ? topTitleEasing(f) : 1;
+      bar.style.setProperty("--collapsed", f.toFixed(3));
+      bar.style.setProperty("--top-title-alpha", topAlpha.toFixed(3));
+      expanded?.style.setProperty("--expanded-alpha", (1 - f).toFixed(3));
+      // Content is under the bar once it has fully collapsed.
+      bar.classList.toggle("is-scrolled", f >= 1);
+      // Like Compose, only the visible title is exposed to screen readers.
+      if (expanded && small) small.toggleAttribute("aria-hidden", topAlpha < 0.5);
+    };
     window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
     update();
   }
 
@@ -145,7 +183,7 @@ const M3 = (() => {
   /* ---------- menu ---------- */
 
   function menu(trigger, panel) {
-    const items = () => [...panel.querySelectorAll(".m3-menu__item")];
+    const items = () => [...panel.querySelectorAll(".m3-menu__item")].filter((i) => !i.hidden);
     let open = false;
 
     const place = () => {
@@ -156,11 +194,15 @@ const M3 = (() => {
       panel.style.top = `${r.bottom + 4}px`;
     };
     const sync = () => {
-      for (const item of items()) item.setAttribute("aria-checked", String(item.dataset.value === panel.dataset.value));
+      for (const item of panel.querySelectorAll('[role="menuitemradio"]')) item.setAttribute("aria-checked", String(item.dataset.value === panel.dataset.value));
     };
     const show = (focusFirst) => {
       if (open) return;
       open = true;
+      panel.dispatchEvent(new Event("beforeopen"));
+      for (const group of panel.querySelectorAll(".m3-menu__group")) {
+        group.hidden = !group.querySelector(".m3-menu__item:not([hidden])");
+      }
       place();
       panel.classList.add("is-open");
       trigger.setAttribute("aria-expanded", "true");
@@ -193,6 +235,12 @@ const M3 = (() => {
     panel.addEventListener("click", (e) => {
       const item = e.target.closest(".m3-menu__item");
       if (!item) return;
+      if (item.getAttribute("role") !== "menuitemradio") {
+        // Action item (a link navigates by itself).
+        close(item.tagName !== "A");
+        panel.dispatchEvent(new CustomEvent("select", { detail: item }));
+        return;
+      }
       const changed = item.dataset.value !== panel.dataset.value;
       panel.value = item.dataset.value;
       close(true);
@@ -274,6 +322,78 @@ const M3 = (() => {
   document.addEventListener("pointerdown", hideTooltip);
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") hideTooltip(); });
 
+  /* ---------- pull to refresh ----------
+   * PullToRefreshDefaults (Expressive): the pull counts half (DragMultiplier
+   * 0.5); 80dp is both the threshold and the indicator's travel
+   * (PositionalThreshold, IndicatorMaxDistance). The indicator is the contained
+   * loading indicator (48dp, primary-container, shape on-primary-container):
+   * while pulling it morphs with the distance and, past the threshold,
+   * rotates; while refreshing it morphs and spins on its own. Touch only, and
+   * only when the page is scrolled to the very top. */
+
+  function pullToRefresh(onRefresh) {
+    if (!("ontouchstart" in window)) return;
+    const THRESHOLD = 80;
+    const box = document.createElement("div");
+    box.className = "m3-pull-refresh";
+    box.setAttribute("aria-hidden", "true");
+    box.innerHTML = '<span class="m3-pull-refresh__shape"></span>';
+    document.body.append(box);
+    document.documentElement.classList.add("has-pull-refresh");
+
+    let startY = null;
+    let pulling = false;
+    let busy = false;
+    let distance = 0;
+    const show = (fraction) => {
+      box.style.setProperty("--p", fraction.toFixed(3));
+      box.classList.add("is-active");
+    };
+    const hide = () => {
+      box.classList.remove("is-active", "is-refreshing");
+      box.style.setProperty("--p", "0");
+    };
+
+    document.addEventListener("touchstart", (e) => {
+      if (busy || window.scrollY > 0 || e.touches.length !== 1 || e.target.closest("dialog, .m3-menu")) return;
+      startY = e.touches[0].clientY;
+      distance = 0;
+    }, { passive: true });
+    document.addEventListener("touchmove", (e) => {
+      if (startY === null) return;
+      const dy = e.touches[0].clientY - startY;
+      if (dy <= 0 || window.scrollY > 0) {
+        if (pulling) hide();
+        pulling = false;
+        startY = null;
+        return;
+      }
+      pulling = true;
+      e.preventDefault(); // instead of the page bouncing or the browser reloading
+      distance = dy * 0.5;
+      show(distance / THRESHOLD);
+    }, { passive: false });
+    const release = async () => {
+      startY = null;
+      if (!pulling) return;
+      pulling = false;
+      if (distance < THRESHOLD) {
+        hide();
+        return;
+      }
+      busy = true;
+      show(1);
+      box.classList.add("is-refreshing");
+      const minimum = new Promise((r) => setTimeout(r, 700)); // long enough to be seen
+      try { await Promise.all([onRefresh(), minimum]); } finally {
+        hide();
+        busy = false;
+      }
+    };
+    document.addEventListener("touchend", release);
+    document.addEventListener("touchcancel", release);
+  }
+
   /* ---------- outlined text field ---------- */
 
   function setLabel(field, text) {
@@ -284,5 +404,5 @@ const M3 = (() => {
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initAppBars);
   else initAppBars();
 
-  return { snackbar, dialog, buttonGroup, menu, setLabel, hideTooltip };
+  return { snackbar, dialog, buttonGroup, menu, setLabel, hideTooltip, pullToRefresh };
 })();
