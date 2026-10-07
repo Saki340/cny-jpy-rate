@@ -16,7 +16,6 @@ const state = {
   history: [], // [{ date, rate }] always stored as CNY -> JPY
   historySource: "frankfurter",
   historyReq: 0,
-  calcShown: 0,
   year: [], // past year of { date, rate }, for renderRank()
 };
 
@@ -135,11 +134,12 @@ function odometer(node, text, animate = true) {
   });
 }
 
-// Count a number from its previous value to `to` (used by the calculator).
-function tweenNumber(node, from, to, format, duration) {
+// Count a number from its previous value to `to` (used by the calculator);
+// `prop` is "textContent", or "value" for an input.
+function tweenNumber(node, from, to, format, duration, prop = "textContent") {
   cancelAnimationFrame(Number(node.dataset.raf || 0));
-  if (!motionOK() || !isFinite(from) || from === to || !(duration > 0)) {
-    node.textContent = format(to);
+  if (!motionOK() || from === null || !isFinite(from) || from === to || !(duration > 0)) {
+    node[prop] = format(to);
     return;
   }
   const start = performance.now();
@@ -147,7 +147,7 @@ function tweenNumber(node, from, to, format, duration) {
   const step = (now) => {
     // A frame's timestamp can be slightly earlier than `start`.
     const t = Math.min(Math.max((now - start) / duration, 0), 1);
-    node.textContent = format(from + (to - from) * ease(t));
+    node[prop] = format(from + (to - from) * ease(t));
     if (t < 1) node.dataset.raf = String(requestAnimationFrame(step));
   };
   node.dataset.raf = String(requestAnimationFrame(step));
@@ -181,9 +181,11 @@ function notify(message) {
   M3.snackbar(message);
 }
 
-// The amount field's floating label ("金额（JPY）").
-function setAmountLabel(cur) {
-  M3.setLabel(el("amount-field"), t("calc.amount", { cur }));
+// The converter's field labels ("JPY 日元" / "CNY 人民币"), in the current order.
+function setCalcLabels() {
+  const [from, to] = currentPair();
+  M3.setLabel(el("amount-field"), `${from} ${t(`cur.${from}`)}`);
+  M3.setLabel(el("amount-to-field"), `${to} ${t(`cur.${to}`)}`);
 }
 
 /* ---------- scroll-triggered entrance ---------- */
@@ -442,15 +444,17 @@ function copyFallback(text) {
 
 let copyResetTimer = 0;
 
-// Copies the plain number (no thousands separators) so it pastes cleanly
-// into other calculators and banking apps.
+// Copies the converted amount (the field the visitor did not type in) as a
+// plain number, without thousands separators, so it pastes cleanly into
+// other calculators and banking apps.
 async function copyResult() {
-  if (!currentMidRate()) return;
-  const text = String(Number(state.calcShown.toFixed(3)));
+  if (!currentMidRate() || lastTo === null) return;
+  const [from, to] = currentPair();
+  const [value, cur] = calcAnchor === "from" ? [lastTo, to] : [lastAmount, from];
+  const text = String(Number(value.toFixed(3)));
   let ok = true;
   try { await navigator.clipboard.writeText(text); } catch { ok = copyFallback(text); }
-  const [, to] = currentPair();
-  notify(ok ? t("notify.copied", { value: text, cur: to }) : t("notify.copyFail"));
+  notify(ok ? t("notify.copied", { value: text, cur }) : t("notify.copyFail"));
   if (!ok) return;
   const btn = el("copy-btn");
   const icon = btn.querySelector(".m3-icon");
@@ -473,6 +477,7 @@ function readShareParams() {
   const amount = Number(params.get("amount"));
   if (params.has("amount") && Number.isFinite(amount) && amount >= 0 && amount <= 1e12) {
     el("amount").value = String(amount);
+    calcAnchor = "from";
     readAmount();
   }
   const clean = new URL(location.href);
@@ -488,8 +493,7 @@ function placeCurrencies() {
   const line = el("rate-line");
   line.append(line.querySelector(".rate-one"), line.querySelector(`[data-cur="${first}"]`),
     line.querySelector(".eq"), el("rate-value"), line.querySelector(`[data-cur="${second}"]`));
-  setAmountLabel(first);
-  el("calc-result-label").textContent = t("calc.result", { cur: second });
+  setCalcLabels();
 }
 
 function shareLink() {
@@ -509,7 +513,7 @@ async function shareResult() {
   const [from, to] = currentPair();
   const amount = lastAmount;
   const source = t(state.rateSource === "currency-api" ? "share.sourceFallback" : "share.source");
-  const text = t("share.text", { a: fmt(amount, 3), from, b: fmt(state.calcShown, 3), to, date: state.rateDate, source });
+  const text = t("share.text", { a: fmt(amount, 3), from, b: fmt(lastTo ?? 0, 3), to, date: state.rateDate, source });
   const url = shareLink();
   if (navigator.share) {
     try {
@@ -644,7 +648,7 @@ async function loadRate({ refresh = false } = {}) {
     if (refresh) return; // keep showing the last good numbers
     el("updated").textContent = "";
     el("rate-value").textContent = "--";
-    el("calc-result").querySelector(".calc-visible").textContent = "--";
+    el("amount-to").value = "";
     boardNote.dataset.i18n = "rate.error";
     boardNote.textContent = t("rate.error");
   }
@@ -699,8 +703,7 @@ function renderRateLine(swapping) {
     });
   }
 
-  setAmountLabel(from);
-  el("calc-result-label").textContent = t("calc.result", { cur: to });
+  setCalcLabels();
 }
 
 // "▲ 0.12% 较前一日 (10-01)", in the direction currently shown.
@@ -733,6 +736,7 @@ function toggleDirection() {
   try { localStorage.setItem(DIRECTION_KEY, state.direction); } catch { /* ignore */ }
   el("swap-btn").classList.toggle("is-flipped");
   if (typeof morphDecoShape === "function" && motionOK()) morphDecoShape();
+  swapCalcFields();
   if (!state.cnyToJpy) return;
   renderRateLine(true);
   renderChange();
@@ -741,18 +745,56 @@ function toggleDirection() {
   renderChart({ morph: true });
 }
 
+// Two-way converter: the field the visitor last typed in (calcAnchor) drives
+// the other one, which counts to its new value. lastAmount is the amount in
+// the first currency, lastTo in the second.
 function runCalculator(duration = 220, { fromInput = false } = {}) {
-  const amount = readAmount();
   const rate = currentMidRate();
-  if (!rate) return;
-  const value = amount * rate;
-  const node = el("calc-result");
-  // The counting animation runs in an aria-hidden span; screen readers get
-  // only the final value, not every intermediate frame.
-  tweenNumber(node.querySelector(".calc-visible"), state.calcShown, value, (v) => fmt(v, 3), duration);
-  node.querySelector(".sr-only").textContent = fmt(value, 3);
-  if (fromInput && value !== state.calcShown) pop(node, 1.03);
-  state.calcShown = value;
+  readAmount();
+  if (rate) {
+    if (calcAnchor === "from") {
+      const value = lastAmount * rate;
+      showComputed(el("amount-to"), lastTo, value, duration, fromInput);
+      lastTo = value;
+    } else {
+      const value = (lastTo ?? 0) / rate;
+      showComputed(el("amount"), lastAmount, value, duration, fromInput);
+      lastAmount = value;
+    }
+    // Screen readers get the result once, not every frame of the count.
+    const [from, to] = currentPair();
+    el("calc-live").textContent = t("calc.pair", { a: fmt(lastAmount, 3), from, b: fmt(lastTo, 3), to });
+  }
+  renderDate();
+}
+
+// Writes a converted amount into the other field, counting up to it (set at
+// once if the visitor is in that field).
+function showComputed(input, fromValue, value, duration, popIt) {
+  const field = input.closest(".m3-text-field");
+  field.classList.remove("is-error");
+  field.querySelector(".m3-text-field__supporting").textContent = "";
+  const format = (v) => fmt(v, 3);
+  input.dataset.final = format(value);
+  tweenNumber(input, fromValue, value, format, document.activeElement === input ? 0 : duration, "value");
+  if (popIt && fromValue !== null && Math.abs(value - fromValue) > 1e-9) pop(field, 1.02);
+}
+
+// Swapping the direction keeps the pair of amounts: the fields trade places.
+function swapCalcFields() {
+  const a = el("amount");
+  const b = el("amount-to");
+  for (const input of [a, b]) cancelAnimationFrame(Number(input.dataset.raf || 0));
+  // The computed field may still be counting: swap its final value.
+  const aText = calcAnchor === "to" && a.dataset.final ? a.dataset.final : a.value;
+  const bText = calcAnchor === "from" && b.dataset.final ? b.dataset.final : b.value;
+  a.value = bText;
+  b.value = aText;
+  const first = lastAmount;
+  lastAmount = lastTo ?? 0;
+  lastTo = first;
+  calcAnchor = calcAnchor === "from" ? "to" : "from";
+  setCalcLabels();
 }
 
 /* ---------- history chart ---------- */
@@ -834,6 +876,26 @@ function resample(points, count, x0, x1) {
   return out;
 }
 
+// 30-day moving average (calendar days) for each day shown, in the direction
+// shown; uses the year of data when loaded, so short ranges get a full window.
+// null where fewer than 30 days of data lie behind a day. Statistics only.
+function movingAverage(pts, inverse, days = 30) {
+  const byDate = new Map();
+  for (const p of [...state.year, ...state.history, ...pts]) byDate.set(p.date, p.rate);
+  const src = [...byDate].sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([date, rate]) => ({ t: Date.parse(date), v: inverse ? 1 / rate : rate }));
+  const span = days * 86400000;
+  const out = [];
+  let lo = 0, hi = 0, sum = 0;
+  for (const p of pts) {
+    const time = Date.parse(p.date);
+    while (hi < src.length && src[hi].t <= time) sum += src[hi++].v;
+    while (lo < hi && src[lo].t <= time - span) sum -= src[lo++].v;
+    out.push(src.length && time - span >= src[0].t && hi > lo ? sum / (hi - lo) : null);
+  }
+  return out;
+}
+
 const pathOf = (points) => points.map(([px, py], i) => `${i ? "L" : "M"}${px.toFixed(1)} ${py.toFixed(1)}`).join(" ");
 
 // Chart geometry and the hover handlers live here between renders.
@@ -851,6 +913,8 @@ function renderChart({ draw = false, morph = false } = {}) {
   const [from, to] = currentPair();
   const inverse = state.direction === "jpy2cny";
   const values = pts.map((p) => (inverse ? 1 / p.rate : p.rate));
+  const ma = movingAverage(pts, inverse);
+  const maValues = ma.filter((v) => v !== null);
 
   // The SVG is drawn 1:1 in CSS pixels so the HTML tooltip can be placed
   // with the same coordinates.
@@ -859,8 +923,8 @@ function renderChart({ draw = false, morph = false } = {}) {
   const padL = 58, padR = 12, padT = 20, padB = 24;
   const n = pts.length;
 
-  const min = Math.min(...values);
-  const max = Math.max(...values);
+  const min = Math.min(...values, ...maValues);
+  const max = Math.max(...values, ...maValues);
   const span = max - min || max * 0.01 || 1;
   const yMin = min - span * 0.12;
   const yMax = max + span * 0.16;
@@ -925,6 +989,7 @@ function renderChart({ draw = false, morph = false } = {}) {
     `<g class="chart-axes">${axes}</g>` +
     `<path class="chart-area" d="${areaOf(linePts)}"/>` +
     `<path class="chart-line" d="${line}" pathLength="1"/>` +
+    (maValues.length > 1 ? `<path class="chart-ma" d="${pathOf(ma.map((v, i) => (v === null ? null : [x(i), y(v)])).filter(Boolean))}"/>` : "") +
     marker(maxIdx, "chart-high", esc(t("chart.high")), -9) +
     marker(minIdx, "chart-low", esc(t("chart.low")), 17) +
     latestMark +
@@ -940,10 +1005,11 @@ function renderChart({ draw = false, morph = false } = {}) {
     ` · <span class="${change >= 0 ? "is-up" : "is-down"}">${esc(t("readout.range"))} ${pctFmt(change)}</span>${fallbackNote}`;
   el("readout-high").textContent = `${t("readout.high")} ${pts[maxIdx].date} · ${pointFmt(values[maxIdx])}`;
   el("readout-low").textContent = `${t("readout.low")} ${pts[minIdx].date} · ${pointFmt(values[minIdx])}`;
+  el("readout-ma").textContent = ma[n - 1] === null ? "" : t("readout.ma", { v: pointFmt(ma[n - 1]) });
   if (draw || canMorph) el("chart-readout").querySelectorAll(".chart-readout-line").forEach((node) => fadeIn(node, 300));
 
   const svg = wrap.querySelector("svg");
-  chart = { svg, pts, values, x, y, W, H, n, from, to, step, padL, linePts, active: -1 };
+  chart = { svg, pts, values, ma, x, y, W, H, n, from, to, step, padL, linePts, active: -1 };
   hideTooltip(true);
 
   if (canMorph) morphChart(svg, prev, linePts, areaOf, padL, W - padR);
@@ -1032,6 +1098,7 @@ function showPoint(i) {
   el("tooltip-date").textContent = `${pts[i].date} ${weekday(pts[i].date)}`;
   el("tooltip-value").textContent = `1 ${from} = ${pointFmt(values[i])} ${to}`;
   el("tooltip-diff").textContent = i === n - 1 ? t("tooltip.latest") : t("tooltip.toLatest", { pct: pctFmt(diff) });
+  el("tooltip-ma").textContent = chart.ma[i] === null ? "" : t("tooltip.ma", { v: pointFmt(chart.ma[i]) });
 
   const tw = tip.offsetWidth;
   const th = tip.offsetHeight;
@@ -1121,41 +1188,54 @@ function evaluateAmount(text) {
 // True if the text is more than a plain number (worth showing "= result").
 const isExpression = (text) => /\d.*[-+*/×÷xX−＋－＊／()（）]|[()（）]/.test(String(text).trim().replace(/^[-+]/, ""));
 
-// The amount used for converting: the field's value; while an expression is
-// unfinished ("1980*"), the last value that could be worked out.
+// The amounts: lastAmount in the first currency, lastTo in the second (null
+// until a rate is known). While an expression is unfinished ("1980*") the
+// last value that could be worked out is kept. calcAnchor is the field the
+// visitor typed in last ("from" or "to").
 let lastAmount = 100;
+let lastTo = null;
+let calcAnchor = "from";
+const CALC_FIELDS = {
+  from: ["amount", "amount-field", "amount-support"],
+  to: ["amount-to", "amount-to-field", "amount-to-support"],
+};
 
-// Reads the field and updates its supporting text: "= 5,940" under an
+// Reads a field and updates its supporting text: "= 5,940" under an
 // expression; an error only when `strict` (on Enter / leaving the field),
 // so it does not flash while the visitor is still typing.
-function readAmount({ strict = false } = {}) {
-  const text = el("amount").value;
+function readAmount({ strict = false, field = calcAnchor } = {}) {
+  const [inputId, fieldId, supportId] = CALC_FIELDS[field];
+  const text = el(inputId).value;
   const value = evaluateAmount(text);
-  const field = el("amount-field");
-  const support = el("amount-support");
   const error = value === null && strict;
-  field.classList.toggle("is-error", error);
+  el(fieldId).classList.toggle("is-error", error);
+  const support = el(supportId);
   if (error) support.textContent = t("amount.invalid");
   else if (value !== null && isExpression(text)) support.textContent = t("amount.preview", { v: fmt(value, 3) });
   else support.textContent = "";
-  if (value !== null) lastAmount = value;
-  return lastAmount;
+  if (value !== null) {
+    if (field === "from") lastAmount = value;
+    else lastTo = value;
+  }
+  return field === "from" ? lastAmount : lastTo;
 }
 
 // Enter: an expression is replaced by its result.
-function settleAmount() {
-  const input = el("amount");
+function settleAmount(field) {
+  const input = el(CALC_FIELDS[field][0]);
   const value = evaluateAmount(input.value);
   if (value !== null && isExpression(input.value)) {
     input.value = String(Number(value.toFixed(6)));
     runCalculator(220, { fromInput: true });
   }
-  readAmount({ strict: true });
+  readAmount({ strict: true, field });
 }
 
-// Inserts an operator from the on-screen keys at the caret.
+// Inserts an operator from the on-screen keys at the caret of the field
+// being typed in.
 function insertIntoAmount(text) {
-  const input = el("amount");
+  const active = document.activeElement;
+  const input = active && (active.id === "amount" || active.id === "amount-to") ? active : el("amount");
   const start = input.selectionStart ?? input.value.length;
   const end = input.selectionEnd ?? start;
   input.setRangeText(text, start, end, "end");
@@ -1163,12 +1243,22 @@ function insertIntoAmount(text) {
 }
 
 function initAmountField() {
-  const input = el("amount");
-  input.addEventListener("input", () => runCalculator(220, { fromInput: true }));
-  input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") { e.preventDefault(); settleAmount(); }
-  });
-  input.addEventListener("change", () => readAmount({ strict: true }));
+  for (const [field, [inputId]] of Object.entries(CALC_FIELDS)) {
+    const input = el(inputId);
+    input.addEventListener("input", () => {
+      calcAnchor = field;
+      runCalculator(220, { fromInput: true });
+    });
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); settleAmount(field); }
+    });
+    input.addEventListener("change", () => { if (calcAnchor === field) readAmount({ strict: true, field }); });
+    // Typing into a field that is still counting: start from its final value.
+    input.addEventListener("focus", () => {
+      cancelAnimationFrame(Number(input.dataset.raf || 0));
+      if (field !== calcAnchor && input.dataset.final) input.value = input.dataset.final;
+    });
+  }
   for (const key of document.querySelectorAll(".calc-keys [data-insert]")) {
     // Keep the focus (and the phone keyboard) in the field.
     key.addEventListener("pointerdown", (e) => e.preventDefault());
@@ -1189,6 +1279,7 @@ async function loadYear() {
     if (Array.isArray(data.points) && data.points.length >= 20) {
       state.year = data.points;
       renderRank();
+      if (chart) renderChart(); // the 30-day average needs the days before the range
     }
   } catch { /* the indicator just stays hidden */ }
 }
@@ -1278,6 +1369,7 @@ function renderSaved() {
 function useSaved(item) {
   if (currentPair()[0] !== item.cur) toggleDirection();
   el("amount").value = String(item.amount);
+  calcAnchor = "from";
   runCalculator(450, { fromInput: true });
   el("calc-heading").scrollIntoView({ behavior: motionOK() ? "smooth" : "auto", block: "start" });
 }
@@ -1291,8 +1383,11 @@ function openSavedDialog(item = null) {
   editingId = item ? item.id : null;
   el("saved-dialog-title").textContent = t(item ? "saved.dialogEdit" : "saved.dialogAdd");
   el("saved-name").value = item ? item.name : "";
-  el("saved-amount").value = item ? String(item.amount) : (lastAmount > 0 ? String(Number(lastAmount.toFixed(2))) : "");
-  el("saved-cur").value = item ? item.cur : currentPair()[0];
+  // A new entry starts from the amount the visitor typed into the converter.
+  const [from, to] = currentPair();
+  const [typed, typedCur] = calcAnchor === "to" && lastTo ? [lastTo, to] : [lastAmount, from];
+  el("saved-amount").value = item ? String(item.amount) : (typed > 0 ? String(Number(typed.toFixed(2))) : "");
+  el("saved-cur").value = item ? item.cur : typedCur;
   el("saved-delete").hidden = !item;
   setSavedError("");
   savedDialog.open();
@@ -1367,6 +1462,112 @@ function initSaved() {
   renderSaved();
 }
 
+/* ---------- rate on a date ---------- */
+
+// Any day since 2005 (/api/day): that day's rate in the current direction and
+// the converter's amount converted at it. A weekend or holiday gets the
+// previous working day, and the note says so.
+const dayCache = new Map();
+let dayReq = 0;
+let dayData = null;
+
+function localToday() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function setDateMessage(text) {
+  el("date-result").innerHTML = `<p class="meta-text">${esc(text)}</p>`;
+}
+
+async function lookupDate() {
+  const value = el("date-input").value;
+  const token = ++dayReq;
+  if (!value) {
+    dayData = null;
+    renderDate();
+    return;
+  }
+  if (!dayCache.has(value)) {
+    setDateMessage(t("date.loading"));
+    try {
+      const res = await fetch(`/api/day?date=${encodeURIComponent(value)}`);
+      const data = await res.json();
+      if (!res.ok || data.error || !(data.cny_to_jpy > 0)) throw new Error(data.error || "failed");
+      dayCache.set(value, data);
+    } catch {
+      if (token === dayReq) setDateMessage(t("date.error"));
+      return;
+    }
+  }
+  if (token !== dayReq) return;
+  dayData = dayCache.get(value);
+  renderDate();
+  fadeIn(el("date-result"), 250);
+}
+
+function renderDate() {
+  const box = el("date-result");
+  if (!box) return;
+  if (!dayData) {
+    box.innerHTML = `<p class="meta-text">${esc(t("date.hint"))}</p>`;
+    return;
+  }
+  const [from, to] = currentPair();
+  const rate = state.direction === "cny2jpy" ? dayData.cny_to_jpy : 1 / dayData.cny_to_jpy;
+  const day = { date: dayData.date, weekday: weekday(dayData.date) };
+  let note = dayData.date !== dayData.requested
+    ? t("date.fallback", { asked: dayData.requested, ...day })
+    : t("date.on", day);
+  if (dayData.source === "currency-api") note += ` · ${t("readout.fallback")} currency-api`;
+  box.innerHTML =
+    `<p class="date-rate">1 ${from} = ${esc(pointFmt(rate))} ${to}</p>` +
+    `<p class="date-amount">${esc(t("calc.pair", { a: fmt(lastAmount, 3), from, b: fmt(lastAmount * rate, 3), to }))}</p>` +
+    `<p class="meta-text">${esc(note)}</p>`;
+}
+
+function initDateLookup() {
+  const input = el("date-input");
+  input.max = localToday();
+  input.addEventListener("change", lookupDate);
+}
+
+/* ---------- keyboard shortcuts ---------- */
+
+// For wide screens with a keyboard: / amount, S swap, 1–4 chart range,
+// D date lookup, ? the list. Ignored while typing, with modifier keys, or
+// while a dialog or the menu is open.
+function initShortcuts() {
+  const help = M3.dialog(el("shortcuts-dialog"));
+  el("shortcuts-open").addEventListener("click", () => help.open());
+  el("shortcuts-close").addEventListener("click", () => help.close());
+  const ranges = { 1: "30", 2: "90", 3: "180", 4: "365" };
+  document.addEventListener("keydown", (e) => {
+    if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
+    if (e.target.closest?.("input, textarea, select, [contenteditable]")) return;
+    if (document.querySelector("dialog[open]") || el("lang-menu").open) return;
+    if (e.key === "/") {
+      e.preventDefault();
+      el("amount").focus();
+      el("amount").select();
+    } else if (e.key === "s" || e.key === "S") {
+      toggleDirection();
+    } else if (e.key in ranges) {
+      const group = el("range-group");
+      if (group.value !== ranges[e.key]) {
+        group.value = ranges[e.key];
+        loadHistory(Number(ranges[e.key]));
+      }
+    } else if (e.key === "d" || e.key === "D") {
+      e.preventDefault();
+      el("date-input").focus();
+    } else if (e.key === "?") {
+      e.preventDefault();
+      help.open();
+    }
+  });
+}
+
 /* ---------- language ---------- */
 
 function initLanguage() {
@@ -1382,15 +1583,14 @@ function initLanguage() {
       runCalculator(0);
       renderRank();
     } else {
-      const [from, to] = currentPair();
-      setAmountLabel(from);
-      el("calc-result-label").textContent = t("calc.result", { cur: to });
+      setCalcLabels();
     }
     if (chart) renderChart();
     if (el("offline-banner").classList.contains("is-shown")) setOffline(true);
     if (!el("install-chrome").hidden) el("install-chrome").href = chromeIntentUrl(); // ?lang= changed
     readAmount();
     renderSaved();
+    renderDate();
   });
 }
 
@@ -1404,11 +1604,12 @@ window.addEventListener("DOMContentLoaded", () => {
   initInstall();
   initAmountField();
   initSaved();
+  initDateLookup();
+  initShortcuts();
   readShareParams();
   placeCurrencies();
   el("copy-btn").addEventListener("click", copyResult);
   el("share-btn").addEventListener("click", shareResult);
-  el("calc-result").addEventListener("click", copyResult);
   el("swap-btn").addEventListener("click", toggleDirection);
   const range = M3.buttonGroup(el("range-group"));
   range.addEventListener("change", () => loadHistory(Number(range.value)));

@@ -108,7 +108,7 @@ button, input, output { font-family: inherit; }
 
 /* Display text and the key numbers use the fully rounded end of Google Sans
  * Flex's roundness axis, like Google's own Expressive type. */
-.eyebrow, .section-heading h2, .rate-line, .calc-result, .chart-tooltip-value, .install-text h2,
+.eyebrow, .section-heading h2, .rate-line, .chart-tooltip-value, .install-text h2,
 .m3-top-app-bar__title { font-variation-settings: "ROND" 100; }
 
 /* ---------- layout ---------- */
@@ -370,12 +370,22 @@ section { margin-bottom: 24px; }
 
 /* ---------- converter ---------- */
 
-.calc-card { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 18px; }
-.calc-input { width: 100%; min-width: 0; }
+/* Two text fields side by side (stacked on phones and in the narrow pane),
+ * then the operator keys and the copy / share actions. The amounts use a
+ * larger input text (headline-small) than a form field. */
+.calc-card { display: flex; flex-direction: column; gap: 12px; }
+.calc-fields { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: start; gap: 16px; }
+.calc-equals { padding-top: 12px; color: var(--card-on-variant); font-size: 24px; }
+.calc-amount .m3-text-field__input {
+  font-size: var(--md-sys-typescale-headline-small-size);
+  font-weight: 560;
+  letter-spacing: 0;
+  font-variation-settings: "ROND" 100;
+}
 /* Operator keys for expressions: only on touch screens, while typing. */
-.calc-keys { display: none; gap: 8px; margin-top: 8px; }
+.calc-keys { display: none; gap: 8px; }
 @media (pointer: coarse) {
-  .calc-input:focus-within .calc-keys { display: flex; }
+  .calc-card:focus-within .calc-keys { display: flex; }
 }
 .calc-keys .m3-chip {
   flex: 1 1 0;
@@ -384,27 +394,26 @@ section { margin-bottom: 24px; }
   color: var(--card-on);
   font-size: 18px;
 }
-.calc-equals { color: var(--card-on-variant); font-size: 24px; }
-.calc-field { min-width: 0; display: flex; flex-direction: column; gap: 10px; }
-.result-label { color: var(--card-on-variant); font-size: 13px; }
-.calc-result-row { display: flex; align-items: center; gap: 0; min-width: 0; }
-/* The result takes all the free width so the buttons stay pinned at the end
- * of the row; otherwise they would shift with every frame of the number tween. */
-.calc-result {
-  display: block;
-  flex: 1 1 auto;
-  min-width: 0;
-  color: var(--card-on);
-  font-size: clamp(23px, 4.5vw, 34px);
-  font-weight: 560;
-  line-height: 1.2;
-  letter-spacing: -.01em;
-  overflow-wrap: anywhere;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
+.calc-actions { display: flex; align-items: center; justify-content: flex-end; gap: 0; margin: -4px -4px -8px 0; }
+.calc-hint { flex: 1 1 auto; color: var(--card-on-variant); font-size: var(--md-sys-typescale-body-small-size); }
 
-/* ---------- history chart ---------- */
+/* ---------- rate on a date ---------- */
+
+.date-card { --card-bg: var(--md-sys-color-tertiary-container); --card-on: var(--md-sys-color-on-tertiary-container); }
+.date-card .m3-text-field__input { color-scheme: inherit; }
+.date-result { margin-top: 12px; color: var(--card-on); }
+.date-result p { margin: 0; }
+.date-rate {
+  font-size: var(--md-sys-typescale-title-large-size);
+  font-weight: 600;
+  line-height: var(--md-sys-typescale-title-large-line-height);
+  font-variation-settings: "ROND" 100;
+  font-variant-numeric: tabular-nums;
+}
+.date-amount { margin-top: 2px !important; font-size: var(--md-sys-typescale-body-large-size); font-variant-numeric: tabular-nums; }
+.date-result .meta-text { margin-top: 6px; }
+
+/* ---------- history chart ---------- *//* ---------- history chart ---------- */
 
 .range-tabs { width: 100%; margin-bottom: 14px; }
 /* On the coloured chart card, unselected buttons use the lightest (darkest in
@@ -422,7 +431,21 @@ section { margin-bottom: 24px; }
 .chart-readout-line { display: block; min-height: 1.55em; }
 .chart-readout-hi, .is-up { color: var(--app-color-high); }
 .chart-readout-lo, .is-down { color: var(--app-color-low); }
-.chart-wrap { position: relative; }
+/* 30-day moving average: a dashed tertiary line (statistics only). */
+.chart-readout-ma { display: flex; align-items: center; gap: 6px; }
+.chart-readout-ma:empty { display: none; }
+.chart-readout-ma::before {
+  content: "";
+  width: 16px;
+  border-top: 2px dashed var(--md-sys-color-tertiary);
+}
+.chart-ma { fill: none; stroke: var(--md-sys-color-tertiary); stroke-width: 1.5; stroke-dasharray: 5 4; stroke-linecap: round; opacity: .9; }
+.chart-svg.is-drawing .chart-ma { animation: fade-in 500ms var(--md-sys-motion-spring-default-effects) 900ms both; }
+.chart-svg.is-morphing .chart-ma { opacity: 0; }
+.chart-svg.is-settled .chart-ma { animation: fade-in 300ms var(--md-sys-motion-spring-default-effects) both; }
+.chart-tooltip-ma:empty { display: none; }
+.chart-tooltip-ma { opacity: .8; }
+.chart-wrap { position: relative; overflow-x: clip; } /* a hidden tooltip left at a wide position must not widen the page */
 .chart { width: 100%; height: 220px; transition: opacity var(--md-sys-motion-spring-default-effects-duration) var(--md-sys-motion-spring-default-effects); }
 .chart-wrap.is-loading .chart:not(.is-loading) { opacity: .4; transition-delay: 200ms; }
 .chart.is-loading { display: grid; place-items: center; }
@@ -613,6 +636,27 @@ section { margin-bottom: 24px; }
 .saved-cur-group { width: 100%; }
 .saved-cur-group .m3-toggle:not([aria-checked="true"]) { background-color: var(--md-sys-color-surface-container-highest); }
 
+/* ---------- keyboard shortcuts (wide screens with a mouse) ---------- */
+
+.shortcut-hint { display: none; }
+@media (hover: hover) and (pointer: fine) and (min-width: 840px) {
+  .shortcut-hint { display: block; margin-left: -12px !important; }
+}
+.shortcut-list { display: flex; flex-direction: column; gap: 10px; margin: 0; }
+.shortcut-list > div { display: flex; align-items: baseline; gap: 16px; }
+.shortcut-list dt { flex: 0 0 72px; color: var(--md-sys-color-on-surface); }
+.shortcut-list dd { margin: 0; }
+kbd {
+  display: inline-block;
+  min-width: 24px;
+  padding: 1px 6px;
+  border-radius: var(--md-sys-shape-corner-extra-small);
+  background-color: var(--md-sys-color-surface-container-highest);
+  color: var(--md-sys-color-on-surface);
+  font: 600 13px/20px var(--font);
+  text-align: center;
+}
+
 /* ---------- Mastercard, install, footer ---------- */
 
 .mc-note { margin: 0 0 16px; color: var(--card-on-variant); font-size: var(--md-sys-typescale-body-small-size); line-height: 1.75; }
@@ -730,10 +774,8 @@ section { margin-bottom: 24px; }
   }
   .chart { height: 300px; }
   /* The converter in the narrow pane: stacked, like on phones. */
-  .pane-side .calc-card { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .pane-side .calc-fields { grid-template-columns: minmax(0, 1fr); gap: 16px; }
   .pane-side .calc-equals { display: none; }
-  .pane-side .calc-field { order: -1; padding: 0 2px 4px; }
-  .pane-side .calc-result { font-size: 30px; }
 }
 @media (min-width: 1200px) {
   .panes { grid-template-columns: minmax(0, 1fr) 412px; }
@@ -747,17 +789,15 @@ section { margin-bottom: 24px; }
   .page { padding-top: 2px; }
   .eyebrow { margin: 16px 0 22px; }
   .surface-card { padding: 16px; }
-  .calc-card { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .calc-fields { grid-template-columns: minmax(0, 1fr); gap: 16px; }
   .calc-equals { display: none; }
-  .calc-field { order: -1; padding: 0 2px 4px; }
-  .calc-result { font-size: 30px; }
   .rate-line { gap: 7px; }
   .chart { height: 205px; }
 }
 
 /* Kept after every rule that uses the `font:` shorthand, which resets
  * font-variant: numbers line up in columns (tabular figures). */
-.rate-line, .calc-result, .chart-readout, .chart-text, .chart-extreme-label, .chart-tooltip { font-variant-numeric: tabular-nums; }
+.rate-line, .chart-readout, .chart-text, .chart-extreme-label, .chart-tooltip { font-variant-numeric: tabular-nums; }
 
 /* ---------- motion ---------- */
 

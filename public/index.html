@@ -131,32 +131,37 @@
       <div class="section-heading">
         <h2 id="calc-heading" data-i18n="section.calc">换算计算器</h2>
       </div>
+      <!-- Two-way converter: type in either field and the other follows
+           (app.js "converter"); both accept simple expressions ("1980*3"). -->
       <div class="m3-card surface-card calc-card">
-        <div class="calc-input">
-          <!-- Accepts simple expressions ("1980*3"); see evaluateAmount() in app.js. -->
-          <div class="m3-text-field" id="amount-field">
+        <div class="calc-fields">
+          <div class="m3-text-field calc-amount" id="amount-field">
             <input class="m3-text-field__input" id="amount" type="text" inputmode="decimal" enterkeyhint="done" value="100" placeholder=" " autocomplete="off" spellcheck="false" aria-describedby="amount-support" />
-            <label class="m3-text-field__label" for="amount">金额（JPY）</label>
-            <fieldset class="m3-text-field__outline" aria-hidden="true"><legend><span>金额（JPY）</span></legend></fieldset>
+            <label class="m3-text-field__label" for="amount">JPY 日元</label>
+            <fieldset class="m3-text-field__outline" aria-hidden="true"><legend><span>JPY 日元</span></legend></fieldset>
             <span class="m3-text-field__supporting" id="amount-support" aria-live="polite"></span>
           </div>
-          <!-- Phone number pads have no operator keys; these appear while typing on touch screens. -->
-          <div class="calc-keys" role="toolbar" aria-label="运算符" data-i18n-attr="aria-label:keys.label">
-            <button type="button" class="m3-chip m3-interactive" tabindex="-1" data-insert="+">+</button>
-            <button type="button" class="m3-chip m3-interactive" tabindex="-1" data-insert="−">−</button>
-            <button type="button" class="m3-chip m3-interactive" tabindex="-1" data-insert="×">×</button>
-            <button type="button" class="m3-chip m3-interactive" tabindex="-1" data-insert="÷">÷</button>
+          <div class="calc-equals" aria-hidden="true">＝</div>
+          <div class="m3-text-field calc-amount" id="amount-to-field">
+            <input class="m3-text-field__input" id="amount-to" type="text" inputmode="decimal" enterkeyhint="done" value="" placeholder=" " autocomplete="off" spellcheck="false" aria-describedby="amount-to-support" />
+            <label class="m3-text-field__label" for="amount-to">CNY 人民币</label>
+            <fieldset class="m3-text-field__outline" aria-hidden="true"><legend><span>CNY 人民币</span></legend></fieldset>
+            <span class="m3-text-field__supporting" id="amount-to-support" aria-live="polite"></span>
           </div>
         </div>
-        <div class="calc-equals" aria-hidden="true">＝</div>
-        <div class="calc-field">
-          <span class="result-label" id="calc-result-label">折合 CNY</span>
-          <div class="calc-result-row">
-            <output class="calc-result" id="calc-result" title="点击复制" data-i18n-attr="title:calc.copyHint"><span class="calc-visible" aria-hidden="true"><span class="skeleton">0.000</span></span><span class="sr-only"></span></output>
-            <button type="button" class="m3-icon-button m3-interactive" id="copy-btn" aria-label="复制换算结果" data-tooltip="复制换算结果" data-i18n-attr="aria-label:calc.copy;data-tooltip:calc.copy"><span class="m3-icon" data-icon="content_copy" aria-hidden="true"></span></button>
-            <button type="button" class="m3-icon-button m3-interactive" id="share-btn" aria-label="分享换算结果" data-tooltip="分享换算结果" data-i18n-attr="aria-label:calc.share;data-tooltip:calc.share"><span class="m3-icon" data-icon="share" aria-hidden="true"></span></button>
-          </div>
+        <!-- Phone number pads have no operator keys; these appear while typing on touch screens. -->
+        <div class="calc-keys" role="toolbar" aria-label="运算符" data-i18n-attr="aria-label:keys.label">
+          <button type="button" class="m3-chip m3-interactive" tabindex="-1" data-insert="+">+</button>
+          <button type="button" class="m3-chip m3-interactive" tabindex="-1" data-insert="−">−</button>
+          <button type="button" class="m3-chip m3-interactive" tabindex="-1" data-insert="×">×</button>
+          <button type="button" class="m3-chip m3-interactive" tabindex="-1" data-insert="÷">÷</button>
         </div>
+        <div class="calc-actions">
+          <span class="calc-hint" data-i18n="calc.twoWay">两个框都可以输入</span>
+          <button type="button" class="m3-icon-button m3-interactive" id="copy-btn" aria-label="复制换算结果" data-tooltip="复制换算结果" data-i18n-attr="aria-label:calc.copy;data-tooltip:calc.copy"><span class="m3-icon" data-icon="content_copy" aria-hidden="true"></span></button>
+          <button type="button" class="m3-icon-button m3-interactive" id="share-btn" aria-label="分享换算结果" data-tooltip="分享换算结果" data-i18n-attr="aria-label:calc.share;data-tooltip:calc.share"><span class="m3-icon" data-icon="share" aria-hidden="true"></span></button>
+        </div>
+        <span class="sr-only" id="calc-live" aria-live="polite"></span>
       </div>
     </section>
 
@@ -188,6 +193,7 @@
           <span class="chart-readout-line" id="readout-latest"><span class="skeleton skeleton-text">最新 0000-00-00 · 0.000000 · 区间 +0.00%</span></span>
           <span class="chart-readout-line chart-readout-hi" id="readout-high"><span class="skeleton skeleton-text">最高 0000-00-00 · 0.000000</span></span>
           <span class="chart-readout-line chart-readout-lo" id="readout-low"><span class="skeleton skeleton-text">最低 0000-00-00 · 0.000000</span></span>
+          <span class="chart-readout-line chart-readout-ma" id="readout-ma"></span>
         </div>
         <div class="chart-wrap">
           <div class="wavy-progress" role="progressbar" aria-label="加载中" data-i18n-attr="aria-label:loading"><div class="wavy-progress__bar"></div></div>
@@ -196,7 +202,25 @@
             <span class="chart-tooltip-date" id="tooltip-date"></span>
             <span class="chart-tooltip-value" id="tooltip-value"></span>
             <span class="chart-tooltip-diff" id="tooltip-diff"></span>
+            <span class="chart-tooltip-ma" id="tooltip-ma"></span>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="sec-side sec-date" aria-labelledby="date-heading">
+      <div class="section-heading">
+        <h2 id="date-heading" data-i18n="section.date">按日期查汇率</h2>
+      </div>
+      <!-- The rate on any day since 2005 (/api/day), and the converter's amount on that day. -->
+      <div class="m3-card surface-card date-card">
+        <div class="m3-text-field" id="date-field">
+          <input class="m3-text-field__input" id="date-input" type="date" min="2005-01-03" />
+          <label class="m3-text-field__label" for="date-input" data-i18n="date.label">日期</label>
+          <fieldset class="m3-text-field__outline" aria-hidden="true"><legend><span data-i18n="date.label">日期</span></legend></fieldset>
+        </div>
+        <div class="date-result" id="date-result" aria-live="polite">
+          <p class="meta-text" id="date-hint" data-i18n="date.hint">选择一个日期，查看当天的欧洲央行参考汇率，以及计算器中的金额在当天折合多少。可查 2005 年以来的任意一天。</p>
         </div>
       </div>
     </section>
@@ -247,6 +271,7 @@
       <p data-i18n-html="footer.ui">界面按 Material Design 3 Expressive 规范实现。</p>
       <p data-i18n-html="footer.github">本项目开源于 <a href="https://github.com/Saki340/cny-jpy-rate" target="_blank" rel="noopener noreferrer">GitHub</a>，欢迎提交 Issue 反馈问题。</p>
       <p data-i18n="footer.privacy">隐私说明</p>
+      <p class="shortcut-hint"><button type="button" class="m3-button m3-button--text m3-interactive" id="shortcuts-open" data-i18n="shortcut.open">键盘快捷键</button></p>
       <p class="disclaimer" data-i18n="footer.disclaimer">本网站仅提供汇率查询与换算参考功能，不构成任何金融、投资或法律建议，也不对因使用本站数据造成的任何损失承担责任；具体交易请以银行、支付机构或万事达官方渠道公布的汇率为准。</p>
     </footer>
   </main>
@@ -276,6 +301,21 @@
       <button type="submit" class="m3-button m3-button--text m3-interactive" id="saved-save" data-i18n="saved.save">保存</button>
     </div>
   </form>
+</dialog>
+<dialog class="m3-dialog" id="shortcuts-dialog" aria-labelledby="shortcuts-title">
+  <div class="m3-dialog__container">
+    <h2 class="m3-dialog__headline" id="shortcuts-title" data-i18n="shortcut.title">键盘快捷键</h2>
+    <dl class="m3-dialog__content shortcut-list">
+      <div><dt><kbd>/</kbd></dt><dd data-i18n="shortcut.amount">输入金额</dd></div>
+      <div><dt><kbd>S</kbd></dt><dd data-i18n="shortcut.swap">切换兑换方向</dd></div>
+      <div><dt><kbd>1</kbd>–<kbd>4</kbd></dt><dd data-i18n="shortcut.range">切换走势范围（30 天 / 90 天 / 180 天 / 1 年）</dd></div>
+      <div><dt><kbd>D</kbd></dt><dd data-i18n="shortcut.date">按日期查汇率</dd></div>
+      <div><dt><kbd>?</kbd></dt><dd data-i18n="shortcut.help">显示快捷键说明</dd></div>
+    </dl>
+    <div class="m3-dialog__actions">
+      <button type="button" class="m3-button m3-button--text m3-interactive" id="shortcuts-close" data-i18n="shortcut.close">知道了</button>
+    </div>
+  </div>
 </dialog>
 <script src="m3/m3.js"></script>
 <script src="i18n.js"></script>
