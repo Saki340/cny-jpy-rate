@@ -168,19 +168,20 @@ section { margin-bottom: 24px; }
  * Every card is a filled container in a colour role (--card-bg / --card-on):
  * today's rate primary-container, the converter the teal app role, the chart
  * secondary-container, the Mastercard note surface-container-highest.
- * Shapes: the hero card extra-large (28dp), the others large (16dp). */
+ * Shape: every card (and the saved-amounts list) uses the card corner,
+ * medium 12dp (Filled/Elevated/OutlinedCardTokens.ContainerShape). */
 .surface-card {
   width: 100%;
   padding: clamp(16px, 3.5vw, 24px);
-  border-radius: var(--md-sys-shape-corner-large);
+  border-radius: var(--md-sys-shape-corner-medium);
   background-color: var(--card-bg, var(--md-sys-color-surface-container-highest));
   color: var(--card-on, var(--md-sys-color-on-surface));
 }
-.rate-card  { --card-bg: var(--md-sys-color-primary-container);   --card-on: var(--md-sys-color-on-primary-container); border-radius: var(--md-sys-shape-corner-extra-large); }
+.rate-card  { --card-bg: var(--md-sys-color-primary-container);   --card-on: var(--md-sys-color-on-primary-container); }
 .calc-card  { --card-bg: var(--app-color-calc-container);         --card-on: var(--app-color-on-calc-container); }
 .chart-card { --card-bg: var(--md-sys-color-secondary-container); --card-on: var(--md-sys-color-on-secondary-container); }
 .mc-panel   { --card-bg: var(--md-sys-color-surface-container-highest); --card-on: var(--md-sys-color-on-surface); }
-.install-card { --card-bg: var(--md-sys-color-surface-container-high); --card-on: var(--md-sys-color-on-surface); }
+.install-card { --card-bg: var(--md-sys-color-surface-container-highest); --card-on: var(--md-sys-color-on-surface); }
 /* Secondary text on a card: the card's "on" colour, slightly softened. */
 .surface-card { --card-on-variant: color-mix(in srgb, var(--card-on) 82%, transparent); }
 .meta-text {
@@ -580,11 +581,15 @@ section { margin-bottom: 24px; }
 /* ---------- saved amounts ---------- */
 
 .section-heading .section-action { margin: -8px 0 -8px auto; }
-.saved-empty { --card-bg: var(--md-sys-color-surface-container); }
-/* Segmented list on the page background (surface): items take the
- * surface-container colour, as Compose's surface items would on a
- * surface-container screen. */
-.saved-list { --list-item-bg: var(--md-sys-color-surface-container); }
+.saved-empty { --card-bg: var(--md-sys-color-surface-container-highest); }
+/* Segmented list on the page background (surface): items take the same
+ * neutral colour as the other neutral blocks (the filled card colour,
+ * surface-container-highest), since surface items would vanish on it. */
+.saved-list { --list-item-bg: var(--md-sys-color-surface-container-highest); }
+/* The list's outer corners match the cards around it (12dp, not the list's
+ * own 16dp), so every block on the page has the same corner. */
+.saved-list .m3-list-item:first-child { --r-top: var(--md-sys-shape-corner-medium); }
+.saved-list .m3-list-item:last-child { --r-bottom: var(--md-sys-shape-corner-medium); }
 .saved-list[hidden], .saved-empty[hidden] { display: none; }
 .saved-result {
   flex: none;
