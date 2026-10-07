@@ -109,20 +109,54 @@
   initial-value: 0px;
 }
 
-/* ---------- top app bar (small) ----------
- * AppBarSmallTokens / AppBarTokens: 64dp, title-large, surface; when content
- * scrolls under it the container becomes surface-container. Leading and
- * trailing space 4dp; icon buttons 48dp touch targets. */
+/* ---------- top app bar: medium flexible (Expressive) ----------
+ * AppBarSmallTokens / AppBarTokens / AppBarMediumFlexibleTokens and
+ * TwoRowsTopAppBar: a 64dp row (title-large, actions; 4dp leading/trailing
+ * space, 48dp icon-button targets) and below it an expanded row with the
+ * headline-medium title and a label-large subtitle (136dp in all; title 16dp
+ * from the edge). Scrolling collapses it (exitUntilCollapsed): the expanded
+ * row scrolls away under the sticky row, its title fading out (1 - f) while
+ * the small title fades in (TopTitleAlphaEasing, cubic-bezier(.8, 0, .8, .15))
+ * and the container goes from surface to surface-container with f, the
+ * collapsed fraction, set by m3.js as --collapsed / --top-title-alpha. */
 .m3-top-app-bar {
+  --collapsed: 0;
   position: sticky;
   top: 0;
   z-index: 10;
   padding-top: env(safe-area-inset-top, 0px);
-  background-color: var(--md-sys-color-surface);
+  background-color: color-mix(in srgb, var(--md-sys-color-surface-container) calc(var(--collapsed) * 100%), var(--md-sys-color-surface));
   color: var(--md-sys-color-on-surface);
-  transition: background-color var(--md-sys-motion-spring-default-effects-duration) var(--md-sys-motion-spring-default-effects);
 }
-.m3-top-app-bar.is-scrolled { background-color: var(--md-sys-color-surface-container); }
+.m3-top-app-bar__title { opacity: var(--top-title-alpha, 1); }
+.m3-top-app-bar__arrow { font-size: .9em; margin: 0 .2em; vertical-align: -.1em; }
+.m3-top-app-bar__expanded {
+  --expanded-alpha: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 72px; /* 136dp - the 64dp row */
+  padding-bottom: 16px;
+  opacity: var(--expanded-alpha);
+}
+.m3-top-app-bar__headline {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  color: var(--md-sys-color-on-surface);
+  font-size: var(--md-sys-typescale-headline-medium-size);
+  font-weight: 700;
+  line-height: var(--md-sys-typescale-headline-medium-line-height);
+  letter-spacing: var(--md-sys-typescale-headline-medium-tracking);
+}
+.m3-top-app-bar__subtitle {
+  margin: 0;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-label-large-size);
+  font-weight: var(--md-sys-typescale-label-large-weight);
+  line-height: var(--md-sys-typescale-label-large-line-height);
+  letter-spacing: var(--md-sys-typescale-label-large-tracking);
+}
 .m3-top-app-bar__row {
   display: flex;
   align-items: center;
@@ -419,8 +453,9 @@
   background-color: var(--md-sys-color-surface-container-low);
   box-shadow: var(--md-sys-elevation-level2);
 }
-.m3-menu__group:first-child { border-top-left-radius: var(--md-sys-shape-corner-large); border-top-right-radius: var(--md-sys-shape-corner-large); }
-.m3-menu__group:last-child { border-bottom-left-radius: var(--md-sys-shape-corner-large); border-bottom-right-radius: var(--md-sys-shape-corner-large); }
+.m3-menu__group[hidden], .m3-menu__item[hidden] { display: none; }
+.m3-menu__group:nth-child(1 of :not([hidden])) { border-top-left-radius: var(--md-sys-shape-corner-large); border-top-right-radius: var(--md-sys-shape-corner-large); }
+.m3-menu__group:nth-last-child(1 of :not([hidden])) { border-bottom-left-radius: var(--md-sys-shape-corner-large); border-bottom-right-radius: var(--md-sys-shape-corner-large); }
 .m3-menu__item {
   display: flex;
   align-items: center;
@@ -444,8 +479,9 @@
     background-color var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects),
     color var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
 }
-.m3-menu__item:first-child { border-top-left-radius: var(--md-sys-shape-corner-medium); border-top-right-radius: var(--md-sys-shape-corner-medium); }
-.m3-menu__item:last-child { border-bottom-left-radius: var(--md-sys-shape-corner-medium); border-bottom-right-radius: var(--md-sys-shape-corner-medium); }
+a.m3-menu__item { text-decoration: none; }
+.m3-menu__item:nth-child(1 of :not([hidden])) { border-top-left-radius: var(--md-sys-shape-corner-medium); border-top-right-radius: var(--md-sys-shape-corner-medium); }
+.m3-menu__item:nth-last-child(1 of :not([hidden])) { border-bottom-left-radius: var(--md-sys-shape-corner-medium); border-bottom-right-radius: var(--md-sys-shape-corner-medium); }
 .m3-menu__item .m3-icon { --m3-icon-opsz: 20; font-size: 20px; color: var(--md-sys-color-on-surface-variant); }
 /* Selection mark: a check, kept as blank space when unchecked so labels align. */
 .m3-menu__item .m3-menu__check { visibility: hidden; }

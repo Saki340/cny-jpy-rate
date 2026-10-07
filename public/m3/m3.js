@@ -6,8 +6,10 @@
 //   M3.dialog(el)                      modal dialog on <dialog>; returns { open, close }
 //   M3.buttonGroup(el)                 connected button group as a radio group;
 //                                      el.value, "change" event
-//   M3.menu(trigger, menu)             menu anchored to a button; menu.value,
-//                                      "change" event, menu.open / close()
+//   M3.menu(trigger, menu)             menu anchored to a button. Radio items
+//                                      (menuitemradio): menu.value, "change";
+//                                      action items (menuitem): "select" event
+//                                      with the item; "beforeopen" event
 //   M3.setLabel(field, text)           outlined text field label
 //
 // Ripples and tooltips are wired up automatically for .m3-interactive and
@@ -44,12 +46,46 @@ const M3 = (() => {
   }
   document.addEventListener("pointerdown", ripple);
 
-  /* ---------- top app bar: container colour while content is under it ---------- */
+  /* ---------- top app bar: medium flexible, collapsing on scroll ---------- */
+
+  // CSS cubic-bezier() as a function of progress (for TopTitleAlphaEasing).
+  function cubicBezier(x1, y1, x2, y2) {
+    const at = (t, a, b) => 3 * a * t * (1 - t) ** 2 + 3 * b * t * t * (1 - t) + t ** 3;
+    return (p) => {
+      if (p <= 0) return 0;
+      if (p >= 1) return 1;
+      let lo = 0, hi = 1, t = p;
+      for (let i = 0; i < 20; i++) {
+        t = (lo + hi) / 2;
+        if (at(t, x1, x2) < p) lo = t; else hi = t;
+      }
+      return at(t, y1, y2);
+    };
+  }
+  const topTitleEasing = cubicBezier(0.8, 0, 0.8, 0.15);
 
   function initAppBars() {
-    const bars = document.querySelectorAll(".m3-top-app-bar");
-    const update = () => bars.forEach((bar) => bar.classList.toggle("is-scrolled", window.scrollY > 0));
+    const bar = document.querySelector(".m3-top-app-bar");
+    if (!bar) return;
+    const expanded = document.querySelector(".m3-top-app-bar__expanded");
+    const small = bar.querySelector(".m3-top-app-bar__title");
+    let last = -1;
+    const update = () => {
+      const range = expanded ? expanded.offsetHeight : 0;
+      const f = range ? Math.min(Math.max(window.scrollY / range, 0), 1) : window.scrollY > 0 ? 1 : 0;
+      if (f === last) return;
+      last = f;
+      const topAlpha = expanded ? topTitleEasing(f) : 1;
+      bar.style.setProperty("--collapsed", f.toFixed(3));
+      bar.style.setProperty("--top-title-alpha", topAlpha.toFixed(3));
+      expanded?.style.setProperty("--expanded-alpha", (1 - f).toFixed(3));
+      // Content is under the bar once it has fully collapsed.
+      bar.classList.toggle("is-scrolled", f >= 1);
+      // Like Compose, only the visible title is exposed to screen readers.
+      if (expanded && small) small.toggleAttribute("aria-hidden", topAlpha < 0.5);
+    };
     window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
     update();
   }
 
@@ -145,7 +181,7 @@ const M3 = (() => {
   /* ---------- menu ---------- */
 
   function menu(trigger, panel) {
-    const items = () => [...panel.querySelectorAll(".m3-menu__item")];
+    const items = () => [...panel.querySelectorAll(".m3-menu__item")].filter((i) => !i.hidden);
     let open = false;
 
     const place = () => {
@@ -156,11 +192,15 @@ const M3 = (() => {
       panel.style.top = `${r.bottom + 4}px`;
     };
     const sync = () => {
-      for (const item of items()) item.setAttribute("aria-checked", String(item.dataset.value === panel.dataset.value));
+      for (const item of panel.querySelectorAll('[role="menuitemradio"]')) item.setAttribute("aria-checked", String(item.dataset.value === panel.dataset.value));
     };
     const show = (focusFirst) => {
       if (open) return;
       open = true;
+      panel.dispatchEvent(new Event("beforeopen"));
+      for (const group of panel.querySelectorAll(".m3-menu__group")) {
+        group.hidden = !group.querySelector(".m3-menu__item:not([hidden])");
+      }
       place();
       panel.classList.add("is-open");
       trigger.setAttribute("aria-expanded", "true");
@@ -193,6 +233,12 @@ const M3 = (() => {
     panel.addEventListener("click", (e) => {
       const item = e.target.closest(".m3-menu__item");
       if (!item) return;
+      if (item.getAttribute("role") !== "menuitemradio") {
+        // Action item (a link navigates by itself).
+        close(item.tagName !== "A");
+        panel.dispatchEvent(new CustomEvent("select", { detail: item }));
+        return;
+      }
       const changed = item.dataset.value !== panel.dataset.value;
       panel.value = item.dataset.value;
       close(true);

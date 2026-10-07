@@ -11,7 +11,7 @@
   font-weight: 300 800;
   font-display: swap;
   /* ASCII + a few symbols (· − ± ⇄) only. */
-  src: url(vendor/fonts/google-sans-flex-ascii.woff2?v=2) format("woff2");
+  src: url(vendor/fonts/google-sans-flex-ascii.woff2?v=3) format("woff2");
 }
 /* Material Symbols Rounded, subset to the icons this page uses (variable:
  * opsz 20–48, wght 400–700, FILL 0–1). Adding an icon means downloading a
@@ -23,7 +23,7 @@
   font-style: normal;
   font-weight: 400 700;
   font-display: block;
-  src: url(vendor/fonts/material-symbols-rounded.woff2?v=2) format("woff2");
+  src: url(vendor/fonts/material-symbols-rounded.woff2?v=3) format("woff2");
 }
 
 /* ---------- app colours ----------
@@ -108,7 +108,7 @@ button, input, output { font-family: inherit; }
 
 /* Display text and the key numbers use the fully rounded end of Google Sans
  * Flex's roundness axis, like Google's own Expressive type. */
-.eyebrow, .section-heading h2, .rate-line, .chart-tooltip-value, .install-text h2,
+.m3-top-app-bar__headline, .section-heading h2, .rate-line, .chart-tooltip-value, .install-text h2,
 .m3-top-app-bar__title { font-variation-settings: "ROND" 100; }
 
 /* ---------- layout ---------- */
@@ -124,19 +124,6 @@ button, input, output { font-family: inherit; }
   margin-inline: auto;
 }
 .page { padding: 4px 0 max(40px, env(safe-area-inset-bottom)); }
-.eyebrow {
-  display: flex;
-  align-items: center;
-  margin: 20px 0 28px;
-  color: var(--md-sys-color-primary);
-  font-size: clamp(30px, 7vw, 40px);
-  font-weight: 760;
-  line-height: 1.25;
-  letter-spacing: .01em;
-}
-/* The ⇄ in the headline is an icon: the font has no such glyph, and each
- * language's fallback font drew it at a different weight. */
-.eyebrow-arrow { font-size: .9em; margin: 0 .22em; }
 section { margin-bottom: 24px; }
 .section-heading { display: flex; align-items: center; gap: 12px; margin: 0 2px 12px; }
 .section-heading h2 {
@@ -169,6 +156,7 @@ section { margin-bottom: 24px; }
 @media (max-width: 360px) {
   .theme-group .m3-toggle { padding: 0 7px; }
   .m3-top-app-bar__title { padding-inline: 8px 0; font-size: 18px; }
+  .m3-top-app-bar__actions { gap: 0; }
 }
 
 /* ---------- cards ----------
@@ -636,12 +624,8 @@ section { margin-bottom: 24px; }
 .saved-cur-group { width: 100%; }
 .saved-cur-group .m3-toggle:not([aria-checked="true"]) { background-color: var(--md-sys-color-surface-container-highest); }
 
-/* ---------- keyboard shortcuts (wide screens with a mouse) ---------- */
+/* ---------- keyboard shortcuts dialog ---------- */
 
-.shortcut-hint { display: none; }
-@media (hover: hover) and (pointer: fine) and (min-width: 840px) {
-  .shortcut-hint { display: block; margin-left: -12px !important; }
-}
 .shortcut-list { display: flex; flex-direction: column; gap: 10px; margin: 0; }
 .shortcut-list > div { display: flex; align-items: baseline; gap: 16px; }
 .shortcut-list dt { flex: 0 0 72px; color: var(--md-sys-color-on-surface); }
@@ -787,7 +771,6 @@ kbd {
 @media (max-width: 560px) {
   :root { --gutter: 12px; }
   .page { padding-top: 2px; }
-  .eyebrow { margin: 16px 0 22px; }
   .surface-card { padding: 16px; }
   .calc-fields { grid-template-columns: minmax(0, 1fr); gap: 16px; }
   .calc-equals { display: none; }
@@ -803,7 +786,6 @@ kbd {
 
 /* Page entrance: the title and sections rise in one after another, once they
  * scroll into view (app.js adds .in-view; only with JS, see html.js). */
-.page > .eyebrow,
 .page section {
   animation: rise-in var(--md-sys-motion-spring-slow-spatial-duration) var(--md-sys-motion-spring-slow-spatial) both;
 }

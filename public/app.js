@@ -266,13 +266,13 @@ function saveThemePref(mode) {
 // theme-color metas (light / dark, for the first paint) get the same value.
 let barScrolled = null;
 function syncThemeColor() {
-  barScrolled = window.scrollY > 0;
+  barScrolled = el("app-bar").classList.contains("is-scrolled");
   const token = barScrolled ? "--md-sys-color-surface-container" : "--md-sys-color-surface";
   const color = getComputedStyle(document.documentElement).getPropertyValue(token).trim();
   if (color) document.querySelectorAll('meta[name="theme-color"]').forEach((meta) => { meta.content = color; });
 }
 window.addEventListener("scroll", () => {
-  if ((window.scrollY > 0) !== barScrolled) syncThemeColor();
+  if (el("app-bar").classList.contains("is-scrolled") !== barScrolled) syncThemeColor();
 }, { passive: true });
 
 function applyTheme(mode) {
@@ -1537,15 +1537,17 @@ function initDateLookup() {
 // For wide screens with a keyboard: / amount, S swap, 1–4 chart range,
 // D date lookup, ? the list. Ignored while typing, with modifier keys, or
 // while a dialog or the menu is open.
+let shortcutsDialog = null;
+
 function initShortcuts() {
   const help = M3.dialog(el("shortcuts-dialog"));
-  el("shortcuts-open").addEventListener("click", () => help.open());
+  shortcutsDialog = help;
   el("shortcuts-close").addEventListener("click", () => help.close());
   const ranges = { 1: "30", 2: "90", 3: "180", 4: "365" };
   document.addEventListener("keydown", (e) => {
     if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
     if (e.target.closest?.("input, textarea, select, [contenteditable]")) return;
-    if (document.querySelector("dialog[open]") || el("lang-menu").open) return;
+    if (document.querySelector("dialog[open]") || el("lang-menu").open || el("more-menu").open) return;
     if (e.key === "/") {
       e.preventDefault();
       el("amount").focus();
@@ -1564,6 +1566,31 @@ function initShortcuts() {
     } else if (e.key === "?") {
       e.preventDefault();
       help.open();
+    }
+  });
+}
+
+/* ---------- more menu ---------- */
+
+// Keyboard shortcuts (devices with a mouse), add to home screen (when the
+// install card applies), data sources and notes (the footer), GitHub.
+const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)");
+
+function initMoreMenu() {
+  const menu = M3.menu(el("more-btn"), el("more-menu"));
+  menu.addEventListener("beforeopen", () => {
+    el("more-shortcuts").hidden = !finePointer.matches;
+    el("more-install").hidden = el("install-section").hidden;
+  });
+  menu.addEventListener("select", (e) => {
+    const item = e.detail;
+    if (item.id === "more-shortcuts") {
+      shortcutsDialog.open();
+    } else if (item.id === "more-install") {
+      if (installPrompt) el("install-btn").click();
+      else el("install-section").scrollIntoView({ behavior: motionOK() ? "smooth" : "auto", block: "center" });
+    } else if (item.id === "more-about") {
+      el("site-footer").scrollIntoView({ behavior: motionOK() ? "smooth" : "auto", block: "start" });
     }
   });
 }
@@ -1606,6 +1633,7 @@ window.addEventListener("DOMContentLoaded", () => {
   initSaved();
   initDateLookup();
   initShortcuts();
+  initMoreMenu();
   readShareParams();
   placeCurrencies();
   el("copy-btn").addEventListener("click", copyResult);

@@ -45,6 +45,8 @@ JPY ⇄ CNY 汇率板。单个 Cloudflare Worker + 静态资源，无构建步�
 
 ## 页面细节
 
+- **顶部应用栏**：M3 Expressive 可折叠中型顶栏（`AppBarMediumFlexibleTokens` / `TwoRowsTopAppBar`）：64dp 的栏 + 下方 72dp 的大标题行（`#app-bar-expanded`，h1「JPY ⇄ CNY」+ 副标题），滚动时大标题行滚走、小标题按 `cubic-bezier(.8,0,.8,.15)` 淡入、背景随折叠比例变为 surface-container（`m3.js` 的 `initAppBars()`，`--collapsed` 等变量）；完全折叠后加 `.is-scrolled`，地址栏颜色据此切换。
+- **「更多」菜单**（`#more-menu`，`initMoreMenu()`）：动作项用 `role="menuitem"`，`M3.menu` 派发 `select`；打开前（`beforeopen`）隐藏不适用的项，空组自动隐藏。主题按钮组保留在顶栏，不要收进菜单。
 - **宽屏布局**（M3 自适应，数值来自 Compose `WindowSizeClass` / `PaneScaffoldDirective`）：600dp 起页边距 24dp；840dp 起分为主区（今日汇率、走势）和辅助区（360dp，1200dp 起 412dp；计算器、常用金额、万事达、安装），间距 24dp，内容最宽 1280px。区块由 `layoutPanes()` 在两栏之间移动（DOM 顺序 = 显示顺序），新增区块时加 `sec-side` 类即可进辅助区。
 - **卡片圆角**：页面上所有色块（卡片和常用金额列表的外角）统一为 medium 12dp，即 Compose `FilledCardTokens.ContainerShape`。
 - **卡片色块**：每张卡片都是 filled 容器，用 `--card-bg` / `--card-on` 指定：今日汇率 primary-container、计算器自定义青绿色（`--app-color-calc-container`，style.css 顶部浅/深两套）、走势 secondary-container、万事达、常用金额、安装卡片等中性色块统一为 surface-container-highest（`FilledCardTokens.ContainerColor`）。卡片内文字、文本框、图表描边都从这两个变量取色，换色只改这一处。
