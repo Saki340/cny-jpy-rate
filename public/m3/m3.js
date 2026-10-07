@@ -4,6 +4,8 @@
 //                                      show a snackbar (4 s, like SnackbarDuration.Short;
 //                                      10 s with an action, like SnackbarDuration.Long)
 //   M3.dialog(el)                      modal dialog on <dialog>; returns { open, close }
+//   M3.pullToRefresh(onRefresh)        pull down at the top of the page (touch) to
+//                                      refresh; onRefresh returns a promise
 //   M3.buttonGroup(el)                 connected button group as a radio group;
 //                                      el.value, "change" event
 //   M3.menu(trigger, menu)             menu anchored to a button. Radio items
@@ -320,6 +322,78 @@ const M3 = (() => {
   document.addEventListener("pointerdown", hideTooltip);
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") hideTooltip(); });
 
+  /* ---------- pull to refresh ----------
+   * PullToRefreshDefaults (Expressive): the pull counts half (DragMultiplier
+   * 0.5); 80dp is both the threshold and the indicator's travel
+   * (PositionalThreshold, IndicatorMaxDistance). The indicator is the contained
+   * loading indicator (48dp, primary-container, shape on-primary-container):
+   * while pulling it morphs with the distance and, past the threshold,
+   * rotates; while refreshing it morphs and spins on its own. Touch only, and
+   * only when the page is scrolled to the very top. */
+
+  function pullToRefresh(onRefresh) {
+    if (!("ontouchstart" in window)) return;
+    const THRESHOLD = 80;
+    const box = document.createElement("div");
+    box.className = "m3-pull-refresh";
+    box.setAttribute("aria-hidden", "true");
+    box.innerHTML = '<span class="m3-pull-refresh__shape"></span>';
+    document.body.append(box);
+    document.documentElement.classList.add("has-pull-refresh");
+
+    let startY = null;
+    let pulling = false;
+    let busy = false;
+    let distance = 0;
+    const show = (fraction) => {
+      box.style.setProperty("--p", fraction.toFixed(3));
+      box.classList.add("is-active");
+    };
+    const hide = () => {
+      box.classList.remove("is-active", "is-refreshing");
+      box.style.setProperty("--p", "0");
+    };
+
+    document.addEventListener("touchstart", (e) => {
+      if (busy || window.scrollY > 0 || e.touches.length !== 1 || e.target.closest("dialog, .m3-menu")) return;
+      startY = e.touches[0].clientY;
+      distance = 0;
+    }, { passive: true });
+    document.addEventListener("touchmove", (e) => {
+      if (startY === null) return;
+      const dy = e.touches[0].clientY - startY;
+      if (dy <= 0 || window.scrollY > 0) {
+        if (pulling) hide();
+        pulling = false;
+        startY = null;
+        return;
+      }
+      pulling = true;
+      e.preventDefault(); // instead of the page bouncing or the browser reloading
+      distance = dy * 0.5;
+      show(distance / THRESHOLD);
+    }, { passive: false });
+    const release = async () => {
+      startY = null;
+      if (!pulling) return;
+      pulling = false;
+      if (distance < THRESHOLD) {
+        hide();
+        return;
+      }
+      busy = true;
+      show(1);
+      box.classList.add("is-refreshing");
+      const minimum = new Promise((r) => setTimeout(r, 700)); // long enough to be seen
+      try { await Promise.all([onRefresh(), minimum]); } finally {
+        hide();
+        busy = false;
+      }
+    };
+    document.addEventListener("touchend", release);
+    document.addEventListener("touchcancel", release);
+  }
+
   /* ---------- outlined text field ---------- */
 
   function setLabel(field, text) {
@@ -330,5 +404,5 @@ const M3 = (() => {
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initAppBars);
   else initAppBars();
 
-  return { snackbar, dialog, buttonGroup, menu, setLabel, hideTooltip };
+  return { snackbar, dialog, buttonGroup, menu, setLabel, hideTooltip, pullToRefresh };
 })();

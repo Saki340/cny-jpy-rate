@@ -54,6 +54,8 @@ JPY ⇄ CNY 汇率板。单个 Cloudflare Worker + 静态资源，无构建步�
 - **走势图**：首次出现用画线动画（`draw`），之后切换范围/方向/新数据都用 `morph`（旧线变形为新线，不重画）；在屏幕外时动画暂停到可见（`is-waiting`）。
 - **区块入场**：`html.js` 下各 section 滚动到可见才播放入场动画。
 - **形状**：由 `ExpressiveShapes.polygon(name)` 生成同点数的 `polygon()`，可直接用 clip-path 过渡变形；新形状加在 `radius` 表里。
+- **字号**：一律用 M3 字号角色（`--md-sys-typescale-*`，关键数字和标题用 `*-emphasized`），不要再写自定义的字号 / 字重。今日汇率：手机 headline-medium、600dp 起 display-small、1200dp 起 display-medium；计算结果：headline-large（手机与窄栏 headline-medium）。
+- **下拉刷新**（`M3.pullToRefresh()`，仅触屏、页面在最顶部时）：数值来自 Compose `PullToRefreshDefaults`（拉动距离 ×0.5、80dp 触发）；指示器是含容器的加载指示器，`html.has-pull-refresh` 关掉浏览器自带的下拉刷新。
 - **字体**：Google Sans Flex 是唯一的拉丁字体（数字用 tabular-nums）；显示文字和关键数字用 `font-variation-settings: "ROND" 100`。子集只含 ASCII 和 · − ± ⇄，新增符号需重新下载子集。
 - 所有装饰性动画都受 `prefers-reduced-motion` 控制（`style.css` 末尾）。
 

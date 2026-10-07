@@ -1502,6 +1502,22 @@ function initShortcuts() {
   });
 }
 
+/* ---------- pull to refresh ---------- */
+
+// Phones: pull down at the top of the page to fetch the rate and the charts
+// again. Rates change once per working day, so "already up to date" is the
+// usual answer.
+async function pullRefresh() {
+  const before = state.rateDate;
+  await Promise.all([
+    loadRate(state.cnyToJpy ? { refresh: true } : undefined),
+    loadHistory(state.historyDays, { refresh: Boolean(chart) }),
+    loadYear(),
+  ]);
+  if (!navigator.onLine) notify(t("offline.plain"));
+  else if (state.rateDate && state.rateDate === before) notify(t("refresh.latest", { date: state.rateDate }));
+}
+
 /* ---------- more menu ---------- */
 
 // Keyboard shortcuts (devices with a mouse), add to home screen (when the
@@ -1568,6 +1584,7 @@ window.addEventListener("DOMContentLoaded", () => {
   initDateLookup();
   initShortcuts();
   initMoreMenu();
+  M3.pullToRefresh(pullRefresh);
   readShareParams();
   placeCurrencies();
   el("copy-btn").addEventListener("click", copyResult);
