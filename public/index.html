@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#fef7ff" media="(prefers-color-scheme: light)" />
 <meta name="theme-color" content="#141218" media="(prefers-color-scheme: dark)" />
 <title>日元人民币汇率 | 汇率板</title>
-<meta name="description" content="日元兑人民币（JPY ⇄ CNY）每日中间汇率（欧洲央行参考汇率）：金额换算支持算式和日本免税，可保存房租等常用金额，附 30 天至 1 年的历史走势和近一年汇率位置。免费、无广告，支持深色模式。" />
+<meta name="description" content="日元兑人民币（JPY ⇄ CNY）每日中间汇率（欧洲央行参考汇率）：金额换算支持算式，可保存房租等常用金额，附 30 天至 1 年的历史走势和近一年汇率位置。免费、无广告，支持深色模式。" />
 <link rel="canonical" href="https://rate.anontokyo.vip/" />
 <!-- One URL per language (the Worker rewrites title/description/canonical for ?lang=). -->
 <link rel="alternate" hreflang="zh-CN" href="https://rate.anontokyo.vip/" />
@@ -24,7 +24,7 @@
 <meta property="og:locale" content="zh_CN" />
 <meta property="og:url" content="https://rate.anontokyo.vip/" />
 <meta property="og:title" content="日元人民币汇率 | 汇率板" />
-<meta property="og:description" content="日元兑人民币每日中间汇率，附换算计算器、常用金额、日本免税换算和历史走势。" />
+<meta property="og:description" content="日元兑人民币每日中间汇率，附换算计算器、常用金额和历史走势。" />
 <meta property="og:image" content="https://rate.anontokyo.vip/og-image.png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
@@ -37,7 +37,7 @@
   "name": "汇率板 · 日元人民币汇率",
   "url": "https://rate.anontokyo.vip/",
   "image": "https://rate.anontokyo.vip/og-image.png",
-  "description": "日元兑人民币（JPY ⇄ CNY）每日中间汇率、金额换算（支持算式与日本免税）、常用金额与历史走势。",
+  "description": "日元兑人民币（JPY ⇄ CNY）每日中间汇率、金额换算（支持算式）、常用金额与历史走势。",
   "applicationCategory": "FinanceApplication",
   "operatingSystem": "Any",
   "inLanguage": "zh-CN",
@@ -151,19 +151,6 @@
             <button type="button" class="m3-icon-button m3-interactive" id="copy-btn" aria-label="复制换算结果" data-tooltip="复制换算结果" data-i18n-attr="aria-label:calc.copy;data-tooltip:calc.copy"><span class="m3-icon" data-icon="content_copy" aria-hidden="true"></span></button>
             <button type="button" class="m3-icon-button m3-interactive" id="share-btn" aria-label="分享换算结果" data-tooltip="分享换算结果" data-i18n-attr="aria-label:calc.share;data-tooltip:calc.share"><span class="m3-icon" data-icon="share" aria-hidden="true"></span></button>
           </div>
-          <p class="calc-tax-note" id="calc-tax-note" hidden></p>
-        </div>
-        <!-- Japanese consumption tax, only when converting from JPY. -->
-        <div class="calc-tax" id="calc-tax">
-          <div class="calc-tax-row">
-            <span class="calc-tax-label" id="tax-label" data-i18n="tax.label">日本购物免税</span>
-            <div class="m3-button-group calc-tax-group" id="tax-group" role="radiogroup" data-value="0" aria-labelledby="tax-label">
-              <button type="button" class="m3-toggle m3-interactive" role="radio" data-value="0" data-i18n="tax.none">不免税</button>
-              <button type="button" class="m3-toggle m3-interactive" role="radio" data-value="10" data-i18n="tax.free10">10%</button>
-              <button type="button" class="m3-toggle m3-interactive" role="radio" data-value="8" data-i18n="tax.free8">8% 食品</button>
-            </div>
-          </div>
-          <p class="calc-tax-hint" data-i18n="tax.note">免税购物时不付消费税：一般商品 10%，食品饮料 8%（酒类和堂食除外）。能否免税以店铺规定为准。</p>
         </div>
       </div>
     </section>
@@ -250,6 +237,7 @@
       <p data-i18n-html="footer.data">今日汇率、换算和历史走势使用同一数据源：欧洲央行（ECB）参考汇率，经 <a href="https://frankfurter.dev" target="_blank" rel="noopener noreferrer">Frankfurter</a> 提供，每个工作日更新一次。Frankfurter 暂时不可用时，改用社区维护的 <a href="https://github.com/fawazahmed0/exchange-api" target="_blank" rel="noopener noreferrer">currency-api</a> 作为备用，页面会注明。以上均为中间汇率，不含任何机构的实际买卖点差。</p>
       <p data-i18n-html="footer.ui">界面按 Material Design 3 Expressive 规范实现。</p>
       <p data-i18n-html="footer.github">本项目开源于 <a href="https://github.com/Saki340/cny-jpy-rate" target="_blank" rel="noopener noreferrer">GitHub</a>，欢迎提交 Issue 反馈问题。</p>
+      <p data-i18n="footer.privacy">隐私说明</p>
       <p class="disclaimer" data-i18n="footer.disclaimer">本网站仅提供汇率查询与换算参考功能，不构成任何金融、投资或法律建议，也不对因使用本站数据造成的任何损失承担责任；具体交易请以银行、支付机构或万事达官方渠道公布的汇率为准。</p>
     </footer>
   </main>

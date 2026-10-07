@@ -17,7 +17,6 @@ const state = {
   historySource: "frankfurter",
   historyReq: 0,
   calcShown: 0,
-  tax: 0, // Japan tax-free: 0, 10 or 8 (%)
   year: [], // past year of { date, rate }, for renderRank()
 };
 
@@ -460,13 +459,12 @@ function placeCurrencies() {
     line.querySelector(".eq"), el("rate-value"), line.querySelector(`[data-cur="${second}"]`));
   setAmountLabel(first);
   el("calc-result-label").textContent = t("calc.result", { cur: second });
-  renderTax();
 }
 
 function shareLink() {
   const [from] = currentPair();
   const url = new URL("/", location.origin);
-  url.searchParams.set("amount", String(Number(effectiveAmount().toFixed(2))));
+  url.searchParams.set("amount", String(Number(lastAmount.toFixed(2))));
   url.searchParams.set("from", from);
   // Same language as the shared text, so the link preview matches it too.
   if (currentLang !== "zh") url.searchParams.set("lang", currentLang);
@@ -478,7 +476,7 @@ function shareLink() {
 async function shareResult() {
   if (!currentMidRate()) return;
   const [from, to] = currentPair();
-  const amount = effectiveAmount();
+  const amount = lastAmount;
   const source = t(state.rateSource === "currency-api" ? "share.sourceFallback" : "share.source");
   const text = t("share.text", { a: fmt(amount, 3), from, b: fmt(state.calcShown, 3), to, date: state.rateDate, source });
   const url = shareLink();
@@ -704,7 +702,6 @@ function toggleDirection() {
   try { localStorage.setItem(DIRECTION_KEY, state.direction); } catch { /* ignore */ }
   el("swap-btn").classList.toggle("is-flipped");
   if (typeof morphDecoShape === "function" && motionOK()) morphDecoShape();
-  renderTax();
   if (!state.cnyToJpy) return;
   renderRateLine(true);
   renderChange();
@@ -714,9 +711,7 @@ function toggleDirection() {
 }
 
 function runCalculator(duration = 220, { fromInput = false } = {}) {
-  readAmount();
-  const amount = effectiveAmount();
-  renderTax();
+  const amount = readAmount();
   const rate = currentMidRate();
   if (!rate) return;
   const value = amount * rate;
@@ -1151,37 +1146,11 @@ function initAmountField() {
   readAmount();
 }
 
-/* ---------- Japan tax-free ---------- */
-
-// Prices in Japan include consumption tax (10%, or 8% on food and drinks);
-// tax-free shopping removes it. Applies only when converting from JPY.
-function effectiveAmount() {
-  const [from] = currentPair();
-  return from === "JPY" && state.tax ? lastAmount / (1 + state.tax / 100) : lastAmount;
-}
-
-function renderTax() {
-  const [from] = currentPair();
-  el("calc-tax").hidden = from !== "JPY";
-  const note = el("calc-tax-note");
-  const on = from === "JPY" && state.tax > 0;
-  note.hidden = !on;
-  if (on) note.textContent = t("tax.applied", { v: fmt(effectiveAmount(), 0), r: state.tax });
-}
-
-function initTax() {
-  const group = M3.buttonGroup(el("tax-group"));
-  group.addEventListener("change", () => {
-    state.tax = Number(group.value);
-    runCalculator(300, { fromInput: true });
-  });
-}
-
 /* ---------- where today's rate stands in the past year ---------- */
 
-// "JPY 换 CNY：比较划算 · 高于近一年 77% 的日子": today's rate ranked among the
-// past year's daily rates, in the direction shown (a higher rate means more
-// of the second currency for the first).
+// "JPY → CNY：处于近一年较高水平 · 高于近一年 77% 的日子": today's rate ranked
+// among the past year's daily rates, in the direction shown. Statistics only,
+// worded neutrally (no "good / bad time to convert" judgement).
 async function loadYear() {
   try {
     const res = await fetch("/api/history?days=365");
@@ -1202,7 +1171,7 @@ function renderRank() {
   const values = pts.map((p) => (inverse ? 1 / p.rate : p.rate));
   const now = currentMidRate();
   const pct = Math.round((values.filter((v) => v < now).length / values.length) * 100);
-  const level = pct >= 67 ? "good" : pct >= 34 ? "avg" : "poor";
+  const level = pct >= 67 ? "levelHigh" : pct >= 34 ? "levelMid" : "levelLow";
   const [from, to] = currentPair();
   el("rank-verdict").textContent = t("rank.verdict", { from, to, level: t(`rank.${level}`) });
   el("rank-pct").textContent = t("rank.pct", { p: pct });
@@ -1278,8 +1247,6 @@ function renderSaved() {
 function useSaved(item) {
   if (currentPair()[0] !== item.cur) toggleDirection();
   el("amount").value = String(item.amount);
-  state.tax = 0;
-  el("tax-group").value = "0";
   runCalculator(450, { fromInput: true });
   el("calc-heading").scrollIntoView({ behavior: motionOK() ? "smooth" : "auto", block: "start" });
 }
@@ -1392,7 +1359,6 @@ function initLanguage() {
     if (el("offline-banner").classList.contains("is-shown")) setOffline(true);
     if (!el("install-chrome").hidden) el("install-chrome").href = chromeIntentUrl(); // ?lang= changed
     readAmount();
-    renderTax();
     renderSaved();
   });
 }
@@ -1406,7 +1372,6 @@ window.addEventListener("DOMContentLoaded", () => {
   initOffline();
   initInstall();
   initAmountField();
-  initTax();
   initSaved();
   readShareParams();
   placeCurrencies();
