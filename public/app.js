@@ -16,6 +16,7 @@ const state = {
   history: [], // [{ date, rate }] always stored as CNY -> JPY
   historySource: "frankfurter",
   historyReq: 0,
+  calcShown: 0,
   year: [], // past year of { date, rate }, for renderRank()
 };
 
@@ -134,12 +135,11 @@ function odometer(node, text, animate = true) {
   });
 }
 
-// Count a number from its previous value to `to` (used by the calculator);
-// `prop` is "textContent", or "value" for an input.
-function tweenNumber(node, from, to, format, duration, prop = "textContent") {
+// Count a number from its previous value to `to` (used by the calculator).
+function tweenNumber(node, from, to, format, duration) {
   cancelAnimationFrame(Number(node.dataset.raf || 0));
-  if (!motionOK() || from === null || !isFinite(from) || from === to || !(duration > 0)) {
-    node[prop] = format(to);
+  if (!motionOK() || !isFinite(from) || from === to || !(duration > 0)) {
+    node.textContent = format(to);
     return;
   }
   const start = performance.now();
@@ -147,7 +147,7 @@ function tweenNumber(node, from, to, format, duration, prop = "textContent") {
   const step = (now) => {
     // A frame's timestamp can be slightly earlier than `start`.
     const t = Math.min(Math.max((now - start) / duration, 0), 1);
-    node[prop] = format(from + (to - from) * ease(t));
+    node.textContent = format(from + (to - from) * ease(t));
     if (t < 1) node.dataset.raf = String(requestAnimationFrame(step));
   };
   node.dataset.raf = String(requestAnimationFrame(step));
@@ -181,11 +181,9 @@ function notify(message) {
   M3.snackbar(message);
 }
 
-// The converter's field labels ("JPY 日元" / "CNY 人民币"), in the current order.
-function setCalcLabels() {
-  const [from, to] = currentPair();
-  M3.setLabel(el("amount-field"), `${from} ${t(`cur.${from}`)}`);
-  M3.setLabel(el("amount-to-field"), `${to} ${t(`cur.${to}`)}`);
+// The amount field's floating label ("金额（JPY）").
+function setAmountLabel(cur) {
+  M3.setLabel(el("amount-field"), t("calc.amount", { cur }));
 }
 
 /* ---------- scroll-triggered entrance ---------- */
@@ -444,17 +442,15 @@ function copyFallback(text) {
 
 let copyResetTimer = 0;
 
-// Copies the converted amount (the field the visitor did not type in) as a
-// plain number, without thousands separators, so it pastes cleanly into
-// other calculators and banking apps.
+// Copies the plain number (no thousands separators) so it pastes cleanly
+// into other calculators and banking apps.
 async function copyResult() {
-  if (!currentMidRate() || lastTo === null) return;
-  const [from, to] = currentPair();
-  const [value, cur] = calcAnchor === "from" ? [lastTo, to] : [lastAmount, from];
-  const text = String(Number(value.toFixed(3)));
+  if (!currentMidRate()) return;
+  const text = String(Number(state.calcShown.toFixed(3)));
   let ok = true;
   try { await navigator.clipboard.writeText(text); } catch { ok = copyFallback(text); }
-  notify(ok ? t("notify.copied", { value: text, cur }) : t("notify.copyFail"));
+  const [, to] = currentPair();
+  notify(ok ? t("notify.copied", { value: text, cur: to }) : t("notify.copyFail"));
   if (!ok) return;
   const btn = el("copy-btn");
   const icon = btn.querySelector(".m3-icon");
@@ -477,7 +473,6 @@ function readShareParams() {
   const amount = Number(params.get("amount"));
   if (params.has("amount") && Number.isFinite(amount) && amount >= 0 && amount <= 1e12) {
     el("amount").value = String(amount);
-    calcAnchor = "from";
     readAmount();
   }
   const clean = new URL(location.href);
@@ -493,7 +488,8 @@ function placeCurrencies() {
   const line = el("rate-line");
   line.append(line.querySelector(".rate-one"), line.querySelector(`[data-cur="${first}"]`),
     line.querySelector(".eq"), el("rate-value"), line.querySelector(`[data-cur="${second}"]`));
-  setCalcLabels();
+  setAmountLabel(first);
+  el("calc-result-label").textContent = t("calc.result", { cur: second });
 }
 
 function shareLink() {
@@ -513,7 +509,7 @@ async function shareResult() {
   const [from, to] = currentPair();
   const amount = lastAmount;
   const source = t(state.rateSource === "currency-api" ? "share.sourceFallback" : "share.source");
-  const text = t("share.text", { a: fmt(amount, 3), from, b: fmt(lastTo ?? 0, 3), to, date: state.rateDate, source });
+  const text = t("share.text", { a: fmt(amount, 3), from, b: fmt(state.calcShown, 3), to, date: state.rateDate, source });
   const url = shareLink();
   if (navigator.share) {
     try {
@@ -648,7 +644,7 @@ async function loadRate({ refresh = false } = {}) {
     if (refresh) return; // keep showing the last good numbers
     el("updated").textContent = "";
     el("rate-value").textContent = "--";
-    el("amount-to").value = "";
+    el("calc-result").querySelector(".calc-visible").textContent = "--";
     boardNote.dataset.i18n = "rate.error";
     boardNote.textContent = t("rate.error");
   }
@@ -703,7 +699,8 @@ function renderRateLine(swapping) {
     });
   }
 
-  setCalcLabels();
+  setAmountLabel(from);
+  el("calc-result-label").textContent = t("calc.result", { cur: to });
 }
 
 // "▲ 0.12% 较前一日 (10-01)", in the direction currently shown.
@@ -736,7 +733,6 @@ function toggleDirection() {
   try { localStorage.setItem(DIRECTION_KEY, state.direction); } catch { /* ignore */ }
   el("swap-btn").classList.toggle("is-flipped");
   if (typeof morphDecoShape === "function" && motionOK()) morphDecoShape();
-  swapCalcFields();
   if (!state.cnyToJpy) return;
   renderRateLine(true);
   renderChange();
@@ -745,56 +741,19 @@ function toggleDirection() {
   renderChart({ morph: true });
 }
 
-// Two-way converter: the field the visitor last typed in (calcAnchor) drives
-// the other one, which counts to its new value. lastAmount is the amount in
-// the first currency, lastTo in the second.
 function runCalculator(duration = 220, { fromInput = false } = {}) {
+  const amount = readAmount();
   const rate = currentMidRate();
-  readAmount();
-  if (rate) {
-    if (calcAnchor === "from") {
-      const value = lastAmount * rate;
-      showComputed(el("amount-to"), lastTo, value, duration, fromInput);
-      lastTo = value;
-    } else {
-      const value = (lastTo ?? 0) / rate;
-      showComputed(el("amount"), lastAmount, value, duration, fromInput);
-      lastAmount = value;
-    }
-    // Screen readers get the result once, not every frame of the count.
-    const [from, to] = currentPair();
-    el("calc-live").textContent = t("calc.pair", { a: fmt(lastAmount, 3), from, b: fmt(lastTo, 3), to });
-  }
-  renderDate();
-}
-
-// Writes a converted amount into the other field, counting up to it (set at
-// once if the visitor is in that field).
-function showComputed(input, fromValue, value, duration, popIt) {
-  const field = input.closest(".m3-text-field");
-  field.classList.remove("is-error");
-  field.querySelector(".m3-text-field__supporting").textContent = "";
-  const format = (v) => fmt(v, 3);
-  input.dataset.final = format(value);
-  tweenNumber(input, fromValue, value, format, document.activeElement === input ? 0 : duration, "value");
-  if (popIt && fromValue !== null && Math.abs(value - fromValue) > 1e-9) pop(field, 1.02);
-}
-
-// Swapping the direction keeps the pair of amounts: the fields trade places.
-function swapCalcFields() {
-  const a = el("amount");
-  const b = el("amount-to");
-  for (const input of [a, b]) cancelAnimationFrame(Number(input.dataset.raf || 0));
-  // The computed field may still be counting: swap its final value.
-  const aText = calcAnchor === "to" && a.dataset.final ? a.dataset.final : a.value;
-  const bText = calcAnchor === "from" && b.dataset.final ? b.dataset.final : b.value;
-  a.value = bText;
-  b.value = aText;
-  const first = lastAmount;
-  lastAmount = lastTo ?? 0;
-  lastTo = first;
-  calcAnchor = calcAnchor === "from" ? "to" : "from";
-  setCalcLabels();
+  if (!rate) return;
+  const value = amount * rate;
+  const node = el("calc-result");
+  // The counting animation runs in an aria-hidden span; screen readers get
+  // only the final value, not every intermediate frame.
+  tweenNumber(node.querySelector(".calc-visible"), state.calcShown, value, (v) => fmt(v, 3), duration);
+  node.querySelector(".sr-only").textContent = fmt(value, 3);
+  if (fromInput && value !== state.calcShown) pop(node, 1.03);
+  state.calcShown = value;
+  renderDate(); // "rate on a date" converts the same amount
 }
 
 /* ---------- history chart ---------- */
@@ -1188,54 +1147,41 @@ function evaluateAmount(text) {
 // True if the text is more than a plain number (worth showing "= result").
 const isExpression = (text) => /\d.*[-+*/×÷xX−＋－＊／()（）]|[()（）]/.test(String(text).trim().replace(/^[-+]/, ""));
 
-// The amounts: lastAmount in the first currency, lastTo in the second (null
-// until a rate is known). While an expression is unfinished ("1980*") the
-// last value that could be worked out is kept. calcAnchor is the field the
-// visitor typed in last ("from" or "to").
+// The amount used for converting: the field's value; while an expression is
+// unfinished ("1980*"), the last value that could be worked out.
 let lastAmount = 100;
-let lastTo = null;
-let calcAnchor = "from";
-const CALC_FIELDS = {
-  from: ["amount", "amount-field", "amount-support"],
-  to: ["amount-to", "amount-to-field", "amount-to-support"],
-};
 
-// Reads a field and updates its supporting text: "= 5,940" under an
+// Reads the field and updates its supporting text: "= 5,940" under an
 // expression; an error only when `strict` (on Enter / leaving the field),
 // so it does not flash while the visitor is still typing.
-function readAmount({ strict = false, field = calcAnchor } = {}) {
-  const [inputId, fieldId, supportId] = CALC_FIELDS[field];
-  const text = el(inputId).value;
+function readAmount({ strict = false } = {}) {
+  const text = el("amount").value;
   const value = evaluateAmount(text);
+  const field = el("amount-field");
+  const support = el("amount-support");
   const error = value === null && strict;
-  el(fieldId).classList.toggle("is-error", error);
-  const support = el(supportId);
+  field.classList.toggle("is-error", error);
   if (error) support.textContent = t("amount.invalid");
   else if (value !== null && isExpression(text)) support.textContent = t("amount.preview", { v: fmt(value, 3) });
   else support.textContent = "";
-  if (value !== null) {
-    if (field === "from") lastAmount = value;
-    else lastTo = value;
-  }
-  return field === "from" ? lastAmount : lastTo;
+  if (value !== null) lastAmount = value;
+  return lastAmount;
 }
 
 // Enter: an expression is replaced by its result.
-function settleAmount(field) {
-  const input = el(CALC_FIELDS[field][0]);
+function settleAmount() {
+  const input = el("amount");
   const value = evaluateAmount(input.value);
   if (value !== null && isExpression(input.value)) {
     input.value = String(Number(value.toFixed(6)));
     runCalculator(220, { fromInput: true });
   }
-  readAmount({ strict: true, field });
+  readAmount({ strict: true });
 }
 
-// Inserts an operator from the on-screen keys at the caret of the field
-// being typed in.
+// Inserts an operator from the on-screen keys at the caret.
 function insertIntoAmount(text) {
-  const active = document.activeElement;
-  const input = active && (active.id === "amount" || active.id === "amount-to") ? active : el("amount");
+  const input = el("amount");
   const start = input.selectionStart ?? input.value.length;
   const end = input.selectionEnd ?? start;
   input.setRangeText(text, start, end, "end");
@@ -1243,22 +1189,12 @@ function insertIntoAmount(text) {
 }
 
 function initAmountField() {
-  for (const [field, [inputId]] of Object.entries(CALC_FIELDS)) {
-    const input = el(inputId);
-    input.addEventListener("input", () => {
-      calcAnchor = field;
-      runCalculator(220, { fromInput: true });
-    });
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") { e.preventDefault(); settleAmount(field); }
-    });
-    input.addEventListener("change", () => { if (calcAnchor === field) readAmount({ strict: true, field }); });
-    // Typing into a field that is still counting: start from its final value.
-    input.addEventListener("focus", () => {
-      cancelAnimationFrame(Number(input.dataset.raf || 0));
-      if (field !== calcAnchor && input.dataset.final) input.value = input.dataset.final;
-    });
-  }
+  const input = el("amount");
+  input.addEventListener("input", () => runCalculator(220, { fromInput: true }));
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); settleAmount(); }
+  });
+  input.addEventListener("change", () => readAmount({ strict: true }));
   for (const key of document.querySelectorAll(".calc-keys [data-insert]")) {
     // Keep the focus (and the phone keyboard) in the field.
     key.addEventListener("pointerdown", (e) => e.preventDefault());
@@ -1369,7 +1305,6 @@ function renderSaved() {
 function useSaved(item) {
   if (currentPair()[0] !== item.cur) toggleDirection();
   el("amount").value = String(item.amount);
-  calcAnchor = "from";
   runCalculator(450, { fromInput: true });
   el("calc-heading").scrollIntoView({ behavior: motionOK() ? "smooth" : "auto", block: "start" });
 }
@@ -1383,11 +1318,8 @@ function openSavedDialog(item = null) {
   editingId = item ? item.id : null;
   el("saved-dialog-title").textContent = t(item ? "saved.dialogEdit" : "saved.dialogAdd");
   el("saved-name").value = item ? item.name : "";
-  // A new entry starts from the amount the visitor typed into the converter.
-  const [from, to] = currentPair();
-  const [typed, typedCur] = calcAnchor === "to" && lastTo ? [lastTo, to] : [lastAmount, from];
-  el("saved-amount").value = item ? String(item.amount) : (typed > 0 ? String(Number(typed.toFixed(2))) : "");
-  el("saved-cur").value = item ? item.cur : typedCur;
+  el("saved-amount").value = item ? String(item.amount) : (lastAmount > 0 ? String(Number(lastAmount.toFixed(2))) : "");
+  el("saved-cur").value = item ? item.cur : currentPair()[0];
   el("saved-delete").hidden = !item;
   setSavedError("");
   savedDialog.open();
@@ -1610,7 +1542,9 @@ function initLanguage() {
       runCalculator(0);
       renderRank();
     } else {
-      setCalcLabels();
+      const [from, to] = currentPair();
+      setAmountLabel(from);
+      el("calc-result-label").textContent = t("calc.result", { cur: to });
     }
     if (chart) renderChart();
     if (el("offline-banner").classList.contains("is-shown")) setOffline(true);
@@ -1638,6 +1572,7 @@ window.addEventListener("DOMContentLoaded", () => {
   placeCurrencies();
   el("copy-btn").addEventListener("click", copyResult);
   el("share-btn").addEventListener("click", shareResult);
+  el("calc-result").addEventListener("click", copyResult);
   el("swap-btn").addEventListener("click", toggleDirection);
   const range = M3.buttonGroup(el("range-group"));
   range.addEventListener("change", () => loadHistory(Number(range.value)));

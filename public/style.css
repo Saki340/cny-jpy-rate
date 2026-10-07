@@ -108,7 +108,7 @@ button, input, output { font-family: inherit; }
 
 /* Display text and the key numbers use the fully rounded end of Google Sans
  * Flex's roundness axis, like Google's own Expressive type. */
-.m3-top-app-bar__headline, .section-heading h2, .rate-line, .chart-tooltip-value, .install-text h2,
+.m3-top-app-bar__headline, .section-heading h2, .rate-line, .calc-result, .chart-tooltip-value, .install-text h2,
 .m3-top-app-bar__title { font-variation-settings: "ROND" 100; }
 
 /* ---------- layout ---------- */
@@ -358,22 +358,12 @@ section { margin-bottom: 24px; }
 
 /* ---------- converter ---------- */
 
-/* Two text fields side by side (stacked on phones and in the narrow pane),
- * then the operator keys and the copy / share actions. The amounts use a
- * larger input text (headline-small) than a form field. */
-.calc-card { display: flex; flex-direction: column; gap: 12px; }
-.calc-fields { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: start; gap: 16px; }
-.calc-equals { padding-top: 12px; color: var(--card-on-variant); font-size: 24px; }
-.calc-amount .m3-text-field__input {
-  font-size: var(--md-sys-typescale-headline-small-size);
-  font-weight: 560;
-  letter-spacing: 0;
-  font-variation-settings: "ROND" 100;
-}
+.calc-card { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 18px; }
+.calc-input { width: 100%; min-width: 0; }
 /* Operator keys for expressions: only on touch screens, while typing. */
-.calc-keys { display: none; gap: 8px; }
+.calc-keys { display: none; gap: 8px; margin-top: 8px; }
 @media (pointer: coarse) {
-  .calc-card:focus-within .calc-keys { display: flex; }
+  .calc-input:focus-within .calc-keys { display: flex; }
 }
 .calc-keys .m3-chip {
   flex: 1 1 0;
@@ -382,8 +372,25 @@ section { margin-bottom: 24px; }
   color: var(--card-on);
   font-size: 18px;
 }
-.calc-actions { display: flex; align-items: center; justify-content: flex-end; gap: 0; margin: -4px -4px -8px 0; }
-.calc-hint { flex: 1 1 auto; color: var(--card-on-variant); font-size: var(--md-sys-typescale-body-small-size); }
+.calc-equals { color: var(--card-on-variant); font-size: 24px; }
+.calc-field { min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.result-label { color: var(--card-on-variant); font-size: 13px; }
+.calc-result-row { display: flex; align-items: center; gap: 0; min-width: 0; }
+/* The result takes all the free width so the buttons stay pinned at the end
+ * of the row; otherwise they would shift with every frame of the number tween. */
+.calc-result {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--card-on);
+  font-size: clamp(23px, 4.5vw, 34px);
+  font-weight: 560;
+  line-height: 1.2;
+  letter-spacing: -.01em;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
 
 /* ---------- rate on a date ---------- */
 
@@ -758,8 +765,10 @@ kbd {
   }
   .chart { height: 300px; }
   /* The converter in the narrow pane: stacked, like on phones. */
-  .pane-side .calc-fields { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .pane-side .calc-card { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .pane-side .calc-equals { display: none; }
+  .pane-side .calc-field { order: -1; padding: 0 2px 4px; }
+  .pane-side .calc-result { font-size: 30px; }
 }
 @media (min-width: 1200px) {
   .panes { grid-template-columns: minmax(0, 1fr) 412px; }
@@ -772,15 +781,17 @@ kbd {
   :root { --gutter: 12px; }
   .page { padding-top: 2px; }
   .surface-card { padding: 16px; }
-  .calc-fields { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .calc-card { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .calc-equals { display: none; }
+  .calc-field { order: -1; padding: 0 2px 4px; }
+  .calc-result { font-size: 30px; }
   .rate-line { gap: 7px; }
   .chart { height: 205px; }
 }
 
 /* Kept after every rule that uses the `font:` shorthand, which resets
  * font-variant: numbers line up in columns (tabular figures). */
-.rate-line, .chart-readout, .chart-text, .chart-extreme-label, .chart-tooltip { font-variant-numeric: tabular-nums; }
+.rate-line, .calc-result, .chart-readout, .chart-text, .chart-extreme-label, .chart-tooltip { font-variant-numeric: tabular-nums; }
 
 /* ---------- motion ---------- */
 

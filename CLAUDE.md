@@ -20,7 +20,7 @@ JPY ⇄ CNY 汇率板。单个 Cloudflare Worker + 静态资源，无构建步�
 - 安装卡片（`initInstall()`）：Chromium 用 `beforeinstallprompt` 显示「安装」按钮，iOS 显示「分享 → 添加到主屏幕」说明；安卓上 Chrome 以外的浏览器（按 `userAgentData.brands` 判断）另显示「建议用 Chrome 安装」的提示和「用 Chrome 打开」（intent 链接）：三星浏览器等自己打包的 APK 可能被 Play Protect 警告「为旧版 Android 设计」，Chrome 由 Google 生成的 WebAPK 不会。已安装或 30 天内点过「不用了」则不显示。
 - 提示信息统一用 `M3.snackbar()`（`app.js` 的 `notify()`）。
 - 分享链接参数 `?amount=…&from=JPY|CNY`（`readShareParams()`），读取后从地址栏移除；manifest 的 shortcuts 也用 `?from=`。
-- 换算计算器是双向的：两个文本框（`#amount` 第一种货币、`#amount-to` 第二种）都能输入，`calcAnchor` 记录最后输入的是哪个，另一个由 `runCalculator()` 算出（`showComputed()` 数字滚动）；金额存在 `lastAmount` / `lastTo`，不要直接读输入框。切换方向时两个框连同金额一起互换（`swapCalcFields()`）。两个框都支持简单算式（`evaluateAmount()`，手写递归下降解析，不要用 `eval`）。
+- 金额框是文本框，支持简单算式（`evaluateAmount()`，手写递归下降解析，不要用 `eval`）；换算用 `readAmount()` / `lastAmount`（算式写到一半时保留上一个可计算的值），不要直接读输入框。
 - 按日期查汇率：`/api/day?date=`（2005-01-03 起，周末节假日由 Frankfurter 返回之前最近的工作日，过去的日期缓存 30 天）；前端 `lookupDate()` / `renderDate()`。
 - 走势图的 30 日均线（`movingAverage()`，按日历日、用近一年数据补足窗口），只作统计展示。
 - 键盘快捷键（`initShortcuts()`）：`/` `S` `1`–`4` `D` `?`；输入框中、对话框或菜单打开时不响应；说明对话框只在宽屏、有鼠标的设备上提供入口。

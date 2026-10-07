@@ -149,37 +149,32 @@
       <div class="section-heading">
         <h2 id="calc-heading" data-i18n="section.calc">换算计算器</h2>
       </div>
-      <!-- Two-way converter: type in either field and the other follows
-           (app.js "converter"); both accept simple expressions ("1980*3"). -->
       <div class="m3-card surface-card calc-card">
-        <div class="calc-fields">
-          <div class="m3-text-field calc-amount" id="amount-field">
+        <div class="calc-input">
+          <!-- Accepts simple expressions ("1980*3"); see evaluateAmount() in app.js. -->
+          <div class="m3-text-field" id="amount-field">
             <input class="m3-text-field__input" id="amount" type="text" inputmode="decimal" enterkeyhint="done" value="100" placeholder=" " autocomplete="off" spellcheck="false" aria-describedby="amount-support" />
-            <label class="m3-text-field__label" for="amount">JPY 日元</label>
-            <fieldset class="m3-text-field__outline" aria-hidden="true"><legend><span>JPY 日元</span></legend></fieldset>
+            <label class="m3-text-field__label" for="amount">金额（JPY）</label>
+            <fieldset class="m3-text-field__outline" aria-hidden="true"><legend><span>金额（JPY）</span></legend></fieldset>
             <span class="m3-text-field__supporting" id="amount-support" aria-live="polite"></span>
           </div>
-          <div class="calc-equals" aria-hidden="true">＝</div>
-          <div class="m3-text-field calc-amount" id="amount-to-field">
-            <input class="m3-text-field__input" id="amount-to" type="text" inputmode="decimal" enterkeyhint="done" value="" placeholder=" " autocomplete="off" spellcheck="false" aria-describedby="amount-to-support" />
-            <label class="m3-text-field__label" for="amount-to">CNY 人民币</label>
-            <fieldset class="m3-text-field__outline" aria-hidden="true"><legend><span>CNY 人民币</span></legend></fieldset>
-            <span class="m3-text-field__supporting" id="amount-to-support" aria-live="polite"></span>
+          <!-- Phone number pads have no operator keys; these appear while typing on touch screens. -->
+          <div class="calc-keys" role="toolbar" aria-label="运算符" data-i18n-attr="aria-label:keys.label">
+            <button type="button" class="m3-chip m3-interactive" tabindex="-1" data-insert="+">+</button>
+            <button type="button" class="m3-chip m3-interactive" tabindex="-1" data-insert="−">−</button>
+            <button type="button" class="m3-chip m3-interactive" tabindex="-1" data-insert="×">×</button>
+            <button type="button" class="m3-chip m3-interactive" tabindex="-1" data-insert="÷">÷</button>
           </div>
         </div>
-        <!-- Phone number pads have no operator keys; these appear while typing on touch screens. -->
-        <div class="calc-keys" role="toolbar" aria-label="运算符" data-i18n-attr="aria-label:keys.label">
-          <button type="button" class="m3-chip m3-interactive" tabindex="-1" data-insert="+">+</button>
-          <button type="button" class="m3-chip m3-interactive" tabindex="-1" data-insert="−">−</button>
-          <button type="button" class="m3-chip m3-interactive" tabindex="-1" data-insert="×">×</button>
-          <button type="button" class="m3-chip m3-interactive" tabindex="-1" data-insert="÷">÷</button>
+        <div class="calc-equals" aria-hidden="true">＝</div>
+        <div class="calc-field">
+          <span class="result-label" id="calc-result-label">折合 CNY</span>
+          <div class="calc-result-row">
+            <output class="calc-result" id="calc-result" title="点击复制" data-i18n-attr="title:calc.copyHint"><span class="calc-visible" aria-hidden="true"><span class="skeleton">0.000</span></span><span class="sr-only"></span></output>
+            <button type="button" class="m3-icon-button m3-interactive" id="copy-btn" aria-label="复制换算结果" data-tooltip="复制换算结果" data-i18n-attr="aria-label:calc.copy;data-tooltip:calc.copy"><span class="m3-icon" data-icon="content_copy" aria-hidden="true"></span></button>
+            <button type="button" class="m3-icon-button m3-interactive" id="share-btn" aria-label="分享换算结果" data-tooltip="分享换算结果" data-i18n-attr="aria-label:calc.share;data-tooltip:calc.share"><span class="m3-icon" data-icon="share" aria-hidden="true"></span></button>
+          </div>
         </div>
-        <div class="calc-actions">
-          <span class="calc-hint" data-i18n="calc.twoWay">两个框都可以输入</span>
-          <button type="button" class="m3-icon-button m3-interactive" id="copy-btn" aria-label="复制换算结果" data-tooltip="复制换算结果" data-i18n-attr="aria-label:calc.copy;data-tooltip:calc.copy"><span class="m3-icon" data-icon="content_copy" aria-hidden="true"></span></button>
-          <button type="button" class="m3-icon-button m3-interactive" id="share-btn" aria-label="分享换算结果" data-tooltip="分享换算结果" data-i18n-attr="aria-label:calc.share;data-tooltip:calc.share"><span class="m3-icon" data-icon="share" aria-hidden="true"></span></button>
-        </div>
-        <span class="sr-only" id="calc-live" aria-live="polite"></span>
       </div>
     </section>
 
