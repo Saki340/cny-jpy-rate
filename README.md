@@ -40,7 +40,7 @@
 
 ```text
 cny-jpy-rate/
-├── worker.js            # Worker 入口：/api/rate、/api/history，其余请求交给静态资源
+├── worker.js            # Worker 入口：/api/rate、/api/day、/api/history，其余请求交给静态资源
 ├── wrangler.toml        # Workers / Assets / 日志配置
 ├── public/
 │   ├── index.html
