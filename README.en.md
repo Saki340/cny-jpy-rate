@@ -12,25 +12,14 @@ A simple Japanese yen / Chinese yuan exchange-rate site: the daily mid-market ra
 
 ## Features
 
-- **Today's rate**: the JPY ⇄ CNY mid-market rate; switch direction with one tap.
-- **Converter**: converts as you type. Simple expressions work (e.g. `1980*3`, `(1200+800)/2`, full-width characters too); on phones, + − × ÷ keys appear while typing.
-- **Rate on a date**: pick any day since 2005 to see that day's reference rate and what the converter's amount was worth then (weekends and holidays show the previous working day). Handy for expense reports and bookkeeping.
-- **Saved amounts**: keep amounts such as rent or tuition in your browser; they are converted at the latest rate every time you visit, and one tap puts them into the converter.
-- **Where today's rate sits in the past year**: the rate card shows how today's rate compares with the past year (higher than what share of days). Statistics only, no judgement.
-- **History chart**: 30 days / 90 days / 180 days / 1 year, with the period's high, low and change. Hover or tap any day to see its rate and the difference from the latest value; the arrow keys step through days one at a time. Includes a 30-day moving average.
-- **Three languages**: 简体中文, 日本語 and English, chosen from the device language and switchable from the language menu in the top bar. Each language has its own URL (`/`, `/?lang=ja`, `/?lang=en`) for sharing and search engines.
-- **Consistent data**: every number on the page comes from the same source, so a given day's rate is the same everywhere.
-- **Change from the previous day**: shown next to today's rate, compared with the previous publication day.
-- **Auto-update**: if the page is left open, it refreshes once the European Central Bank publishes a new rate, and the digits roll to the new value.
-- **Material 3 Expressive design**: a collapsing large-title top app bar, spring motion, connected button groups, shape-morphing loading animations and decorative shapes, and pull-to-refresh on phones. Follows the system light / dark theme by default, with a light / dark switch in the top bar; works on phones, tablets and computers (two panes on wide screens); motion follows the system "reduce motion" setting.
-- **Add to home screen**: an install card at the bottom of the page (one-click install in Chrome and Edge on Android and desktop, instructions on iPhone; other Android browsers are advised to install with Chrome). Once installed it opens like an app, and long-pressing the icon jumps straight to "CNY to JPY" or "JPY to CNY".
-- **Works offline**: when offline, the last fetched data is shown with a note at the top saying which day's rate it is; it refreshes automatically when you're back online.
-- **One-tap copy**: tap the result or the copy button to copy the plain number without thousands separators, ready to paste into other apps.
-- **Share a conversion**: opens the system share sheet on phones; other browsers copy the text and a link. Links look like `/?amount=10000&from=JPY` and open with the same conversion.
-- **Next update time**: shows roughly when the European Central Bank will publish the next rate, in the visitor's time zone.
+- **Today's rate**: the ECB mid-market rate, with the change from the previous day and where it sits in the past year; refreshes automatically when a new rate is published.
+- **Converter**: converts as you type and accepts simple expressions (e.g. `1980*3`); save amounts you use often, and copy or share the result in one tap.
+- **History chart**: 30 days to 1 year, with the high, low and a 30-day moving average; you can also look up the rate on any day since 2005.
 - **Keyboard shortcuts** (desktop): `/` amount, `S` switch direction, `1`–`4` chart range, `D` rate on a date, `?` show all.
-- **Reachable worldwide**: no UI library; fonts and icons are all self-hosted, with no Google Fonts or other CDNs that are unreliable in mainland China.
-- Free, no ads, no tracking cookies.
+- **Three languages**: 简体中文, 日本語 and English, chosen from the device language.
+- **Material 3 Expressive design**: light / dark follows the system; works on phones, tablets and computers.
+- **Installable, works offline**: add it to your home screen and use it like an app; when offline, the last fetched data is shown.
+- **Reachable worldwide**: fonts and icons are all self-hosted, with no external CDN. Free, no ads, no tracking cookies.
 
 ## Tech stack
 
@@ -131,6 +120,12 @@ All of these are mid-market rates, without any bank's or payment provider's spre
 - **Search engines**: verified in Google Search Console; the sitemap is `/sitemap.xml`. The description, canonical, Open Graph and JSON-LD in the page `<head>` are written directly in the HTML and don't depend on JS.
 
 ## Changelog
+
+### 2026-10-10
+- Added a GitHub button to the top bar (on wide screens; on phones it is in the "More" menu).
+- The theme switch is now just light / dark, and every visit starts by following the system.
+- Fixed the top bar's small title being cut off on phones.
+- Added Japanese and English READMEs and a one-click deploy button.
 
 ### 2026-10-08
 - Added rate on a date: look up the reference rate for any day since 2005, and what the converter's amount was worth that day.
