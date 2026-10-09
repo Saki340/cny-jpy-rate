@@ -22,7 +22,7 @@
 - **数据一致**：页面上所有数字来自同一数据源，同一天的汇率在各处相同。
 - **较前一日涨跌**：今日汇率旁显示与前一个公布日相比的涨跌幅。
 - **自动更新**：页面开着时，欧洲央行公布新汇率后会自动刷新，数字以滚动动画变为新值。
-- **Material 3 Expressive 风格**：可折叠大标题顶栏、弹簧动效、连接式按钮组、形状变形的加载动画和装饰图形，手机上可下拉刷新；浅色 / 深色 / 跟随系统三种主题，适配手机、平板和电脑（宽屏时分为两栏）；动效遵循系统的「减弱动态效果」设置。
+- **Material 3 Expressive 风格**：可折叠大标题顶栏、弹簧动效、连接式按钮组、形状变形的加载动画和装饰图形，手机上可下拉刷新；默认跟随系统深浅色，也可在顶栏切换浅色 / 深色，适配手机、平板和电脑（宽屏时分为两栏）；动效遵循系统的「减弱动态效果」设置。
 - **可添加到主屏幕**：页面底部有安装卡片（安卓 / 电脑上的 Chrome、Edge 一键安装，iPhone 显示操作说明；安卓上的其他浏览器会提示改用 Chrome 安装）；安装后像 App 一样打开，长按图标可直接进入「人民币换日元」或「日元换人民币」。
 - **离线可用**：断网时显示上次获取的数据，并在顶部注明是哪一天的汇率；恢复联网后自动刷新。
 - **一键复制换算结果**：点击结果或复制按钮，复制不带千分位的纯数字，方便粘贴到其他 App。
@@ -86,6 +86,8 @@ npx wrangler dev
 ## 部署
 
 仓库已连接 Cloudflare **Workers Builds**：推送到 `main` 分支后自动执行 `npx wrangler deploy`，无需构建命令。
+
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/Saki340/cny-jpy-rate)
 
 如果要部署自己的副本：Fork 本仓库，在 Cloudflare 控制台的 **Workers & Pages** 中创建 Worker 并连接你的仓库，部署命令填 `npx wrangler deploy` 即可。也可以在本地运行 `npx wrangler deploy` 直接部署。
 

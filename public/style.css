@@ -153,10 +153,17 @@ section { margin-bottom: 24px; }
     white-space: nowrap;
   }
 }
-@media (max-width: 360px) {
+@media (max-width: 399px) {
   .theme-group .m3-toggle { padding: 0 7px; }
-  .m3-top-app-bar__title { padding-inline: 8px 0; font-size: 18px; }
   .m3-top-app-bar__actions { gap: 0; }
+}
+@media (max-width: 360px) {
+  .m3-top-app-bar__title { padding-inline: 8px 0; font-size: 18px; }
+}
+/* GitHub in the app bar from 600dp; below that it is in the More menu. */
+.github-mark { width: 20px; height: 20px; }
+@media (max-width: 599px) {
+  .github-btn { display: none; }
 }
 
 /* ---------- cards ----------

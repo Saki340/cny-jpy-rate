@@ -20,7 +20,6 @@ const state = {
   year: [], // past year of { date, rate }, for renderRank()
 };
 
-const THEME_KEY = "theme-pref";
 const DIRECTION_KEY = "direction-pref";
 
 // The last direction used (e.g. always CNY -> JPY) is where the page opens;
@@ -248,15 +247,9 @@ wideQuery.addEventListener("change", () => {
 
 /* ---------- theme ---------- */
 
-// localStorage can throw (private mode, blocked site data); theme choice is
-// only a convenience, so failures are ignored.
-function readThemePref() {
-  try { return localStorage.getItem(THEME_KEY); } catch { return null; }
-}
-
-function saveThemePref(mode) {
-  try { localStorage.setItem(THEME_KEY, mode); } catch { /* ignore */ }
-}
+// Every visit starts in the system theme (theme-auto) and follows it; the
+// light / dark switch overrides it for this visit only and is not saved.
+const darkScheme = window.matchMedia("(prefers-color-scheme: dark)");
 
 // Keep the browser UI colour (mobile address bar) in sync with the page surface.
 // Keep the browser UI colour (mobile address bar) in step with the top app
@@ -274,13 +267,14 @@ window.addEventListener("scroll", () => {
 }, { passive: true });
 
 function applyTheme(mode) {
-  const next = mode === "dark" || mode === "light" ? mode : "auto";
-  saveThemePref(next);
   document.documentElement.classList.remove("theme-dark", "theme-light", "theme-auto");
-  document.documentElement.classList.add(`theme-${next}`);
+  document.documentElement.classList.add(`theme-${mode}`);
   syncThemeColor();
-  const group = el("theme-group");
-  if (group && String(group.value) !== next) group.value = next;
+}
+
+// While following the system, the switch shows the system's current theme.
+function showSystemTheme() {
+  if (document.documentElement.classList.contains("theme-auto")) el("theme-group").value = darkScheme.matches ? "dark" : "light";
 }
 
 // The new theme spreads out as a circle from where the user clicked
@@ -306,11 +300,15 @@ function switchTheme(mode) {
 
 function initTheme() {
   const group = M3.buttonGroup(el("theme-group"));
-  const saved = readThemePref();
-  applyTheme(saved === "light" || saved === "dark" ? saved : "auto");
+  try { localStorage.removeItem("theme-pref"); } catch { /* ignore */ } // the old saved choice
+  applyTheme("auto");
+  showSystemTheme();
   group.addEventListener("pointerdown", (e) => { themeOrigin = { x: e.clientX, y: e.clientY }; });
   group.addEventListener("change", () => switchTheme(group.value));
-  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", syncThemeColor);
+  darkScheme.addEventListener("change", () => {
+    showSystemTheme();
+    syncThemeColor();
+  });
 }
 
 /* ---------- next update time ---------- */
@@ -1529,6 +1527,7 @@ function initMoreMenu() {
   menu.addEventListener("beforeopen", () => {
     el("more-shortcuts").hidden = !finePointer.matches;
     el("more-install").hidden = el("install-section").hidden;
+    el("more-github").hidden = getComputedStyle(el("github-btn")).display !== "none"; // in the app bar
   });
   menu.addEventListener("select", (e) => {
     const item = e.detail;

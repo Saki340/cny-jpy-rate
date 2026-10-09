@@ -22,7 +22,7 @@ A simple Japanese yen / Chinese yuan exchange-rate site: the daily mid-market ra
 - **Consistent data**: every number on the page comes from the same source, so a given day's rate is the same everywhere.
 - **Change from the previous day**: shown next to today's rate, compared with the previous publication day.
 - **Auto-update**: if the page is left open, it refreshes once the European Central Bank publishes a new rate, and the digits roll to the new value.
-- **Material 3 Expressive design**: a collapsing large-title top app bar, spring motion, connected button groups, shape-morphing loading animations and decorative shapes, and pull-to-refresh on phones. Light / dark / system themes; works on phones, tablets and computers (two panes on wide screens); motion follows the system "reduce motion" setting.
+- **Material 3 Expressive design**: a collapsing large-title top app bar, spring motion, connected button groups, shape-morphing loading animations and decorative shapes, and pull-to-refresh on phones. Follows the system light / dark theme by default, with a light / dark switch in the top bar; works on phones, tablets and computers (two panes on wide screens); motion follows the system "reduce motion" setting.
 - **Add to home screen**: an install card at the bottom of the page (one-click install in Chrome and Edge on Android and desktop, instructions on iPhone; other Android browsers are advised to install with Chrome). Once installed it opens like an app, and long-pressing the icon jumps straight to "CNY to JPY" or "JPY to CNY".
 - **Works offline**: when offline, the last fetched data is shown with a note at the top saying which day's rate it is; it refreshes automatically when you're back online.
 - **One-tap copy**: tap the result or the copy button to copy the plain number without thousands separators, ready to paste into other apps.
@@ -86,6 +86,8 @@ Then open <http://localhost:8787>. The API queries the upstream data sources liv
 ## Deployment
 
 The repository is connected to Cloudflare **Workers Builds**: pushing to `main` runs `npx wrangler deploy` automatically; no build command is needed.
+
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/Saki340/cny-jpy-rate)
 
 To deploy your own copy: fork this repository, create a Worker under **Workers & Pages** in the Cloudflare dashboard, connect your repository, and set the deploy command to `npx wrangler deploy`. You can also run `npx wrangler deploy` locally.
 

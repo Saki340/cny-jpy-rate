@@ -40,13 +40,13 @@ JPY ⇄ CNY 汇率板。单个 Cloudflare Worker + 静态资源，无构建步�
 - 系统令牌用 `--md-sys-*`（`tokens.css`）：颜色是完整颜色值，直接 `var(--md-sys-color-primary)`；半透明用 `color-mix(in srgb, var(--x) 12%, transparent)`。项目自定义颜色（`--app-color-*`）在 `style.css` 顶部同时定义浅色和深色两套。
 - 组件写在 `m3/m3.css` / `m3.js`，每个组件的注释写明对应的 Compose 令牌对象；新增组件也照此办理。状态层用 `.m3-interactive`（悬停 8%、聚焦 10%、按下 10% + 涟漪），聚焦环 3px secondary。
 - 动效：Compose 的弹簧（刚度 / 阻尼比）被采样成 CSS `linear()`，即 `--md-sys-motion-spring-{fast,default,slow}-{spatial,effects}` 及 `-duration`。位置/尺寸/形状用 spatial（有回弹），颜色/透明度用 effects（无回弹）；**跟随指针移动的东西（悬浮提示、光标）用 `--follow`（不回弹）**。JS 里的 Web Animations 用 `app.js` 的 `SPRING_*`（从 CSS 令牌读取），自绘动画用 `springCurve()`。
-- 主题：`<html>` 上的 `theme-light|dark|auto`，用户选择存在 `localStorage`（键 `theme-pref`）。
+- 主题：`<html>` 上的 `theme-light|dark|auto`。每次访问都从 `theme-auto`（跟随系统）开始，顶栏开关只有浅色 / 深色两项：跟随系统时显示系统当前的深浅色并随系统变化，用户点选后只在本次访问有效，**不保存**（旧的 `theme-pref` 会被删除）。
 - 组件 API：`M3.buttonGroup(el)`（单选按钮组，`value` + `change` 事件，方向键切换）、`M3.menu(trigger, panel)`（`value` + `change`）、`M3.setLabel(field, text)`（文本框标签）、`M3.snackbar(text, { action, onAction })`、`M3.dialog(el)`（`<dialog>`，返回 `{ open, close }`）；列表用 `.m3-list` / `.m3-list-item`（Expressive 分段列表），小标签用 `.m3-chip`；文本框错误态加 `.is-error`，说明文字放 `.m3-text-field__supporting`；提示框写 `data-tooltip`（触屏和菜单打开时不显示）。
 
 ## 页面细节
 
 - **顶部应用栏**：M3 Expressive 可折叠中型顶栏（`AppBarMediumFlexibleTokens` / `TwoRowsTopAppBar`）：64dp 的栏 + 下方 72dp 的大标题行（`#app-bar-expanded`，h1「JPY ⇄ CNY」+ 副标题），滚动时大标题行滚走、小标题按 `cubic-bezier(.8,0,.8,.15)` 淡入、背景随折叠比例变为 surface-container（`m3.js` 的 `initAppBars()`，`--collapsed` 等变量）；完全折叠后加 `.is-scrolled`，地址栏颜色据此切换。
-- **「更多」菜单**（`#more-menu`，`initMoreMenu()`）：动作项用 `role="menuitem"`，`M3.menu` 派发 `select`；打开前（`beforeopen`）隐藏不适用的项，空组自动隐藏。主题按钮组保留在顶栏，不要收进菜单。
+- **「更多」菜单**（`#more-menu`，`initMoreMenu()`）：动作项用 `role="menuitem"`，`M3.menu` 派发 `select`；打开前（`beforeopen`）隐藏不适用的项，空组自动隐藏。主题按钮组保留在顶栏，不要收进菜单。GitHub 按钮（`#github-btn`，GitHub octicon 的 SVG，Material Symbols 没有品牌图标）600dp 起显示在顶栏，更窄时顶栏放不下，改在菜单里显示 `#more-github`（`beforeopen` 按按钮是否显示切换）。
 - **宽屏布局**（M3 自适应，数值来自 Compose `WindowSizeClass` / `PaneScaffoldDirective`）：600dp 起页边距 24dp；840dp 起分为主区（今日汇率、走势）和辅助区（360dp，1200dp 起 412dp；计算器、常用金额、万事达、安装），间距 24dp，内容最宽 1280px。区块由 `layoutPanes()` 在两栏之间移动（DOM 顺序 = 显示顺序），新增区块时加 `sec-side` 类即可进辅助区。
 - **卡片圆角**：页面上所有色块（卡片和常用金额列表的外角）统一为 medium 12dp，即 Compose `FilledCardTokens.ContainerShape`。
 - **卡片色块**：每张卡片都是 filled 容器，用 `--card-bg` / `--card-on` 指定：今日汇率 primary-container、计算器自定义青绿色（`--app-color-calc-container`，style.css 顶部浅/深两套）、走势 secondary-container、万事达、常用金额、安装卡片等中性色块统一为 surface-container-highest（`FilledCardTokens.ContainerColor`）。卡片内文字、文本框、图表描边都从这两个变量取色，换色只改这一处。
