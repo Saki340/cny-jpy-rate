@@ -21,6 +21,13 @@
 - **インストール・オフライン対応**：ホーム画面に追加してアプリのように使え、オフライン時は前回取得したデータを表示します。
 - **国内外からアクセス可能**：フォントとアイコンはすべてセルフホストで、外部 CDN に依存しません。無料、広告なし、トラッキング Cookie なし。
 
+## スクリーンショット
+
+<p>
+  <img src="docs/screenshots/Screenshot_ja_1.jpg" alt="今日のレートと換算電卓" width="300" />
+  <img src="docs/screenshots/Screenshot_ja_2.jpg" alt="よく使う金額と推移チャート" width="300" />
+</p>
+
 ## 技術スタック
 
 - **実行環境**：[Cloudflare Workers](https://developers.cloudflare.com/workers/)（Static Assets がフロントエンドを配信し、`worker.js` が `/api/*` を処理）
@@ -52,7 +59,8 @@ cny-jpy-rate/
 │   ├── sitemap.xml
 │   └── vendor/fonts/    # セルフホストのフォント
 ├── docs/
-│   └── og-image.html    # プレビュー画像の元ファイル（?lang=ja / en で言語を切り替え）
+│   ├── og-image.html    # プレビュー画像の元ファイル（?lang=ja / en で言語を切り替え）
+│   └── screenshots/     # README のスマートフォンのスクリーンショット（中 / 日 / 英）
 ├── tools/
 │   └── m3-tokens.py     # Compose Material 3 のソースから tokens.css を生成
 ├── CLAUDE.md            # Claude Code 向けのプロジェクト説明

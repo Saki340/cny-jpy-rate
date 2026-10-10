@@ -21,6 +21,13 @@ A simple Japanese yen / Chinese yuan exchange-rate site: the daily mid-market ra
 - **Installable, works offline**: add it to your home screen and use it like an app; when offline, the last fetched data is shown.
 - **Reachable worldwide**: fonts and icons are all self-hosted, with no external CDN. Free, no ads, no tracking cookies.
 
+## Screenshots
+
+<p>
+  <img src="docs/screenshots/Screenshot_en_1.jpg" alt="Today's rate and the converter" width="300" />
+  <img src="docs/screenshots/Screenshot_en_2.jpg" alt="Saved amounts and the history chart" width="300" />
+</p>
+
 ## Tech stack
 
 - **Runtime**: [Cloudflare Workers](https://developers.cloudflare.com/workers/) (Static Assets serve the front end; `worker.js` handles `/api/*`)
@@ -52,7 +59,8 @@ cny-jpy-rate/
 │   ├── sitemap.xml
 │   └── vendor/fonts/    # Self-hosted fonts
 ├── docs/
-│   └── og-image.html    # Source of the previews (?lang=ja / en switches language)
+│   ├── og-image.html    # Source of the previews (?lang=ja / en switches language)
+│   └── screenshots/     # Phone screenshots used in the READMEs (zh / ja / en)
 ├── tools/
 │   └── m3-tokens.py     # Generates tokens.css from the Compose Material 3 source
 ├── CLAUDE.md            # Project notes for Claude Code

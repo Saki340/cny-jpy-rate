@@ -21,6 +21,13 @@
 - **可安装、可离线**：可添加到主屏幕像 App 一样使用，断网时显示上次获取的数据。
 - **国内外都能访问**：字体和图标全部自托管，不依赖外部 CDN；免费、无广告、无跟踪 Cookie。
 
+## 截图
+
+<p>
+  <img src="docs/screenshots/Screenshot_cn_1.jpg" alt="今日汇率与换算计算器" width="300" />
+  <img src="docs/screenshots/Screenshot_cn_2.jpg" alt="常用金额与历史走势" width="300" />
+</p>
+
 ## 技术栈
 
 - **运行环境**：[Cloudflare Workers](https://developers.cloudflare.com/workers/)（Static Assets 提供前端，`worker.js` 处理 `/api/*`）
@@ -52,7 +59,8 @@ cny-jpy-rate/
 │   ├── sitemap.xml
 │   └── vendor/fonts/    # 自托管的字体
 ├── docs/
-│   └── og-image.html    # 预览图的源文件（?lang=ja / en 切换语言）
+│   ├── og-image.html    # 预览图的源文件（?lang=ja / en 切换语言）
+│   └── screenshots/     # README 中的手机截图（中 / 日 / 英）
 ├── tools/
 │   └── m3-tokens.py     # 从 Compose Material 3 源码生成 tokens.css
 ├── CLAUDE.md            # 给 Claude Code 的项目说明
