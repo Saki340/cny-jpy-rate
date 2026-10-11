@@ -337,6 +337,11 @@
   appearance: textfield;
   -moz-appearance: textfield;
 }
+/* Trailing icon (OutlinedTextFieldTokens.TrailingIcon*: 24dp, on-surface-variant):
+ * an icon button centred 24dp from the end, as in Compose (12dp padding + 24dp
+ * icon); the input leaves room for it. */
+.m3-text-field--trailing .m3-text-field__input { padding-right: 52px; }
+.m3-text-field__trailing { position: absolute; top: 4px; right: 0; z-index: 1; }
 .m3-text-field__input::-webkit-outer-spin-button,
 .m3-text-field__input::-webkit-inner-spin-button { margin: 0; -webkit-appearance: none; }
 .m3-text-field__outline {

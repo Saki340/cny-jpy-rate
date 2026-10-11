@@ -33,12 +33,19 @@ async function getJson(url, cacheTtl) {
   return res.json();
 }
 
+// Tries each source in turn; if all fail, the error lists why each one did,
+// so the warnings below say which upstream broke (see Workers Logs).
 async function firstOk(tasks) {
+  const reasons = [];
   for (const task of tasks) {
-    try { return await task(); } catch { /* try the next one */ }
+    try { return await task(); } catch (e) { reasons.push(e.message); } // try the next one
   }
-  throw new Error("all sources failed");
+  throw new Error(`all sources failed: ${reasons.join("; ")}`);
 }
+
+// Only failures are logged: falling back to currency-api, or giving up.
+const warnFallback = (api, e) => console.warn(`${api}: Frankfurter failed, using currency-api (${e.message})`);
+const logFailure = (api, e) => console.error(`${api}: all sources failed (${e.message})`);
 
 // Guard: a host that ignores our params answers with EUR-based rates, which
 // would show a wrong number, so the base currency is always checked.
@@ -75,14 +82,18 @@ async function rate() {
     const [date, latest] = days[days.length - 1];
     const prev = days.length > 1 ? days[days.length - 2] : null;
     return rateResponse(date, latest.JPY, prev && { date: prev[0], rate: prev[1].JPY }, "frankfurter");
-  } catch { /* fall back */ }
+  } catch (e) { warnFallback("/api/rate", e); }
   try {
     const latest = await currencyApiOn("latest");
     const day = new Date(`${latest.date}T00:00:00Z`);
     day.setUTCDate(day.getUTCDate() - 1);
-    const prev = await currencyApiOn(isoDate(day)).catch(() => null);
+    const prev = await currencyApiOn(isoDate(day)).catch((e) => {
+      console.warn(`/api/rate: no previous day from currency-api (${e.message})`);
+      return null;
+    });
     return rateResponse(latest.date, latest.rate, prev, "currency-api");
-  } catch {
+  } catch (e) {
+    logFailure("/api/rate", e);
     return json({ error: "汇率获取失败，请稍后再试" }, 502);
   }
 }
@@ -150,11 +161,12 @@ async function history(url) {
   try {
     const points = await frankfurterHistory(`${isoDate(start)}..${isoDate(end)}`);
     return json({ points, source: "frankfurter" }, 200, headers);
-  } catch { /* fall back */ }
+  } catch (e) { warnFallback("/api/history", e); }
   try {
     const points = await currencyApiHistory(start, days);
     return json({ points, source: "currency-api" }, 200, headers);
-  } catch {
+  } catch (e) {
+    logFailure("/api/history", e);
     return json({ error: "历史数据获取失败", points: [] }, 502);
   }
 }
@@ -183,11 +195,12 @@ async function day(url) {
     const rate = data.rates?.JPY;
     if (typeof rate !== "number" || rate <= 0) throw new Error("unexpected response shape");
     return json({ requested: asked, date: data.date, cny_to_jpy: rate, source: "frankfurter" }, 200, headers);
-  } catch { /* fall back */ }
+  } catch (e) { warnFallback("/api/day", e); }
   try {
     const r = await currencyApiOn(asked);
     return json({ requested: asked, date: r.date, cny_to_jpy: r.rate, source: "currency-api" }, 200, headers);
-  } catch {
+  } catch (e) {
+    logFailure("/api/day", e);
     return json({ error: "rate unavailable" }, 502);
   }
 }

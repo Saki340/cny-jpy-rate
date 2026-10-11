@@ -56,7 +56,7 @@
      Google Fonts, which is slow or blocked in mainland China. Components are
      this site's own Material 3 implementation (public/m3), no UI library. -->
 <link rel="preload" href="vendor/fonts/google-sans-flex-ascii.woff2?v=3" as="font" type="font/woff2" crossorigin />
-<link rel="preload" href="vendor/fonts/material-symbols-rounded.woff2?v=3" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="vendor/fonts/material-symbols-rounded.woff2?v=4" as="font" type="font/woff2" crossorigin />
 <link rel="stylesheet" href="m3/tokens.css" />
 <link rel="stylesheet" href="m3/m3.css" />
 <link rel="stylesheet" href="style.css" />
@@ -152,10 +152,12 @@
       <div class="m3-card surface-card calc-card">
         <div class="calc-input">
           <!-- Accepts simple expressions ("1980*3"); see evaluateAmount() in app.js. -->
-          <div class="m3-text-field" id="amount-field">
+          <div class="m3-text-field m3-text-field--trailing" id="amount-field">
             <input class="m3-text-field__input" id="amount" type="text" inputmode="decimal" enterkeyhint="done" value="100" placeholder=" " autocomplete="off" spellcheck="false" aria-describedby="amount-support" />
             <label class="m3-text-field__label" for="amount">金额（JPY）</label>
             <fieldset class="m3-text-field__outline" aria-hidden="true"><legend><span>金额（JPY）</span></legend></fieldset>
+            <!-- Trailing icon: save this amount to 常用金额 (opens the same dialog, prefilled). -->
+            <button type="button" class="m3-icon-button m3-interactive m3-text-field__trailing" id="save-amount-btn" aria-label="存为常用金额" data-tooltip="存为常用金额" data-i18n-attr="aria-label:calc.save;data-tooltip:calc.save"><span class="m3-icon" data-icon="bookmark_add" aria-hidden="true"></span></button>
             <span class="m3-text-field__supporting" id="amount-support" aria-live="polite"></span>
           </div>
           <!-- Phone number pads have no operator keys; these appear while typing on touch screens. -->

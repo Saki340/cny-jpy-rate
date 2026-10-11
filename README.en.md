@@ -129,6 +129,10 @@ All of these are mid-market rates, without any bank's or payment provider's spre
 
 ## Changelog
 
+### 2026-10-11
+- Added a "Save this amount" button to the right of the converter's amount field, to add the current amount to your saved amounts in one tap.
+- Upstream data-source failures are now logged, making it easier to tell which source broke.
+
 ### 2026-10-10
 - Added a GitHub button to the top bar (on wide screens; on phones it is in the "More" menu).
 - The theme switch is now just light / dark, and every visit starts by following the system.

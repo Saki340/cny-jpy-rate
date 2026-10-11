@@ -1324,6 +1324,28 @@ function openSavedDialog(item = null) {
   el("saved-name").focus();
 }
 
+// The converter's "save" button: the amount being converted, prefilled in the
+// add dialog (the visitor only adds a name).
+function saveCurrentAmount() {
+  const value = evaluateAmount(el("amount").value);
+  if (!value) {
+    readAmount({ strict: true });
+    notify(t("saved.invalid"));
+    return;
+  }
+  const cur = currentPair()[0];
+  const amount = Number(value.toFixed(2));
+  if (saved.some((i) => i.cur === cur && Math.abs(i.amount - amount) < 0.005)) {
+    notify(t("saved.exists", { amount: `${fmt(amount, 2)} ${cur}` }));
+    return;
+  }
+  if (saved.length >= SAVED_MAX) {
+    notify(t("saved.full", { n: SAVED_MAX }));
+    return;
+  }
+  openSavedDialog();
+}
+
 function submitSaved() {
   const amount = evaluateAmount(el("saved-amount").value);
   if (!amount) {
@@ -1373,6 +1395,7 @@ function initSaved() {
   savedDialog = M3.dialog(el("saved-dialog"));
   M3.buttonGroup(el("saved-cur"));
   el("saved-add").addEventListener("click", () => openSavedDialog());
+  el("save-amount-btn").addEventListener("click", saveCurrentAmount);
   el("saved-list").addEventListener("click", (e) => {
     const use = e.target.closest("[data-use]");
     const edit = e.target.closest("[data-edit]");
