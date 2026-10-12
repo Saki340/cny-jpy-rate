@@ -11,7 +11,7 @@ JPY ⇄ CNY 汇率板。单个 Cloudflare Worker + 静态资源，无构建步�
 - `worker.js` — Worker 入口，处理 `/api/rate`（含前一个公布日，用于「较前一日」；缓存 10 分钟）、`/api/history`（缓存 1 小时）。两者共用同一数据源：主源 Frankfurter（欧洲央行参考汇率），失败时用 fawazahmed0 currency-api。**不要再接入 Yahoo 等条款不允许商用/公开展示的数据源。**其余请求交给 `env.ASSETS`。
 - `wrangler.toml` — `public/` 为静态资源目录，`/api/*` 先走 Worker；`[observability]` 开启 Workers Logs（不要删，否则部署会把日志关掉）。
 - `public/index.html` / `app.js` / `style.css` — 前端，原生 JS，无打包；走势图为手写 SVG。
-- `public/i18n.js` — 界面文案（简体中文 / 日本語 / English）与语言切换。见下方「多语言」。
+- `public/i18n-strings.js` — 界面文案词典（`LANGS`、`I18N`，简体中文 / 日本語 / English），只放数据；页面和 `worker.js` 共用。`public/i18n.js` — 语言选择与切换（`t()`、`applyI18n()`）。见下方「多语言」。
 - `public/m3/` — 本站自己实现的 Material 3 组件（不用任何 UI 库），见下方「界面规范」：
   - `tokens.css` — 系统设计令牌（颜色、字号、形状、状态层、动效），**由 `tools/m3-tokens.py` 从 Jetpack Compose Material 3 源码生成，不要手改**。
   - `m3.css` / `m3.js` — 顶部应用栏、按钮、图标按钮、连接式按钮组、卡片、描边文本框、菜单、提示、snackbar、涟漪。
@@ -75,7 +75,7 @@ JPY ⇄ CNY 汇率板。单个 Cloudflare Worker + 静态资源，无构建步�
 - 三种语言：`zh`（默认）、`ja`、`en`。选择顺序：URL `?lang=` → 用户在菜单中的选择（`localStorage` 键 `lang-pref`）→ 设备语言（`zh-*`/`ja-*`）→ 其余一律 `en`。
 - **新增或修改任何用户可见文字，三种语言都要写**：静态文字在 `index.html` 用 `data-i18n` / `data-i18n-html`（含链接）/ `data-i18n-attr="attr:key;…"` 标记；`app.js` 里用 `t(key, params)`，数字和时间用 `locale()`。不要在 HTML/JS 里写死中文。
 - 切换语言会派发 `langchange` 事件，`app.js` 的 `initLanguage()` 里重绘所有 JS 生成的文字；新增动态文字要在那里加上。
-- 每种语言有独立 URL（`/`、`/?lang=ja`、`/?lang=en`），Worker 用 HTMLRewriter 改写 `<head>`（lang、title、description、canonical、og）以便搜索引擎收录；`worker.js` 的 `PAGE_META` 要和 `i18n.js` 的 `doc.title` / `doc.description` 保持一致。hreflang 写在 `index.html` 和 `sitemap.xml`。
+- 每种语言有独立 URL（`/`、`/?lang=ja`、`/?lang=en`），Worker 用 HTMLRewriter 改写 `<head>`（lang、title、description、canonical、og），并按 `data-i18n` / `data-i18n-html` / `data-i18n-attr` 把正文翻译好再返回（词典来自 `i18n-strings.js`）；**否则各语言页的正文都是中文，Google 会判为重复网页、只收录 `/`**。因此 `index.html` 里由 JS 填写的占位文字（骨架屏、金额标签等）不要写中文，用数字或币种代码；`worker.js` 的 `PAGE_META` 要和 `i18n.js` 的 `doc.title` / `doc.description` 保持一致。hreflang 写在 `index.html` 和 `sitemap.xml`。
 - 语言菜单：`M3.menu()`，M3 Expressive 分组菜单（`.m3-menu__group`，组间 2dp 间隙代替分隔线；选中项 tertiary-container 填色，`menuitemradio`），数值来自 `MenuDefaults` / `SegmentedMenuTokens`。
 - 每种语言另有分享预览图 `og-image-{ja,en}.png` 和清单 `manifest-{ja,en}.webmanifest`（`id` 同为 `/`，是同一个 App），Worker 按 `?lang=` 改写，`applyI18n()` 在页面里同步切换。
 - 日文页面优先用日文字体（`:root:lang(ja)`），否则汉字会显示成中文字形。

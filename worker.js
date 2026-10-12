@@ -1,3 +1,5 @@
+import "./public/i18n-strings.js"; // sets globalThis.I18N_STRINGS (shared with the page)
+
 // One data source for everything, so the board, the calculator and the chart
 // always agree: Frankfurter (ECB reference rates, published once per working
 // day). fawazahmed0's currency-api is only a fallback when Frankfurter fails.
@@ -207,10 +209,12 @@ async function day(url) {
 
 /* ---------- per-language page head ---------- */
 
-// The page text is translated in the browser (public/i18n.js), but search
-// engines and link previews read <head> as served. For /?lang=ja and
-// /?lang=en the Worker rewrites the language-specific head tags, so each
-// language has its own indexable URL (see the hreflang links in index.html).
+// Search engines and link previews read the page as served. For /?lang=ja and
+// /?lang=en the Worker rewrites the language-specific head tags and
+// translates the static text (the data-i18n markers, from the same
+// dictionaries the page uses), so each language URL is its own page rather
+// than a copy of the Chinese one (see the hreflang links in index.html).
+// Without this Google treats them as duplicates and picks / as canonical.
 const SITE = "https://rate.anontokyo.vip/";
 const PAGE_META = {
   ja: {
@@ -239,9 +243,30 @@ const PAGE_META = {
 
 function localizedPage(response, lang) {
   const meta = PAGE_META[lang];
+  const strings = globalThis.I18N_STRINGS.I18N[lang];
   const url = `${SITE}?lang=${lang}`;
   const setAttr = (name, value) => ({ element(el) { el.setAttribute(name, value); } });
   return new HTMLRewriter()
+    .on("[data-i18n]", {
+      element(el) {
+        const text = strings[el.getAttribute("data-i18n")];
+        if (text !== undefined) el.setInnerContent(text);
+      },
+    })
+    .on("[data-i18n-html]", {
+      element(el) {
+        const html = strings[el.getAttribute("data-i18n-html")];
+        if (html !== undefined) el.setInnerContent(html, { html: true });
+      },
+    })
+    .on("[data-i18n-attr]", {
+      element(el) {
+        for (const pair of el.getAttribute("data-i18n-attr").split(";")) {
+          const [attr, key] = pair.split(":").map((s) => s.trim());
+          if (attr && strings[key] !== undefined) el.setAttribute(attr, strings[key]);
+        }
+      },
+    })
     .on("html", setAttr("lang", meta.htmlLang))
     .on("title", { element(el) { el.setInnerContent(meta.title); } })
     .on('meta[name="description"]', setAttr("content", meta.description))

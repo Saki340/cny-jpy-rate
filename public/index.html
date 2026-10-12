@@ -8,7 +8,7 @@
 <title>日元人民币汇率 | 汇率板</title>
 <meta name="description" content="日元兑人民币（JPY ⇄ CNY）每日中间汇率（欧洲央行参考汇率）：金额换算支持算式，可保存房租等常用金额，附 30 天至 1 年的历史走势和近一年汇率位置。免费、无广告，支持深色模式。" />
 <link rel="canonical" href="https://rate.anontokyo.vip/" />
-<!-- One URL per language (the Worker rewrites title/description/canonical for ?lang=). -->
+<!-- One URL per language (for ?lang= the Worker rewrites the head and translates the data-i18n text). -->
 <link rel="alternate" hreflang="zh-CN" href="https://rate.anontokyo.vip/" />
 <link rel="alternate" hreflang="ja" href="https://rate.anontokyo.vip/?lang=ja" />
 <link rel="alternate" hreflang="en" href="https://rate.anontokyo.vip/?lang=en" />
@@ -129,7 +129,7 @@
       </div>
       <div class="m3-card surface-card rate-card">
         <div class="deco-shape" aria-hidden="true"></div>
-        <p class="meta-text" id="updated"><span class="skeleton skeleton-text">数据日期 0000-00-00 · 欧洲央行参考汇率</span></p>
+        <p class="meta-text" id="updated"><span class="skeleton skeleton-text">0000 0000-00-00 · 0000000000000000</span></p>
         <div class="rate-line" id="rate-line" aria-live="polite"><span class="rate-one">1</span><span class="cur cur-jpy" data-cur="JPY">JPY</span><span class="eq">=</span><span class="rate-value" id="rate-value"><span class="loading-indicator loading-indicator--sm" role="progressbar" aria-label="加载中" data-i18n-attr="aria-label:loading"><span></span></span></span><span class="cur cur-cny" data-cur="CNY">CNY</span></div>
         <div class="rate-change" id="rate-change" aria-live="polite"></div>
         <!-- Where today's rate stands among the past year's days (app.js renderRank). -->
@@ -154,9 +154,9 @@
           <!-- Accepts simple expressions ("1980*3"); see evaluateAmount() in app.js. -->
           <div class="m3-text-field m3-text-field--trailing" id="amount-field">
             <input class="m3-text-field__input" id="amount" type="text" inputmode="decimal" enterkeyhint="done" value="100" placeholder=" " autocomplete="off" spellcheck="false" aria-describedby="amount-support" />
-            <label class="m3-text-field__label" for="amount">金额（JPY）</label>
-            <fieldset class="m3-text-field__outline" aria-hidden="true"><legend><span>金额（JPY）</span></legend></fieldset>
-            <!-- Trailing icon: save this amount to 常用金额 (opens the same dialog, prefilled). -->
+            <label class="m3-text-field__label" for="amount">JPY</label>
+            <fieldset class="m3-text-field__outline" aria-hidden="true"><legend><span>JPY</span></legend></fieldset>
+            <!-- Trailing icon: save this amount to the saved amounts (opens the same dialog, prefilled). -->
             <button type="button" class="m3-icon-button m3-interactive m3-text-field__trailing" id="save-amount-btn" aria-label="存为常用金额" data-tooltip="存为常用金额" data-i18n-attr="aria-label:calc.save;data-tooltip:calc.save"><span class="m3-icon" data-icon="bookmark_add" aria-hidden="true"></span></button>
             <span class="m3-text-field__supporting" id="amount-support" aria-live="polite"></span>
           </div>
@@ -170,7 +170,7 @@
         </div>
         <div class="calc-equals" aria-hidden="true">＝</div>
         <div class="calc-field">
-          <span class="result-label" id="calc-result-label">折合 CNY</span>
+          <span class="result-label" id="calc-result-label">CNY</span>
           <div class="calc-result-row">
             <output class="calc-result" id="calc-result" title="点击复制" data-i18n-attr="title:calc.copyHint"><span class="calc-visible" aria-hidden="true"><span class="skeleton">0.000</span></span><span class="sr-only"></span></output>
             <button type="button" class="m3-icon-button m3-interactive" id="copy-btn" aria-label="复制换算结果" data-tooltip="复制换算结果" data-i18n-attr="aria-label:calc.copy;data-tooltip:calc.copy"><span class="m3-icon" data-icon="content_copy" aria-hidden="true"></span></button>
@@ -205,9 +205,9 @@
         </div>
         <!-- Fixed three-line summary: it never changes while hovering, so the page does not jump. -->
         <div class="chart-readout" id="chart-readout">
-          <span class="chart-readout-line" id="readout-latest"><span class="skeleton skeleton-text">最新 0000-00-00 · 0.000000 · 区间 +0.00%</span></span>
-          <span class="chart-readout-line chart-readout-hi" id="readout-high"><span class="skeleton skeleton-text">最高 0000-00-00 · 0.000000</span></span>
-          <span class="chart-readout-line chart-readout-lo" id="readout-low"><span class="skeleton skeleton-text">最低 0000-00-00 · 0.000000</span></span>
+          <span class="chart-readout-line" id="readout-latest"><span class="skeleton skeleton-text">0000 0000-00-00 · 0.000000 · 0000 +0.00%</span></span>
+          <span class="chart-readout-line chart-readout-hi" id="readout-high"><span class="skeleton skeleton-text">0000 0000-00-00 · 0.000000</span></span>
+          <span class="chart-readout-line chart-readout-lo" id="readout-low"><span class="skeleton skeleton-text">0000 0000-00-00 · 0.000000</span></span>
           <span class="chart-readout-line chart-readout-ma" id="readout-ma"></span>
         </div>
         <div class="chart-wrap">
@@ -291,7 +291,7 @@
   </main>
 <dialog class="m3-dialog" id="saved-dialog" aria-labelledby="saved-dialog-title">
   <form class="m3-dialog__container" id="saved-form" novalidate>
-    <h2 class="m3-dialog__headline" id="saved-dialog-title">添加常用金额</h2>
+    <h2 class="m3-dialog__headline" id="saved-dialog-title" data-i18n="saved.dialogAdd">添加常用金额</h2>
     <div class="m3-dialog__content">
       <div class="m3-text-field" id="saved-name-field">
         <input class="m3-text-field__input" id="saved-name" type="text" maxlength="20" placeholder=" " autocomplete="off" />
@@ -332,6 +332,7 @@
   </div>
 </dialog>
 <script src="m3/m3.js"></script>
+<script src="i18n-strings.js"></script>
 <script src="i18n.js"></script>
 <script src="expressive.js"></script>
 <script src="app.js"></script>

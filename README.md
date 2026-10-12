@@ -43,7 +43,8 @@ cny-jpy-rate/
 ├── public/
 │   ├── index.html
 │   ├── app.js           # 前端逻辑、走势图、动效
-│   ├── i18n.js          # 界面文案（中 / 日 / 英）与语言切换
+│   ├── i18n-strings.js  # 界面文案（中 / 日 / 英），页面和 Worker 共用
+│   ├── i18n.js          # 语言选择与切换
 │   ├── style.css
 │   ├── m3/
 │   │   ├── tokens.css   # M3 系统设计令牌（由 tools/m3-tokens.py 生成）

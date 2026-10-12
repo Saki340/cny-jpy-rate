@@ -43,7 +43,8 @@ cny-jpy-rate/
 ├── public/
 │   ├── index.html
 │   ├── app.js           # フロントエンドのロジック、チャート、アニメーション
-│   ├── i18n.js          # UI の文言（中 / 日 / 英）と言語切り替え
+│   ├── i18n-strings.js  # UI の文言（中 / 日 / 英）。ページと Worker で共用
+│   ├── i18n.js          # 言語の選択と切り替え
 │   ├── style.css
 │   ├── m3/
 │   │   ├── tokens.css   # M3 システムデザイントークン（tools/m3-tokens.py で生成）
