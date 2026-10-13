@@ -6,8 +6,13 @@
 // served instead (the page shows the data date, so old rates are visible).
 
 // Bumping the name drops older caches on activate (v1 still held the
-// removed mdui files).
-const CACHE = "rate-board-v2";
+// removed mdui files; v2 the hand-written M3 components).
+const CACHE = "rate-board-v3";
+
+// Cached when the worker installs, so the components are there even if the
+// first visit ends before the page has fetched them through the worker. The
+// URL must match the one in index.html exactly (including ?v=).
+const PRECACHE = ["/vendor/petal.js?v=1"];
 
 // Pages are cached under their path plus ?lang= only, so share links
 // (?amount=…&from=…) do not each keep a copy of the page.
@@ -24,7 +29,13 @@ function markFromCache(response) {
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 
-self.addEventListener("install", () => self.skipWaiting());
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches.open(CACHE)
+      .then((cache) => Promise.allSettled(PRECACHE.map((url) => cache.add(url))))
+      .then(() => self.skipWaiting()),
+  );
+});
 
 self.addEventListener("activate", (event) => {
   event.waitUntil((async () => {

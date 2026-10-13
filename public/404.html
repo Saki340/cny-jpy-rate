@@ -11,17 +11,16 @@
 <title>找不到页面 | 汇率板</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="stylesheet" href="/m3/tokens.css" />
-<link rel="stylesheet" href="/m3/m3.css" />
 <link rel="stylesheet" href="/style.css" />
+<script type="module" src="/vendor/petal.js?v=1"></script>
 </head>
 <body>
   <main class="not-found">
     <div class="not-found-mark" aria-hidden="true"><span class="not-found-shape" id="nf-shape"></span><span class="not-found-code">404</span></div>
     <h1 class="not-found-title" id="nf-title">找不到这个页面</h1>
     <p class="not-found-text" id="nf-text">链接可能有误，或者页面已经不存在了。</p>
-    <a class="m3-button m3-button--filled m3-interactive" id="nf-home" href="/">回到首页</a>
+    <petal-filled-button id="nf-home" href="/">回到首页</petal-filled-button>
   </main>
-<script src="/m3/m3.js"></script>
 <script src="/expressive.js"></script>
 <script>
   (function () {

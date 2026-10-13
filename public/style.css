@@ -1,6 +1,7 @@
-/* Page styles. Components are in m3/m3.css; every colour, type size, shape
- * and motion value comes from the Material 3 system tokens in m3/tokens.css
- * (--md-sys-*), generated from Jetpack Compose Material 3. */
+/* Page styles. Components are petal-elements (vendor/petal.js); every colour,
+ * type size, shape and motion value comes from the Material 3 system tokens in
+ * m3/tokens.css (--md-sys-*), generated from Jetpack Compose Material 3, which
+ * petal reads directly. */
 
 /* Self-hosted fonts (see public/vendor/fonts/README.txt). One Latin family,
  * Google Sans Flex (variable: weight + roundness), covers text and numbers;
@@ -59,6 +60,11 @@
 }
 
 :root {
+  /* petal-icon: the self-hosted Material Symbols Rounded subset below. */
+  --md-icon-font: "Material Symbols Rounded";
+  /* petal text (buttons, fields, menus, dialogs) uses the page font. */
+  --md-ref-typeface-brand: var(--font);
+  --md-ref-typeface-plain: var(--font);
   --page-width: 760px;
   --font: "Google Sans Flex", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans", "Yu Gothic UI", system-ui, sans-serif;
   /* Things that follow the pointer must not overshoot: the critically damped
@@ -74,16 +80,21 @@
   --font: "Google Sans Flex", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 /* Language names in the menu each use their own script's fonts. */
-.m3-menu__item[lang="ja"] { font-family: "Google Sans Flex", "Hiragino Sans", "Yu Gothic UI", "Yu Gothic", Meiryo, "Noto Sans JP", sans-serif; }
-.m3-menu__item[lang="zh-CN"] { font-family: "Google Sans Flex", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif; }
+petal-menu-item[lang="ja"] { --md-menu-item-label-text-font: "Google Sans Flex", "Hiragino Sans", "Yu Gothic UI", "Yu Gothic", Meiryo, "Noto Sans JP", sans-serif; }
+petal-menu-item[lang="zh-CN"] { --md-menu-item-label-text-font: "Google Sans Flex", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif; }
+/* Components are not drawn until petal.js has defined them (no unstyled flash). */
+petal-top-app-bar:not(:defined), petal-button-group:not(:defined), petal-filled-card:not(:defined),
+petal-outlined-text-field:not(:defined), petal-icon-button:not(:defined) { visibility: hidden; }
 
 /* ---------- base ---------- */
 
 * { box-sizing: border-box; }
-html { scroll-padding-top: 72px; }
+html, body { height: 100%; }
+/* The page scrolls inside #scroller (petal-pull-to-refresh), not the window. */
+#scroller { height: 100%; scroll-padding-top: 72px; }
 body {
   margin: 0;
-  min-height: 100vh;
+  overflow: hidden;
   background-color: var(--md-sys-color-surface);
   color: var(--md-sys-color-on-surface);
   font-family: var(--font);
@@ -108,8 +119,7 @@ button, input, output { font-family: inherit; }
 
 /* Display text and the key numbers use the fully rounded end of Google Sans
  * Flex's roundness axis, like Google's own Expressive type. */
-.m3-top-app-bar__headline, .section-heading h2, .rate-line, .calc-result, .chart-tooltip-value, .install-text h2,
-.m3-top-app-bar__title { font-variation-settings: "ROND" 100; }
+petal-top-app-bar, .section-heading h2, .rate-line, .calc-result, .chart-tooltip-value, .install-text h2 { font-variation-settings: "ROND" 100; }
 
 /* ---------- layout ---------- */
 
@@ -117,11 +127,10 @@ button, input, output { font-family: inherit; }
  * medium width class (600dp) up, as in Compose's adaptive scaffolds. */
 :root { --gutter: 16px; }
 .page-width { width: min(100% - 2 * var(--gutter), var(--page-width)); margin-inline: auto; }
-/* The bar is full width; its row lines the title up with the page content
- * (the title sits 16px into the row). */
-.m3-top-app-bar__row {
-  width: min(100%, 100% - 2 * (var(--gutter) - 16px), var(--page-width) + 32px);
-  margin-inline: auto;
+/* The bar is full width; its content lines up with the page content (the
+ * title sits 16px into the row). */
+petal-top-app-bar::part(container) {
+  padding-inline: max(0px, calc((100% - min(100% - 2 * var(--gutter) + 32px, var(--page-width) + 32px)) / 2));
 }
 .page { padding: 4px 0 max(40px, env(safe-area-inset-bottom)); }
 section { margin-bottom: 24px; }
@@ -136,32 +145,25 @@ section { margin-bottom: 24px; }
 
 /* ---------- app bar contents ---------- */
 
-/* Theme buttons: labels on wide screens; icons on narrow ones, where three
- * languages' labels would not fit beside the title and the language button. */
+/* Theme buttons: labels on wide screens; icons on narrow ones (the group gets
+ * .is-compact from app.js), where three languages' labels would not fit beside
+ * the title and the language button. */
 .theme-group { flex: none; }
-.theme-group .m3-toggle { padding: 0 14px; }
-.theme-group .m3-toggle .m3-icon { display: none; }
-@media (max-width: 600px) {
-  .theme-group .m3-toggle { padding: 0 10px; }
-  .theme-group .m3-toggle .m3-icon { display: inline-block; }
-  .theme-group .m3-toggle__label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
-  }
+.theme-group.is-compact petal-filled-button {
+  --md-filled-button-leading-space: 10px;
+  --md-filled-button-trailing-space: 10px;
 }
-@media (max-width: 399px) {
-  .theme-group .m3-toggle { padding: 0 7px; }
-  .m3-top-app-bar__actions { gap: 0; }
-}
-@media (max-width: 360px) {
-  .m3-top-app-bar__title { padding-inline: 8px 0; font-size: 18px; }
+.theme-group.is-compact .theme-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 /* GitHub in the app bar from 600dp; below that it is in the More menu. */
 .github-mark { width: 20px; height: 20px; }
+.github-btn { --md-icon-size: 20px; }
 @media (max-width: 599px) {
   .github-btn { display: none; }
 }
@@ -172,11 +174,11 @@ section { margin-bottom: 24px; }
  * secondary-container, the Mastercard note surface-container-highest.
  * Shape: every card (and the saved-amounts list) uses the card corner,
  * medium 12dp (Filled/Elevated/OutlinedCardTokens.ContainerShape). */
-.surface-card {
+petal-filled-card.surface-card {
   width: 100%;
   padding: clamp(16px, 3.5vw, 24px);
-  border-radius: var(--md-sys-shape-corner-medium);
-  background-color: var(--card-bg, var(--md-sys-color-surface-container-highest));
+  --md-filled-card-container-shape: var(--md-sys-shape-corner-medium);
+  --md-filled-card-container-color: var(--card-bg, var(--md-sys-color-surface-container-highest));
   color: var(--card-on, var(--md-sys-color-on-surface));
 }
 .rate-card  { --card-bg: var(--md-sys-color-primary-container);   --card-on: var(--md-sys-color-on-primary-container); }
@@ -193,15 +195,32 @@ section { margin-bottom: 24px; }
   line-height: 1.65;
   letter-spacing: var(--md-sys-typescale-body-small-tracking);
 }
-/* Text fields on a coloured card take the card's colours. */
-.surface-card .m3-text-field { color: var(--card-on); }
-.surface-card .m3-text-field__label { color: var(--card-on-variant); }
-.surface-card .m3-text-field__outline { border-color: color-mix(in srgb, var(--card-on) 55%, transparent); }
-@media (hover: hover) {
-  .surface-card .m3-text-field:hover .m3-text-field__outline { border-color: var(--card-on); }
+/* Text fields and icon buttons on a coloured card take the card's colours. */
+.surface-card petal-outlined-text-field {
+  --md-outlined-text-field-input-text-color: var(--card-on);
+  --md-outlined-text-field-focus-input-text-color: var(--card-on);
+  --md-outlined-text-field-hover-input-text-color: var(--card-on);
+  --md-outlined-text-field-label-text-color: var(--card-on-variant);
+  --md-outlined-text-field-hover-label-text-color: var(--card-on-variant);
+  --md-outlined-text-field-supporting-text-color: var(--card-on-variant);
+  --md-outlined-text-field-hover-supporting-text-color: var(--card-on-variant);
+  --md-outlined-text-field-outline-color: color-mix(in srgb, var(--card-on) 55%, transparent);
+  --md-outlined-text-field-hover-outline-color: var(--card-on);
+  --md-outlined-text-field-focus-outline-color: var(--md-sys-color-primary);
+  --md-outlined-text-field-trailing-icon-color: var(--card-on);
+  --md-outlined-text-field-hover-trailing-icon-color: var(--card-on);
+  --md-outlined-text-field-focus-trailing-icon-color: var(--card-on);
+  display: flex;
 }
-.surface-card .m3-text-field__input:focus ~ .m3-text-field__outline { border-color: var(--md-sys-color-primary); }
-.surface-card .m3-icon-button { color: var(--card-on); }
+.surface-card petal-icon-button {
+  --md-icon-button-icon-color: var(--card-on);
+  --md-icon-button-hover-icon-color: var(--card-on);
+  --md-icon-button-focus-icon-color: var(--card-on);
+  --md-icon-button-pressed-icon-color: var(--card-on);
+  --md-icon-button-hover-state-layer-color: var(--card-on);
+  --md-icon-button-pressed-state-layer-color: var(--card-on);
+  --md-icon-button-focus-state-layer-color: var(--card-on);
+}
 
 /* ---------- today's rate (hero card) ---------- */
 
@@ -301,7 +320,7 @@ section { margin-bottom: 24px; }
 }
 .change-chip.is-down { --chip: var(--app-color-low); }
 .change-chip.is-flat { --chip: var(--card-on); }
-.change-chip .m3-icon { --m3-icon-opsz: 20; font-size: 16px; }
+.change-chip petal-icon { --md-icon-size: 16px; }
 .change-chip.is-flash { animation: chip-flash 1.6s var(--md-sys-motion-spring-default-effects) 1; }
 @keyframes chip-flash { 0%, 30% { background-color: color-mix(in srgb, var(--chip) 40%, transparent); } }
 .change-label { color: var(--card-on); opacity: .75; }
@@ -378,12 +397,11 @@ section { margin-bottom: 24px; }
 @media (pointer: coarse) {
   .calc-input:focus-within .calc-keys { display: flex; }
 }
-.calc-keys .m3-chip {
+.calc-keys petal-assist-chip {
   flex: 1 1 0;
-  padding: 0;
-  border-color: color-mix(in srgb, var(--card-on) 30%, transparent);
-  color: var(--card-on);
-  font-size: 18px;
+  --md-assist-chip-outline-color: color-mix(in srgb, var(--card-on) 30%, transparent);
+  --md-assist-chip-label-text-color: var(--card-on);
+  --md-assist-chip-label-text-size: 18px;
 }
 .calc-equals { color: var(--card-on-variant); font-size: 24px; }
 .calc-field { min-width: 0; display: flex; flex-direction: column; gap: 10px; }
@@ -409,7 +427,6 @@ section { margin-bottom: 24px; }
 /* ---------- rate on a date ---------- */
 
 .date-card { --card-bg: var(--md-sys-color-tertiary-container); --card-on: var(--md-sys-color-on-tertiary-container); }
-.date-card .m3-text-field__input { color-scheme: inherit; }
 .date-result { margin-top: 12px; color: var(--card-on); }
 .date-result p { margin: 0; }
 .date-rate {
@@ -428,7 +445,8 @@ section { margin-bottom: 24px; }
 .range-tabs { width: 100%; margin-bottom: 14px; }
 /* On the coloured chart card, unselected buttons use the lightest (darkest in
  * dark mode) surface so they stand out from the card. */
-.chart-card .m3-toggle:not([aria-checked="true"]) { background-color: var(--md-sys-color-surface-container-lowest); }
+.chart-card petal-filled-button:not([selected]) { --_container-color: var(--md-sys-color-surface-container-lowest); }
+.range-tabs petal-filled-button { flex: 1 1 0; }
 .chart-readout {
   display: flex;
   flex-direction: column;
@@ -551,57 +569,24 @@ section { margin-bottom: 24px; }
 @keyframes fade-in { from { opacity: 0; } }
 @keyframes marker-pop { from { opacity: 0; transform: scale(0); } }
 
-/* Wavy linear progress, indeterminate (LinearProgressIndicatorTokens: 4dp
- * thick, amplitude 3dp, wavelength 20dp, 10dp high; active primary, track
- * secondary-container). Shown only if loading takes longer than 200ms. */
-.wavy-progress {
+/* Wavy linear progress, indeterminate (petal-linear-progress wavy). Shown only
+ * if loading takes longer than 200ms. */
+.chart-progress {
   position: absolute;
   inset: -8px 0 auto;
-  height: 10px;
-  overflow: hidden; /* the travelling segment starts and ends outside */
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--md-sys-motion-spring-default-effects-duration) var(--md-sys-motion-spring-default-effects);
 }
-.chart-wrap.is-loading .wavy-progress { opacity: 1; transition-delay: 200ms; }
-.wavy-progress::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 3px;
-  height: 4px;
-  border-radius: 2px;
-  background-color: var(--md-sys-color-surface-container-lowest);
-}
-.wavy-progress__bar {
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 42%;
-  border-radius: 5px;
-  background-color: var(--md-sys-color-primary);
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='10'%3E%3Cpath d='M-5 5 Q0 0 5 5 T15 5 T25 5' fill='none' stroke='black' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E") 0 0 / 20px 10px repeat-x;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='10'%3E%3Cpath d='M-5 5 Q0 0 5 5 T15 5 T25 5' fill='none' stroke='black' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E") 0 0 / 20px 10px repeat-x;
-  animation:
-    wavy-travel 1.8s cubic-bezier(.65, 0, .35, 1) infinite,
-    wavy-flow .6s linear infinite;
-}
-@keyframes wavy-travel { from { transform: translateX(-100%); } to { transform: translateX(240%); } }
-@keyframes wavy-flow { to { -webkit-mask-position: 20px 0; mask-position: 20px 0; } }
+.chart-wrap.is-loading .chart-progress { opacity: 1; transition-delay: 200ms; }
 
-/* Loading indicator (LoadingIndicatorTokens: 48dp container, 38dp active
- * indicator in primary): a shape that morphs through the M3 shape sequence
- * while spinning (keyframes generated by expressive.js). */
-.loading-indicator { display: inline-grid; place-items: center; width: 48px; height: 48px; vertical-align: middle; }
-.loading-indicator > span {
-  width: 38px;
-  height: 38px;
-  background-color: var(--md-sys-color-primary);
-  animation: ex-loading-morph 4.55s infinite, ex-loading-spin 4.55s linear infinite;
+/* Loading indicators (petal-loading-indicator contained): 48dp by default;
+ * the one inside the rate line is as tall as the text. */
+.loading-sm {
+  --md-loading-indicator-container-width: 1.1em;
+  --md-loading-indicator-container-height: 1.1em;
+  vertical-align: middle;
 }
-.loading-indicator--sm { width: 1em; height: 1em; }
-.loading-indicator--sm > span { width: .8em; height: .8em; }
-@keyframes ex-loading-spin { to { rotate: 1turn; } }
 
 /* Skeleton placeholders while the first data loads. */
 .skeleton {
@@ -630,12 +615,14 @@ section { margin-bottom: 24px; }
 /* Segmented list on the page background (surface): items take the same
  * neutral colour as the other neutral blocks (the filled card colour,
  * surface-container-highest), since surface items would vanish on it. */
-.saved-list { --list-item-bg: var(--md-sys-color-surface-container-highest); }
-/* The list's outer corners match the cards around it (12dp, not the list's
- * own 16dp), so every block on the page has the same corner. */
-.saved-list .m3-list-item:first-child { --r-top: var(--md-sys-shape-corner-medium); }
-.saved-list .m3-list-item:last-child { --r-bottom: var(--md-sys-shape-corner-medium); }
-.saved-list[hidden], .saved-empty[hidden] { display: none; }
+petal-list.saved-list {
+  --md-list-segmented-item-container-color: var(--md-sys-color-surface-container-highest);
+  /* The list's outer corners match the cards around it (12dp, not the list's
+   * own 16dp), so every block on the page has the same corner. */
+  --md-list-segmented-container-shape: var(--md-sys-shape-corner-medium);
+}
+.saved-end { display: flex; align-items: center; gap: 4px; }
+petal-list.saved-list[hidden], .saved-empty[hidden] { display: none; }
 .saved-result {
   flex: none;
   color: var(--md-sys-color-on-surface);
@@ -651,7 +638,10 @@ section { margin-bottom: 24px; }
 }
 .saved-result-cur { color: var(--md-sys-color-on-surface-variant); font-size: var(--md-sys-typescale-body-small-size); }
 .saved-cur-group { width: 100%; }
-.saved-cur-group .m3-toggle:not([aria-checked="true"]) { background-color: var(--md-sys-color-surface-container-highest); }
+.saved-cur-group petal-filled-button { flex: 1 1 0; }
+.saved-cur-group petal-filled-button:not([selected]) { --_container-color: var(--md-sys-color-surface-container-highest); }
+#saved-form { display: flex; flex-direction: column; gap: 16px; margin: 0; padding-top: 8px; }
+.dialog-start { margin-inline-end: auto; }
 
 /* ---------- keyboard shortcuts dialog ---------- */
 
@@ -770,7 +760,7 @@ kbd {
   color: var(--md-sys-color-on-secondary-container);
   font-size: var(--md-sys-typescale-body-medium-size);
 }
-.offline-pill .m3-icon { --m3-icon-opsz: 20; font-size: 20px; }
+.offline-pill petal-icon { --md-icon-size: 20px; }
 
 /* ---------- wide screens: main pane + supporting pane ----------
  * Compose adaptive (WindowSizeClass, PaneScaffoldDirective): from the
@@ -869,3 +859,13 @@ html.js .page section:not(.in-view) { animation-play-state: paused; }
   .skeleton { animation: none; }
   .chart-pulse { display: none; }
 }
+
+/* ---------- petal overrides ---------- */
+
+/* petal hosts set their own display, which beats the UA's [hidden] rule. */
+petal-filled-button[hidden], petal-filled-tonal-button[hidden], petal-text-button[hidden],
+petal-menu-item[hidden], petal-menu-group[hidden], petal-icon-button[hidden] { display: none !important; }
+/* petal-dialog's scrim is a z-index: 1 layer (not the top layer), so the
+ * sticky bar must not be above it. */
+petal-top-app-bar { z-index: 1; }
+petal-dialog { width: 560px; }

@@ -6,5 +6,10 @@
 /vendor/fonts/*
   Cache-Control: public, max-age=604800, stale-while-revalidate=86400
 
+# The petal-elements bundle (tools/build-petal.mjs); the URL carries ?v=, bump it
+# in index.html and sw.js (PRECACHE) after rebuilding.
+/vendor/petal.js
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+
 /icons/*
   Cache-Control: public, max-age=86400

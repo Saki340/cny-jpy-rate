@@ -54,68 +54,69 @@
 </script>
 <!-- Fonts are self-hosted (public/vendor) so the page does not depend on
      Google Fonts, which is slow or blocked in mainland China. Components are
-     this site's own Material 3 implementation (public/m3), no UI library. -->
+     petal-elements (Material 3 Expressive web components), bundled into
+     vendor/petal.js by tools/build-petal.mjs; colours come from m3/tokens.css. -->
 <link rel="preload" href="vendor/fonts/google-sans-flex-ascii.woff2?v=3" as="font" type="font/woff2" crossorigin />
 <link rel="preload" href="vendor/fonts/material-symbols-rounded.woff2?v=4" as="font" type="font/woff2" crossorigin />
+<link rel="modulepreload" href="vendor/petal.js?v=1" />
 <link rel="stylesheet" href="m3/tokens.css" />
-<link rel="stylesheet" href="m3/m3.css" />
 <link rel="stylesheet" href="style.css" />
+<script type="module" src="vendor/petal.js?v=1"></script>
 </head>
 <body>
+  <!-- The page scrolls inside this element (petal-pull-to-refresh is a scroll
+       container; it needs a height). The app bar listens to it (scroll-target). -->
+  <petal-pull-to-refresh id="scroller" label="加载中" data-i18n-attr="label:loading">
   <!-- M3 Expressive medium flexible top app bar: the large title and subtitle
-       (below the bar) scroll away while the small title fades in (m3.js). -->
-  <header class="m3-top-app-bar" id="app-bar">
-    <div class="m3-top-app-bar__row">
-      <div class="m3-top-app-bar__title" id="app-bar-title" aria-hidden="true">JPY<span class="m3-icon m3-top-app-bar__arrow" data-icon="sync_alt" aria-hidden="true"></span>CNY</div>
-      <div class="m3-top-app-bar__actions">
-        <!-- Theme: connected button group (light / dark). It starts on the system
-             theme and follows it until the visitor picks one; the pick lasts for
-             this visit only. Labels on wide screens, icons on narrow ones (the
-             label stays for screen readers). -->
-        <div class="m3-button-group theme-group" id="theme-group" role="radiogroup" data-value="light" aria-label="主题" data-i18n-attr="aria-label:theme.label">
-          <button type="button" class="m3-toggle m3-interactive" role="radio" data-value="light"><span class="m3-icon" data-icon="light_mode" aria-hidden="true"></span><span class="m3-toggle__label" data-i18n="theme.light">浅色</span></button>
-          <button type="button" class="m3-toggle m3-interactive" role="radio" data-value="dark"><span class="m3-icon" data-icon="dark_mode" aria-hidden="true"></span><span class="m3-toggle__label" data-i18n="theme.dark">深色</span></button>
-        </div>
-        <!-- Language: icon button + Expressive menu (two groups). -->
-        <button type="button" class="m3-icon-button m3-interactive" id="lang-btn" aria-controls="lang-menu" aria-label="语言" data-tooltip="语言" data-i18n-attr="aria-label:lang.label;data-tooltip:lang.label"><span class="m3-icon" data-icon="translate" aria-hidden="true"></span></button>
-        <!-- GitHub: from 600dp; on phones it stays in the More menu (no room). The
-             mark is the GitHub octicon (Material Symbols has no brand icons). -->
-        <a class="m3-icon-button m3-interactive github-btn" id="github-btn" href="https://github.com/Saki340/cny-jpy-rate" target="_blank" rel="noopener noreferrer" aria-label="GitHub 源码" data-tooltip="GitHub 源码" data-i18n-attr="aria-label:more.github;data-tooltip:more.github"><svg class="github-mark" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"/></svg></a>
-        <button type="button" class="m3-icon-button m3-interactive" id="more-btn" aria-controls="more-menu" aria-label="更多选项" data-tooltip="更多选项" data-i18n-attr="aria-label:more.label;data-tooltip:more.label"><span class="m3-icon" data-icon="more_vert" aria-hidden="true"></span></button>
-      </div>
-    </div>
-  </header>
-  <div class="m3-top-app-bar__expanded page-width" id="app-bar-expanded">
-    <h1 class="m3-top-app-bar__headline">JPY<span class="m3-icon m3-top-app-bar__arrow" data-icon="sync_alt" aria-hidden="true"></span><span class="sr-only">⇄</span>CNY</h1>
-    <p class="m3-top-app-bar__subtitle" data-i18n="app.title">日元人民币汇率</p>
-  </div>
-  <div class="m3-menu" id="lang-menu" role="menu" aria-labelledby="lang-btn" data-value="auto">
-    <div class="m3-menu__group" role="group">
-      <button type="button" class="m3-menu__item m3-interactive" role="menuitemradio" data-value="auto"><span class="m3-icon m3-menu__check" data-icon="check" aria-hidden="true"></span><span data-i18n="lang.auto">跟随设备语言</span></button>
-    </div>
-    <div class="m3-menu__group" role="group">
-      <button type="button" class="m3-menu__item m3-interactive" role="menuitemradio" data-value="zh" lang="zh-CN"><span class="m3-icon m3-menu__check" data-icon="check" aria-hidden="true"></span>简体中文</button>
-      <button type="button" class="m3-menu__item m3-interactive" role="menuitemradio" data-value="ja" lang="ja"><span class="m3-icon m3-menu__check" data-icon="check" aria-hidden="true"></span>日本語</button>
-      <button type="button" class="m3-menu__item m3-interactive" role="menuitemradio" data-value="en" lang="en"><span class="m3-icon m3-menu__check" data-icon="check" aria-hidden="true"></span>English</button>
-    </div>
-  </div>
+       scroll away while the small title fades in. -->
+  <petal-top-app-bar id="app-bar" size="medium" scroll-target="scroller" headline="JPY ⇄ CNY" subtitle="日元人民币汇率" data-i18n-attr="subtitle:app.title">
+    <!-- Theme: connected button group (light / dark). It starts on the system
+         theme and follows it until the visitor picks one; the pick lasts for
+         this visit only. Labels on wide screens, icons on narrow ones (the
+         label stays for screen readers). -->
+    <petal-button-group slot="actions" class="theme-group" id="theme-group" connected single-select aria-label="主题" data-i18n-attr="aria-label:theme.label">
+      <petal-filled-button toggle data-value="light"><petal-icon slot="icon" aria-hidden="true">light_mode</petal-icon><span class="theme-label" data-i18n="theme.light">浅色</span></petal-filled-button>
+      <petal-filled-button toggle data-value="dark"><petal-icon slot="icon" aria-hidden="true">dark_mode</petal-icon><span class="theme-label" data-i18n="theme.dark">深色</span></petal-filled-button>
+    </petal-button-group>
+    <!-- Language: icon button + Expressive menu (two groups). -->
+    <petal-icon-button slot="actions" id="lang-btn" aria-label="语言" data-i18n-attr="aria-label:lang.label"><petal-icon aria-hidden="true">translate</petal-icon></petal-icon-button>
+    <!-- GitHub: from 600dp; on phones it stays in the More menu (no room). The
+         mark is the GitHub octicon (Material Symbols has no brand icons). -->
+    <petal-icon-button slot="actions" class="github-btn" id="github-btn" href="https://github.com/Saki340/cny-jpy-rate" target="_blank" rel="noopener noreferrer" aria-label="GitHub 源码" data-i18n-attr="aria-label:more.github"><petal-icon aria-hidden="true"><svg class="github-mark" viewBox="0 0 16 16"><path fill="currentColor" d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"/></svg></petal-icon></petal-icon-button>
+    <petal-icon-button slot="actions" id="more-btn" aria-label="更多选项" data-i18n-attr="aria-label:more.label"><petal-icon aria-hidden="true">more_vert</petal-icon></petal-icon-button>
+  </petal-top-app-bar>
+  <petal-tooltip for="lang-btn" data-i18n="lang.label">语言</petal-tooltip>
+  <petal-tooltip for="github-btn" data-i18n="more.github">GitHub 源码</petal-tooltip>
+  <petal-tooltip for="more-btn" data-i18n="more.label">更多选项</petal-tooltip>
+  <h1 class="sr-only">JPY ⇄ CNY <span data-i18n="app.title">日元人民币汇率</span></h1>
 
-  <!-- More: actions (menuitem). Items that do not apply are hidden, and so is a group left empty. -->
-  <div class="m3-menu" id="more-menu" role="menu" aria-labelledby="more-btn">
-    <div class="m3-menu__group" role="group">
-      <button type="button" class="m3-menu__item m3-interactive" role="menuitem" id="more-shortcuts"><span class="m3-icon" data-icon="keyboard" aria-hidden="true"></span><span data-i18n="more.shortcuts">键盘快捷键</span></button>
-      <button type="button" class="m3-menu__item m3-interactive" role="menuitem" id="more-install" hidden><span class="m3-icon" data-icon="add_to_home_screen" aria-hidden="true"></span><span data-i18n="more.install">添加到桌面</span></button>
-    </div>
-    <div class="m3-menu__group" role="group">
-      <button type="button" class="m3-menu__item m3-interactive" role="menuitem" id="more-about"><span class="m3-icon" data-icon="info" aria-hidden="true"></span><span data-i18n="more.about">数据来源与说明</span></button>
-      <a class="m3-menu__item m3-interactive" role="menuitem" id="more-github" href="https://github.com/Saki340/cny-jpy-rate" target="_blank" rel="noopener noreferrer"><span class="m3-icon" data-icon="code" aria-hidden="true"></span><span data-i18n="more.github">GitHub 源码</span></a>
-    </div>
-  </div>
+  <petal-menu id="lang-menu" anchor="lang-btn" positioning="popover" aria-label="语言" data-i18n-attr="aria-label:lang.label">
+    <petal-menu-group>
+      <petal-menu-item type="menuitemradio" data-value="auto"><div slot="headline" data-i18n="lang.auto">跟随设备语言</div></petal-menu-item>
+    </petal-menu-group>
+    <petal-menu-group>
+      <petal-menu-item type="menuitemradio" data-value="zh" lang="zh-CN"><div slot="headline">简体中文</div></petal-menu-item>
+      <petal-menu-item type="menuitemradio" data-value="ja" lang="ja"><div slot="headline">日本語</div></petal-menu-item>
+      <petal-menu-item type="menuitemradio" data-value="en" lang="en"><div slot="headline">English</div></petal-menu-item>
+    </petal-menu-group>
+  </petal-menu>
+
+  <!-- More: actions. Items that do not apply are hidden, and so is a group left empty. -->
+  <petal-menu id="more-menu" anchor="more-btn" positioning="popover" aria-label="更多选项" data-i18n-attr="aria-label:more.label">
+    <petal-menu-group>
+      <petal-menu-item id="more-shortcuts"><petal-icon slot="start" aria-hidden="true">keyboard</petal-icon><div slot="headline" data-i18n="more.shortcuts">键盘快捷键</div></petal-menu-item>
+      <petal-menu-item id="more-install" hidden><petal-icon slot="start" aria-hidden="true">add_to_home_screen</petal-icon><div slot="headline" data-i18n="more.install">添加到桌面</div></petal-menu-item>
+    </petal-menu-group>
+    <petal-menu-group>
+      <petal-menu-item id="more-about"><petal-icon slot="start" aria-hidden="true">info</petal-icon><div slot="headline" data-i18n="more.about">数据来源与说明</div></petal-menu-item>
+      <petal-menu-item id="more-github" href="https://github.com/Saki340/cny-jpy-rate" target="_blank" rel="noopener noreferrer"><petal-icon slot="start" aria-hidden="true">code</petal-icon><div slot="headline" data-i18n="more.github">GitHub 源码</div></petal-menu-item>
+    </petal-menu-group>
+  </petal-menu>
 
   <main class="page page-width">
     <!-- Shown while offline; app.js fills in which day's data is on screen. -->
     <div class="offline-banner" id="offline-banner" role="status" aria-live="polite">
-      <div class="offline-banner-inner"><div class="offline-pill"><span class="m3-icon" data-icon="cloud_off" aria-hidden="true"></span><span id="offline-text"></span></div></div>
+      <div class="offline-banner-inner"><div class="offline-pill"><petal-icon aria-hidden="true">cloud_off</petal-icon><span id="offline-text"></span></div></div>
     </div>
 
     <!-- Two panes on wide screens (M3 supporting-pane layout, app.js layoutPanes()):
@@ -127,10 +128,10 @@
       <div class="section-heading">
         <h2 id="board-heading" data-i18n="section.rate">今日汇率</h2>
       </div>
-      <div class="m3-card surface-card rate-card">
+      <petal-filled-card class="surface-card rate-card">
         <div class="deco-shape" aria-hidden="true"></div>
         <p class="meta-text" id="updated"><span class="skeleton skeleton-text">0000 0000-00-00 · 0000000000000000</span></p>
-        <div class="rate-line" id="rate-line" aria-live="polite"><span class="rate-one">1</span><span class="cur cur-jpy" data-cur="JPY">JPY</span><span class="eq">=</span><span class="rate-value" id="rate-value"><span class="loading-indicator loading-indicator--sm" role="progressbar" aria-label="加载中" data-i18n-attr="aria-label:loading"><span></span></span></span><span class="cur cur-cny" data-cur="CNY">CNY</span></div>
+        <div class="rate-line" id="rate-line" aria-live="polite"><span class="rate-one">1</span><span class="cur cur-jpy" data-cur="JPY">JPY</span><span class="eq">=</span><span class="rate-value" id="rate-value"><petal-loading-indicator contained class="loading-sm" aria-label="加载中" data-i18n-attr="aria-label:loading"></petal-loading-indicator></span><span class="cur cur-cny" data-cur="CNY">CNY</span></div>
         <div class="rate-change" id="rate-change" aria-live="polite"></div>
         <!-- Where today's rate stands among the past year's days (app.js renderRank). -->
         <div class="rate-rank" id="rate-rank" hidden>
@@ -140,32 +141,30 @@
         </div>
         <p class="meta-text" id="board-note" data-i18n="board.note">欧洲央行每个工作日公布一次参考汇率，周末和节假日沿用上一个工作日的数据。</p>
         <div class="card-actions">
-          <button type="button" class="m3-button m3-button--filled m3-interactive" id="swap-btn"><span class="m3-icon swap-icon" data-icon="swap_horiz" aria-hidden="true"></span><span data-i18n="swap">切换兑换方向</span></button>
+          <petal-filled-button id="swap-btn"><petal-icon slot="icon" class="swap-icon" aria-hidden="true">swap_horiz</petal-icon><span data-i18n="swap">切换兑换方向</span></petal-filled-button>
         </div>
-      </div>
+      </petal-filled-card>
     </section>
 
     <section class="sec-side sec-calc" aria-labelledby="calc-heading">
       <div class="section-heading">
         <h2 id="calc-heading" data-i18n="section.calc">换算计算器</h2>
       </div>
-      <div class="m3-card surface-card calc-card">
+      <petal-filled-card class="surface-card calc-card">
         <div class="calc-input">
-          <!-- Accepts simple expressions ("1980*3"); see evaluateAmount() in app.js. -->
-          <div class="m3-text-field m3-text-field--trailing" id="amount-field">
-            <input class="m3-text-field__input" id="amount" type="text" inputmode="decimal" enterkeyhint="done" value="100" placeholder=" " autocomplete="off" spellcheck="false" aria-describedby="amount-support" />
-            <label class="m3-text-field__label" for="amount">JPY</label>
-            <fieldset class="m3-text-field__outline" aria-hidden="true"><legend><span>JPY</span></legend></fieldset>
+          <!-- Accepts simple expressions ("1980*3"); see evaluateAmount() in app.js.
+               The label ("金额（JPY）") is set by app.js; supporting / error text too. -->
+          <petal-outlined-text-field id="amount" label="JPY" value="100" inputmode="decimal" autocomplete="off">
             <!-- Trailing icon: save this amount to the saved amounts (opens the same dialog, prefilled). -->
-            <button type="button" class="m3-icon-button m3-interactive m3-text-field__trailing" id="save-amount-btn" aria-label="存为常用金额" data-tooltip="存为常用金额" data-i18n-attr="aria-label:calc.save;data-tooltip:calc.save"><span class="m3-icon" data-icon="bookmark_add" aria-hidden="true"></span></button>
-            <span class="m3-text-field__supporting" id="amount-support" aria-live="polite"></span>
-          </div>
+            <petal-icon-button slot="trailing-icon" id="save-amount-btn" aria-label="存为常用金额" data-i18n-attr="aria-label:calc.save"><petal-icon aria-hidden="true">bookmark_add</petal-icon></petal-icon-button>
+          </petal-outlined-text-field>
+          <petal-tooltip for="save-amount-btn" data-i18n="calc.save">存为常用金额</petal-tooltip>
           <!-- Phone number pads have no operator keys; these appear while typing on touch screens. -->
           <div class="calc-keys" role="toolbar" aria-label="运算符" data-i18n-attr="aria-label:keys.label">
-            <button type="button" class="m3-chip m3-interactive" tabindex="-1" data-insert="+">+</button>
-            <button type="button" class="m3-chip m3-interactive" tabindex="-1" data-insert="−">−</button>
-            <button type="button" class="m3-chip m3-interactive" tabindex="-1" data-insert="×">×</button>
-            <button type="button" class="m3-chip m3-interactive" tabindex="-1" data-insert="÷">÷</button>
+            <petal-assist-chip label="+" tabindex="-1" data-insert="+"></petal-assist-chip>
+            <petal-assist-chip label="−" tabindex="-1" data-insert="−"></petal-assist-chip>
+            <petal-assist-chip label="×" tabindex="-1" data-insert="×"></petal-assist-chip>
+            <petal-assist-chip label="÷" tabindex="-1" data-insert="÷"></petal-assist-chip>
           </div>
         </div>
         <div class="calc-equals" aria-hidden="true">＝</div>
@@ -173,36 +172,39 @@
           <span class="result-label" id="calc-result-label">CNY</span>
           <div class="calc-result-row">
             <output class="calc-result" id="calc-result" title="点击复制" data-i18n-attr="title:calc.copyHint"><span class="calc-visible" aria-hidden="true"><span class="skeleton">0.000</span></span><span class="sr-only"></span></output>
-            <button type="button" class="m3-icon-button m3-interactive" id="copy-btn" aria-label="复制换算结果" data-tooltip="复制换算结果" data-i18n-attr="aria-label:calc.copy;data-tooltip:calc.copy"><span class="m3-icon" data-icon="content_copy" aria-hidden="true"></span></button>
-            <button type="button" class="m3-icon-button m3-interactive" id="share-btn" aria-label="分享换算结果" data-tooltip="分享换算结果" data-i18n-attr="aria-label:calc.share;data-tooltip:calc.share"><span class="m3-icon" data-icon="share" aria-hidden="true"></span></button>
+            <petal-icon-button id="copy-btn" aria-label="复制换算结果" data-i18n-attr="aria-label:calc.copy"><petal-icon aria-hidden="true">content_copy</petal-icon></petal-icon-button>
+            <petal-tooltip for="copy-btn" data-i18n="calc.copy">复制换算结果</petal-tooltip>
+            <petal-icon-button id="share-btn" aria-label="分享换算结果" data-i18n-attr="aria-label:calc.share"><petal-icon aria-hidden="true">share</petal-icon></petal-icon-button>
+            <petal-tooltip for="share-btn" data-i18n="calc.share">分享换算结果</petal-tooltip>
           </div>
         </div>
-      </div>
+      </petal-filled-card>
     </section>
 
     <section class="sec-side sec-saved" aria-labelledby="saved-heading">
       <div class="section-heading">
         <h2 id="saved-heading" data-i18n="section.saved">常用金额</h2>
-        <button type="button" class="m3-button m3-button--text m3-interactive section-action" id="saved-add"><span class="m3-icon" data-icon="add" aria-hidden="true"></span><span data-i18n="saved.add">添加</span></button>
+        <petal-text-button class="section-action" id="saved-add"><petal-icon slot="icon" aria-hidden="true">add</petal-icon><span data-i18n="saved.add">添加</span></petal-text-button>
       </div>
       <!-- Saved amounts (localStorage), converted at the latest rate on every visit. -->
-      <div class="m3-card surface-card saved-empty" id="saved-empty">
+      <petal-filled-card class="surface-card saved-empty" id="saved-empty">
         <p class="meta-text" data-i18n="saved.empty">把每月房租、学费等常用金额保存在这里，每次打开网站都会按最新汇率算好。数据只保存在这台设备的浏览器里。</p>
-      </div>
-      <ul class="m3-list saved-list" id="saved-list" aria-labelledby="saved-heading" hidden></ul>
+      </petal-filled-card>
+      <petal-list segmented class="saved-list" id="saved-list" aria-labelledby="saved-heading" hidden></petal-list>
+      <div id="saved-tooltips"></div>
     </section>
 
     <section class="sec-chart" aria-labelledby="chart-heading">
       <div class="section-heading">
         <h2 id="chart-heading" data-i18n="section.chart">历史走势</h2>
       </div>
-      <div class="m3-card surface-card chart-card">
-        <div class="m3-button-group range-tabs" id="range-group" role="radiogroup" data-value="90" aria-label="时间范围" data-i18n-attr="aria-label:range.label">
-          <button type="button" class="m3-toggle m3-interactive" role="radio" data-value="30" data-i18n="range.30">30 天</button>
-          <button type="button" class="m3-toggle m3-interactive" role="radio" data-value="90" data-i18n="range.90">90 天</button>
-          <button type="button" class="m3-toggle m3-interactive" role="radio" data-value="180" data-i18n="range.180">180 天</button>
-          <button type="button" class="m3-toggle m3-interactive" role="radio" data-value="365" data-i18n="range.365">1 年</button>
-        </div>
+      <petal-filled-card class="surface-card chart-card">
+        <petal-button-group class="range-tabs" id="range-group" connected single-select aria-label="时间范围" data-i18n-attr="aria-label:range.label">
+          <petal-filled-button toggle data-value="30" data-i18n="range.30">30 天</petal-filled-button>
+          <petal-filled-button toggle data-value="90" data-i18n="range.90">90 天</petal-filled-button>
+          <petal-filled-button toggle data-value="180" data-i18n="range.180">180 天</petal-filled-button>
+          <petal-filled-button toggle data-value="365" data-i18n="range.365">1 年</petal-filled-button>
+        </petal-button-group>
         <!-- Fixed three-line summary: it never changes while hovering, so the page does not jump. -->
         <div class="chart-readout" id="chart-readout">
           <span class="chart-readout-line" id="readout-latest"><span class="skeleton skeleton-text">0000 0000-00-00 · 0.000000 · 0000 +0.00%</span></span>
@@ -211,8 +213,8 @@
           <span class="chart-readout-line chart-readout-ma" id="readout-ma"></span>
         </div>
         <div class="chart-wrap">
-          <div class="wavy-progress" role="progressbar" aria-label="加载中" data-i18n-attr="aria-label:loading"><div class="wavy-progress__bar"></div></div>
-          <div class="chart is-loading" id="history-chart"><span class="loading-indicator" role="progressbar" aria-label="加载中" data-i18n-attr="aria-label:loading"><span></span></span></div>
+          <petal-linear-progress class="chart-progress" wavy indeterminate aria-label="加载中" data-i18n-attr="aria-label:loading"></petal-linear-progress>
+          <div class="chart is-loading" id="history-chart"><petal-loading-indicator contained aria-label="加载中" data-i18n-attr="aria-label:loading"></petal-loading-indicator></div>
           <div class="chart-tooltip" id="chart-tooltip" aria-hidden="true">
             <span class="chart-tooltip-date" id="tooltip-date"></span>
             <span class="chart-tooltip-value" id="tooltip-value"></span>
@@ -220,7 +222,7 @@
             <span class="chart-tooltip-ma" id="tooltip-ma"></span>
           </div>
         </div>
-      </div>
+      </petal-filled-card>
     </section>
 
     <section class="sec-side sec-date" aria-labelledby="date-heading">
@@ -228,34 +230,30 @@
         <h2 id="date-heading" data-i18n="section.date">按日期查汇率</h2>
       </div>
       <!-- The rate on any day since 2005 (/api/day), and the converter's amount on that day. -->
-      <div class="m3-card surface-card date-card">
-        <div class="m3-text-field" id="date-field">
-          <input class="m3-text-field__input" id="date-input" type="date" min="2005-01-03" />
-          <label class="m3-text-field__label" for="date-input" data-i18n="date.label">日期</label>
-          <fieldset class="m3-text-field__outline" aria-hidden="true"><legend><span data-i18n="date.label">日期</span></legend></fieldset>
-        </div>
+      <petal-filled-card class="surface-card date-card">
+        <petal-outlined-text-field id="date-input" type="date" label="日期" min="2005-01-03" data-i18n-attr="label:date.label"></petal-outlined-text-field>
         <div class="date-result" id="date-result" aria-live="polite">
           <p class="meta-text" id="date-hint" data-i18n="date.hint">选择一个日期，查看当天的欧洲央行参考汇率，以及计算器中的金额在当天折合多少。可查 2005 年以来的任意一天。</p>
         </div>
-      </div>
+      </petal-filled-card>
     </section>
 
     <section class="sec-side sec-mc" aria-labelledby="mc-heading">
       <div class="section-heading">
         <h2 id="mc-heading" data-i18n="section.mc">Mastercard 官方换算器</h2>
       </div>
-      <div class="m3-card surface-card mc-panel">
+      <petal-filled-card class="surface-card mc-panel">
         <p class="mc-note" id="mc-note" data-i18n="mc.note">用万事达卡在海外刷卡时，入账按万事达的结算汇率计算，其中含有汇率差价，通常和本页的中间价略有不同；发卡行还可能另收货币转换费。实际金额请以万事达官方换算器和发卡行账单为准。</p>
         <div class="mc-actions">
-          <a class="m3-button m3-button--tonal m3-interactive" href="https://www.mastercard.com/us/en/personal/get-support/currency-exchange-rate-converter.html" target="_blank" rel="noopener noreferrer"><span class="m3-icon" data-icon="open_in_new" aria-hidden="true"></span><span data-i18n="mc.open">打开万事达官方换算器</span></a>
+          <petal-filled-tonal-button href="https://www.mastercard.com/us/en/personal/get-support/currency-exchange-rate-converter.html" target="_blank" rel="noopener noreferrer"><petal-icon slot="icon" aria-hidden="true">open_in_new</petal-icon><span data-i18n="mc.open">打开万事达官方换算器</span></petal-filled-tonal-button>
         </div>
-      </div>
+      </petal-filled-card>
     </section>
 
     <!-- "Add to home screen": shown only where the page can be installed and
          is not already running as an installed app (see initInstall). -->
     <section class="sec-side install-section" id="install-section" aria-labelledby="install-heading" hidden>
-      <div class="m3-card surface-card install-card">
+      <petal-filled-card class="surface-card install-card">
         <div class="install-row">
           <img class="install-icon" src="/icons/icon-192.png" alt="" width="48" height="48" />
           <div class="install-text">
@@ -269,18 +267,18 @@
              WebAPK does not trigger it. -->
         <p class="install-note" id="install-browser-note" data-i18n="install.otherBrowser" hidden>在手机上安装建议使用 Chrome。用其他浏览器安装时，系统可能会提示「这是为旧版 Android 设计的应用」。</p>
         <div class="install-actions">
-          <button type="button" class="m3-button m3-button--text m3-interactive" id="install-dismiss" data-i18n="install.dismiss">不用了</button>
-          <a class="m3-button m3-button--tonal m3-interactive" id="install-chrome" href="/" hidden><span class="m3-icon" data-icon="open_in_new" aria-hidden="true"></span><span data-i18n="install.chrome">用 Chrome 打开</span></a>
-          <button type="button" class="m3-button m3-button--filled m3-interactive" id="install-btn"><span class="m3-icon" data-icon="add_to_home_screen" aria-hidden="true"></span><span data-i18n="install.button">安装</span></button>
+          <petal-text-button id="install-dismiss" data-i18n="install.dismiss">不用了</petal-text-button>
+          <petal-filled-tonal-button id="install-chrome" href="/" hidden><petal-icon slot="icon" aria-hidden="true">open_in_new</petal-icon><span data-i18n="install.chrome">用 Chrome 打开</span></petal-filled-tonal-button>
+          <petal-filled-button id="install-btn"><petal-icon slot="icon" aria-hidden="true">add_to_home_screen</petal-icon><span data-i18n="install.button">安装</span></petal-filled-button>
         </div>
-      </div>
+      </petal-filled-card>
     </section>
 
     </div>
     <div class="pane pane-side" id="pane-side"></div>
     </div>
 
-    <hr class="m3-divider" />
+    <petal-divider></petal-divider>
     <footer class="site-footer" id="site-footer">
       <p data-i18n-html="footer.data">今日汇率、换算和历史走势使用同一数据源：欧洲央行（ECB）参考汇率，经 <a href="https://frankfurter.dev" target="_blank" rel="noopener noreferrer">Frankfurter</a> 提供，每个工作日更新一次。Frankfurter 暂时不可用时，改用社区维护的 <a href="https://github.com/fawazahmed0/exchange-api" target="_blank" rel="noopener noreferrer">currency-api</a> 作为备用，页面会注明。以上均为中间汇率，不含任何机构的实际买卖点差。</p>
       <p data-i18n-html="footer.ui">界面按 Material Design 3 Expressive 规范实现。</p>
@@ -289,49 +287,38 @@
       <p class="disclaimer" data-i18n="footer.disclaimer">本网站仅提供汇率查询与换算参考功能，不构成任何金融、投资或法律建议，也不对因使用本站数据造成的任何损失承担责任；具体交易请以银行、支付机构或万事达官方渠道公布的汇率为准。</p>
     </footer>
   </main>
-<dialog class="m3-dialog" id="saved-dialog" aria-labelledby="saved-dialog-title">
-  <form class="m3-dialog__container" id="saved-form" novalidate>
-    <h2 class="m3-dialog__headline" id="saved-dialog-title" data-i18n="saved.dialogAdd">添加常用金额</h2>
-    <div class="m3-dialog__content">
-      <div class="m3-text-field" id="saved-name-field">
-        <input class="m3-text-field__input" id="saved-name" type="text" maxlength="20" placeholder=" " autocomplete="off" />
-        <label class="m3-text-field__label" for="saved-name" data-i18n="saved.name">名称（可选，如：房租）</label>
-        <fieldset class="m3-text-field__outline" aria-hidden="true"><legend><span data-i18n="saved.name">名称（可选，如：房租）</span></legend></fieldset>
-      </div>
-      <div class="m3-text-field" id="saved-amount-field">
-        <input class="m3-text-field__input" id="saved-amount" type="text" inputmode="decimal" placeholder=" " autocomplete="off" spellcheck="false" aria-describedby="saved-amount-support" />
-        <label class="m3-text-field__label" for="saved-amount" data-i18n="saved.amount">金额</label>
-        <fieldset class="m3-text-field__outline" aria-hidden="true"><legend><span data-i18n="saved.amount">金额</span></legend></fieldset>
-        <span class="m3-text-field__supporting" id="saved-amount-support" aria-live="polite"></span>
-      </div>
-      <div class="m3-button-group saved-cur-group" id="saved-cur" role="radiogroup" data-value="JPY" aria-label="币种" data-i18n-attr="aria-label:saved.currency">
-        <button type="button" class="m3-toggle m3-interactive" role="radio" data-value="JPY">JPY</button>
-        <button type="button" class="m3-toggle m3-interactive" role="radio" data-value="CNY">CNY</button>
-      </div>
-    </div>
-    <div class="m3-dialog__actions">
-      <button type="button" class="m3-button m3-button--text m3-interactive m3-dialog__start" id="saved-delete" data-i18n="saved.delete" hidden>删除</button>
-      <button type="button" class="m3-button m3-button--text m3-interactive" id="saved-cancel" data-i18n="saved.cancel">取消</button>
-      <button type="submit" class="m3-button m3-button--text m3-interactive" id="saved-save" data-i18n="saved.save">保存</button>
-    </div>
+  </petal-pull-to-refresh>
+
+<petal-dialog id="saved-dialog">
+  <div slot="headline" id="saved-dialog-title" data-i18n="saved.dialogAdd">添加常用金额</div>
+  <form slot="content" id="saved-form" novalidate>
+    <petal-outlined-text-field id="saved-name" label="名称（可选，如：房租）" autocomplete="off" data-i18n-attr="label:saved.name"></petal-outlined-text-field>
+    <petal-outlined-text-field id="saved-amount" label="金额" inputmode="decimal" autocomplete="off" data-i18n-attr="label:saved.amount"></petal-outlined-text-field>
+    <petal-button-group class="saved-cur-group" id="saved-cur" connected single-select aria-label="币种" data-i18n-attr="aria-label:saved.currency">
+      <petal-filled-button toggle data-value="JPY">JPY</petal-filled-button>
+      <petal-filled-button toggle data-value="CNY">CNY</petal-filled-button>
+    </petal-button-group>
   </form>
-</dialog>
-<dialog class="m3-dialog" id="shortcuts-dialog" aria-labelledby="shortcuts-title">
-  <div class="m3-dialog__container">
-    <h2 class="m3-dialog__headline" id="shortcuts-title" data-i18n="shortcut.title">键盘快捷键</h2>
-    <dl class="m3-dialog__content shortcut-list">
-      <div><dt><kbd>/</kbd></dt><dd data-i18n="shortcut.amount">输入金额</dd></div>
-      <div><dt><kbd>S</kbd></dt><dd data-i18n="shortcut.swap">切换兑换方向</dd></div>
-      <div><dt><kbd>1</kbd>–<kbd>4</kbd></dt><dd data-i18n="shortcut.range">切换走势范围（30 天 / 90 天 / 180 天 / 1 年）</dd></div>
-      <div><dt><kbd>D</kbd></dt><dd data-i18n="shortcut.date">按日期查汇率</dd></div>
-      <div><dt><kbd>?</kbd></dt><dd data-i18n="shortcut.help">显示快捷键说明</dd></div>
-    </dl>
-    <div class="m3-dialog__actions">
-      <button type="button" class="m3-button m3-button--text m3-interactive" id="shortcuts-close" data-i18n="shortcut.close">知道了</button>
-    </div>
+  <div slot="actions">
+    <petal-text-button class="dialog-start" id="saved-delete" data-i18n="saved.delete" hidden>删除</petal-text-button>
+    <petal-text-button id="saved-cancel" data-i18n="saved.cancel">取消</petal-text-button>
+    <petal-text-button id="saved-save" data-i18n="saved.save">保存</petal-text-button>
   </div>
-</dialog>
-<script src="m3/m3.js"></script>
+</petal-dialog>
+<petal-dialog id="shortcuts-dialog">
+  <div slot="headline" id="shortcuts-title" data-i18n="shortcut.title">键盘快捷键</div>
+  <dl slot="content" class="shortcut-list">
+    <div><dt><kbd>/</kbd></dt><dd data-i18n="shortcut.amount">输入金额</dd></div>
+    <div><dt><kbd>S</kbd></dt><dd data-i18n="shortcut.swap">切换兑换方向</dd></div>
+    <div><dt><kbd>1</kbd>–<kbd>4</kbd></dt><dd data-i18n="shortcut.range">切换走势范围（30 天 / 90 天 / 180 天 / 1 年）</dd></div>
+    <div><dt><kbd>D</kbd></dt><dd data-i18n="shortcut.date">按日期查汇率</dd></div>
+    <div><dt><kbd>?</kbd></dt><dd data-i18n="shortcut.help">显示快捷键说明</dd></div>
+  </dl>
+  <div slot="actions">
+    <petal-text-button id="shortcuts-close" data-i18n="shortcut.close">知道了</petal-text-button>
+  </div>
+</petal-dialog>
+<petal-snackbar id="snackbar"></petal-snackbar>
 <script src="i18n-strings.js"></script>
 <script src="i18n.js"></script>
 <script src="expressive.js"></script>

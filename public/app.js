@@ -166,7 +166,7 @@ function pop(node, amount = 1.04) {
 // Loading indicators leave before the content arrives (shrink + fade), so the
 // hand-over reads as one motion instead of a jump.
 async function exitLoading(container) {
-  const indicator = container.querySelector(".loading-indicator");
+  const indicator = container.querySelector("petal-loading-indicator");
   if (!indicator || !motionOK() || !indicator.animate) return;
   const exit = indicator.animate(
     [{ transform: "scale(1)", opacity: 1 }, { transform: "scale(0.2)", opacity: 0 }],
@@ -176,14 +176,71 @@ async function exitLoading(container) {
   await Promise.race([exit, new Promise((resolve) => setTimeout(resolve, 250))]);
 }
 
-function notify(message) {
-  M3.snackbar(message);
+// Messages go through one <petal-snackbar>. With an action it stays 10 s
+// (SnackbarDuration.Long) and onAction runs when the action is pressed.
+async function notify(message, { action, onAction } = {}) {
+  const bar = el("snackbar");
+  bar.close();
+  bar.textContent = message;
+  bar.action = action || "";
+  bar.duration = action ? "long" : "short";
+  if (await bar.show() === "action") onAction?.();
 }
 
 // The amount field's floating label ("金额（JPY）").
 function setAmountLabel(cur) {
-  M3.setLabel(el("amount-field"), t("calc.amount", { cur }));
+  el("amount").label = t("calc.amount", { cur });
 }
+
+// A <petal-button-group single-select> of toggle buttons used as a radio
+// group: group.value is the selected button's data-value ("change" fires on
+// the group when the visitor picks another one; setting value does not).
+function bindGroup(group) {
+  const buttons = () => [...group.querySelectorAll("[data-value]")];
+  Object.defineProperty(group, "value", {
+    get: () => buttons().find((b) => b.selected)?.dataset.value,
+    set: (v) => { for (const b of buttons()) b.selected = b.dataset.value === String(v); },
+  });
+  return group;
+}
+
+// A <petal-menu> of menuitemradio items: menu.value is the checked item's
+// data-value; clicking another item fires "change".
+function bindRadioMenu(menu) {
+  const items = () => [...menu.querySelectorAll('[type="menuitemradio"]')];
+  Object.defineProperty(menu, "value", {
+    get: () => items().find((i) => i.checked)?.dataset.value,
+    set: (v) => { for (const i of items()) i.checked = i.dataset.value === String(v); },
+  });
+  for (const item of items()) {
+    item.addEventListener("click", () => {
+      if (item.checked) return;
+      menu.value = item.dataset.value;
+      menu.dispatchEvent(new Event("change"));
+    });
+  }
+  return menu;
+}
+
+// Opens a menu from its button. `before` runs first (hide items that do not
+// apply); a group left empty is hidden too.
+function bindMenuButton(button, menu, before) {
+  menu.addEventListener("opened", () => button.setAttribute("aria-expanded", "true"));
+  menu.addEventListener("closed", () => button.setAttribute("aria-expanded", "false"));
+  button.setAttribute("aria-haspopup", "menu");
+  button.addEventListener("click", () => {
+    if (!menu.open) {
+      before?.();
+      for (const group of menu.querySelectorAll("petal-menu-group")) {
+        group.hidden = !group.querySelector("petal-menu-item:not([hidden])");
+      }
+    }
+    menu.open = !menu.open;
+  });
+}
+
+// Is a dialog or a menu open? (Shortcuts stay quiet then.)
+const overlayOpen = () => [...document.querySelectorAll("petal-dialog, petal-menu")].some((n) => n.open);
 
 /* ---------- scroll-triggered entrance ---------- */
 
@@ -257,13 +314,17 @@ const darkScheme = window.matchMedia("(prefers-color-scheme: dark)");
 // theme-color metas (light / dark, for the first paint) get the same value.
 let barScrolled = null;
 function syncThemeColor() {
-  barScrolled = el("app-bar").classList.contains("is-scrolled");
+  barScrolled = el("app-bar").collapsedFraction >= 1;
   const token = barScrolled ? "--md-sys-color-surface-container" : "--md-sys-color-surface";
   const color = getComputedStyle(document.documentElement).getPropertyValue(token).trim();
   if (color) document.querySelectorAll('meta[name="theme-color"]').forEach((meta) => { meta.content = color; });
 }
-window.addEventListener("scroll", () => {
-  if (el("app-bar").classList.contains("is-scrolled") !== barScrolled) syncThemeColor();
+// The bar updates itself in the next frame (its listener comes later than
+// this one), so look two frames on.
+el("scroller").addEventListener("scroll", () => {
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    if ((el("app-bar").collapsedFraction >= 1) !== barScrolled) syncThemeColor();
+  }));
 }, { passive: true });
 
 function applyTheme(mode) {
@@ -299,7 +360,16 @@ function switchTheme(mode) {
 }
 
 function initTheme() {
-  const group = M3.buttonGroup(el("theme-group"));
+  const group = bindGroup(el("theme-group"));
+  // Icons instead of labels on phones (see style.css): the icon goes into the
+  // button's content there, and is taken out of every slot on wide screens.
+  const narrow = window.matchMedia("(max-width: 600px)");
+  const sync = () => {
+    group.classList.toggle("is-compact", narrow.matches);
+    for (const icon of group.querySelectorAll("petal-icon")) icon.slot = narrow.matches ? "" : "none";
+  };
+  narrow.addEventListener("change", sync);
+  sync();
   try { localStorage.removeItem("theme-pref"); } catch { /* ignore */ } // the old saved choice
   applyTheme("auto");
   showSystemTheme();
@@ -451,11 +521,11 @@ async function copyResult() {
   notify(ok ? t("notify.copied", { value: text, cur: to }) : t("notify.copyFail"));
   if (!ok) return;
   const btn = el("copy-btn");
-  const icon = btn.querySelector(".m3-icon");
-  icon.dataset.icon = "check";
+  const icon = btn.querySelector("petal-icon");
+  icon.textContent = "check";
   pop(btn, 1.15);
   clearTimeout(copyResetTimer);
-  copyResetTimer = setTimeout(() => { icon.dataset.icon = "content_copy"; }, 1600);
+  copyResetTimer = setTimeout(() => { icon.textContent = "content_copy"; }, 1600);
 }
 
 /* ---------- share ---------- */
@@ -715,7 +785,7 @@ function renderChange({ flash = false } = {}) {
   const icon = { up: "arrow_upward", down: "arrow_downward", flat: "remove" }[dir];
   const wasEmpty = !box.firstElementChild;
   box.innerHTML =
-    `<span class="change-chip is-${dir}"><span class="m3-icon" data-icon="${icon}" aria-hidden="true"></span>${pctFmt(change).replace(/^[+−±]/, "")}</span>` +
+    `<span class="change-chip is-${dir}"><petal-icon aria-hidden="true">${icon}</petal-icon>${pctFmt(change).replace(/^[+−±]/, "")}</span>` +
     `<span class="change-label">${esc(t("change.label", { date: (state.prevDate || "").slice(5) }))}</span>`;
   const chip = box.querySelector(".change-chip");
   if (flash) {
@@ -1155,13 +1225,11 @@ let lastAmount = 100;
 function readAmount({ strict = false } = {}) {
   const text = el("amount").value;
   const value = evaluateAmount(text);
-  const field = el("amount-field");
-  const support = el("amount-support");
+  const field = el("amount");
   const error = value === null && strict;
-  field.classList.toggle("is-error", error);
-  if (error) support.textContent = t("amount.invalid");
-  else if (value !== null && isExpression(text)) support.textContent = t("amount.preview", { v: fmt(value, 3) });
-  else support.textContent = "";
+  field.error = error;
+  field.errorText = error ? t("amount.invalid") : "";
+  field.supportingText = !error && value !== null && isExpression(text) ? t("amount.preview", { v: fmt(value, 3) }) : "";
   if (value !== null) lastAmount = value;
   return lastAmount;
 }
@@ -1289,14 +1357,17 @@ function renderSaved() {
     const amountText = `${fmt(item.amount, 2)} ${item.cur}`;
     const name = item.name || amountText;
     const editLabel = esc(t("saved.edit", { name }));
-    return `<li class="m3-list-item saved-item">` +
-      `<button type="button" class="m3-list-item__main m3-interactive" data-use="${esc(item.id)}">` +
-      `<span class="m3-list-item__text"><span class="m3-list-item__headline">${esc(name)}</span>` +
-      (item.name ? `<span class="m3-list-item__supporting">${esc(amountText)}</span>` : "") + `</span>` +
+    return `<petal-list-item type="button" class="saved-item" data-use="${esc(item.id)}">` +
+      `<div slot="headline">${esc(name)}</div>` +
+      (item.name ? `<div slot="supporting-text">${esc(amountText)}</div>` : "") +
+      `<div slot="end" class="saved-end">` +
       `<span class="saved-result"><span class="sr-only">≈</span><span class="saved-result-value">${value === null ? "--" : esc(fmt(value, 2))}</span> <span class="saved-result-cur">${to}</span></span>` +
-      `</button>` +
-      `<button type="button" class="m3-icon-button m3-interactive" data-edit="${esc(item.id)}" aria-label="${editLabel}" data-tooltip="${editLabel}"><span class="m3-icon" data-icon="edit" aria-hidden="true"></span></button>` +
-      `</li>`;
+      `<petal-icon-button id="edit-${esc(item.id)}" data-edit="${esc(item.id)}" aria-label="${editLabel}"><petal-icon aria-hidden="true">edit</petal-icon></petal-icon-button>` +
+      `</div></petal-list-item>`;
+  }).join("");
+  el("saved-tooltips").innerHTML = saved.map((item) => {
+    const name = item.name || `${fmt(item.amount, 2)} ${item.cur}`;
+    return `<petal-tooltip for="edit-${esc(item.id)}">${esc(t("saved.edit", { name }))}</petal-tooltip>`;
   }).join("");
 }
 
@@ -1308,8 +1379,8 @@ function useSaved(item) {
 }
 
 function setSavedError(message) {
-  el("saved-amount-field").classList.toggle("is-error", Boolean(message));
-  el("saved-amount-support").textContent = message || "";
+  el("saved-amount").error = Boolean(message);
+  el("saved-amount").errorText = message || "";
 }
 
 function openSavedDialog(item = null) {
@@ -1320,8 +1391,7 @@ function openSavedDialog(item = null) {
   el("saved-cur").value = item ? item.cur : currentPair()[0];
   el("saved-delete").hidden = !item;
   setSavedError("");
-  savedDialog.open();
-  el("saved-name").focus();
+  savedDialog.show().then(() => el("saved-name").focus());
 }
 
 // The converter's "save" button: the amount being converted, prefilled in the
@@ -1381,7 +1451,7 @@ function deleteSaved() {
   writeSaved();
   renderSaved();
   savedDialog.close("delete");
-  M3.snackbar(t("saved.deleted", { name: removed.name || `${fmt(removed.amount, 2)} ${removed.cur}` }), {
+  notify(t("saved.deleted", { name: removed.name || `${fmt(removed.amount, 2)} ${removed.cur}` }), {
     action: t("saved.undo"),
     onAction: () => {
       saved.splice(Math.min(at, saved.length), 0, removed);
@@ -1392,20 +1462,25 @@ function deleteSaved() {
 }
 
 function initSaved() {
-  savedDialog = M3.dialog(el("saved-dialog"));
-  M3.buttonGroup(el("saved-cur"));
+  savedDialog = el("saved-dialog");
+  bindGroup(el("saved-cur"));
   el("saved-add").addEventListener("click", () => openSavedDialog());
   el("save-amount-btn").addEventListener("click", saveCurrentAmount);
   el("saved-list").addEventListener("click", (e) => {
-    const use = e.target.closest("[data-use]");
     const edit = e.target.closest("[data-edit]");
-    const item = saved.find((i) => i.id === (use || edit)?.dataset[use ? "use" : "edit"]);
+    const use = e.target.closest("[data-use]");
+    const item = saved.find((i) => i.id === (edit || use)?.dataset[edit ? "edit" : "use"]);
     if (!item) return;
-    if (use) useSaved(item);
-    else openSavedDialog(item);
+    if (edit) openSavedDialog(item);
+    else useSaved(item);
   });
   el("saved-form").addEventListener("submit", (e) => { e.preventDefault(); submitSaved(); });
   el("saved-cancel").addEventListener("click", () => savedDialog.close());
+  el("saved-save").addEventListener("click", submitSaved);
+  // No submit button in the form (the buttons are in the dialog's action row).
+  for (const id of ["saved-name", "saved-amount"]) {
+    el(id).addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); submitSaved(); } });
+  }
   el("saved-delete").addEventListener("click", deleteSaved);
   el("saved-amount").addEventListener("input", () => setSavedError(""));
   // Another tab changed the list.
@@ -1493,14 +1568,14 @@ function initDateLookup() {
 let shortcutsDialog = null;
 
 function initShortcuts() {
-  const help = M3.dialog(el("shortcuts-dialog"));
+  const help = el("shortcuts-dialog");
   shortcutsDialog = help;
   el("shortcuts-close").addEventListener("click", () => help.close());
   const ranges = { 1: "30", 2: "90", 3: "180", 4: "365" };
   document.addEventListener("keydown", (e) => {
     if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
-    if (e.target.closest?.("input, textarea, select, [contenteditable]")) return;
-    if (document.querySelector("dialog[open]") || el("lang-menu").open || el("more-menu").open) return;
+    if (e.target.closest?.("input, textarea, select, [contenteditable], petal-outlined-text-field")) return;
+    if (overlayOpen()) return;
     if (e.key === "/") {
       e.preventDefault();
       el("amount").focus();
@@ -1518,7 +1593,7 @@ function initShortcuts() {
       el("date-input").focus();
     } else if (e.key === "?") {
       e.preventDefault();
-      help.open();
+      help.show();
     }
   });
 }
@@ -1546,16 +1621,17 @@ async function pullRefresh() {
 const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)");
 
 function initMoreMenu() {
-  const menu = M3.menu(el("more-btn"), el("more-menu"));
-  menu.addEventListener("beforeopen", () => {
+  const menu = el("more-menu");
+  bindMenuButton(el("more-btn"), menu, () => {
     el("more-shortcuts").hidden = !finePointer.matches;
     el("more-install").hidden = el("install-section").hidden;
     el("more-github").hidden = getComputedStyle(el("github-btn")).display !== "none"; // in the app bar
   });
-  menu.addEventListener("select", (e) => {
-    const item = e.detail;
+  menu.addEventListener("click", (e) => {
+    const item = e.target.closest("petal-menu-item");
+    if (!item) return;
     if (item.id === "more-shortcuts") {
-      shortcutsDialog.open();
+      shortcutsDialog.show();
     } else if (item.id === "more-install") {
       if (installPrompt) el("install-btn").click();
       else el("install-section").scrollIntoView({ behavior: motionOK() ? "smooth" : "auto", block: "center" });
@@ -1568,7 +1644,8 @@ function initMoreMenu() {
 /* ---------- language ---------- */
 
 function initLanguage() {
-  const menu = M3.menu(el("lang-btn"), el("lang-menu"));
+  const menu = bindRadioMenu(el("lang-menu"));
+  bindMenuButton(el("lang-btn"), menu);
   menu.value = langChoice();
   menu.addEventListener("change", () => setLang(menu.value));
   // Re-render everything built in JS; static text is handled by applyI18n().
@@ -1606,14 +1683,18 @@ window.addEventListener("DOMContentLoaded", () => {
   initDateLookup();
   initShortcuts();
   initMoreMenu();
-  M3.pullToRefresh(pullRefresh);
+  // The page scrolls inside <petal-pull-to-refresh> (touch only).
+  el("scroller").addEventListener("refresh", async () => {
+    const minimum = new Promise((r) => setTimeout(r, 700)); // long enough to be seen
+    try { await Promise.all([pullRefresh(), minimum]); } finally { el("scroller").refreshing = false; }
+  });
   readShareParams();
   placeCurrencies();
   el("copy-btn").addEventListener("click", copyResult);
   el("share-btn").addEventListener("click", shareResult);
   el("calc-result").addEventListener("click", copyResult);
   el("swap-btn").addEventListener("click", toggleDirection);
-  const range = M3.buttonGroup(el("range-group"));
+  const range = bindGroup(el("range-group"));
   range.addEventListener("change", () => loadHistory(Number(range.value)));
   // Touch: tapping anywhere outside the chart dismisses the tooltip.
   document.addEventListener("pointerdown", (e) => {
