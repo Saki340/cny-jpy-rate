@@ -32,7 +32,7 @@
 
 - **运行环境**：[Cloudflare Workers](https://developers.cloudflare.com/workers/)（Static Assets 提供前端，`worker.js` 处理 `/api/*`）
 - **前端**：原生 HTML / CSS / JavaScript，无构建步骤、无 npm 依赖；走势图为手写 SVG
-- **界面**：自己实现的 [Material 3 Expressive](https://m3.material.io) 组件（`public/m3/`），不依赖 UI 库。配色、字号、形状、动效等设计令牌由 `tools/m3-tokens.py` 从 [Jetpack Compose Material 3](https://github.com/androidx/androidx/tree/androidx-main/compose/material3) 源码生成；各组件的尺寸也取自其中的组件令牌
+- **界面**：[petal-elements](https://github.com/Saki340/petal-elements)（[Material 3 Expressive](https://m3.material.io) 的 Lit Web 组件），用 `tools/build-petal.mjs` 打包成 `public/vendor/petal.js` 后直接引用，站点本身仍无构建步骤。配色、字号、形状、动效等设计令牌由 `tools/m3-tokens.py` 从 [Jetpack Compose Material 3](https://github.com/androidx/androidx/tree/androidx-main/compose/material3) 源码生成；各组件的尺寸也取自其中的组件令牌
 
 ## 项目结构
 
@@ -48,9 +48,8 @@ cny-jpy-rate/
 │   ├── style.css
 │   ├── m3/
 │   │   ├── tokens.css   # M3 系统设计令牌（由 tools/m3-tokens.py 生成）
-│   │   ├── m3.css       # M3 组件样式
-│   │   └── m3.js        # M3 组件行为（菜单、按钮组、提示、snackbar、涟漪）
-│   ├── expressive.js    # M3 形状库（装饰形状、加载指示器）
+│   ├── vendor/petal.js  # petal-elements 组件包（由 tools/build-petal.mjs 生成）
+│   ├── expressive.js    # M3 形状库（装饰形状）
 │   ├── manifest*.webmanifest  # Web App 清单（中文 / -ja / -en，安装后的名称随语言）
 │   ├── sw.js            # Service Worker：网络优先，离线时使用缓存
 │   ├── icons/           # Web App 图标
@@ -116,6 +115,7 @@ npx wrangler dev
   python tools/m3-tokens.py <androidx 提交 SHA>
   ```
 
+- **组件包**：先在 petal-elements 仓库运行 `npm run build`，再 `node tools/build-petal.mjs [petal 仓库路径]`（默认 `../petal-elements`）；重新生成后把 `index.html`、`404.html`、`sw.js` 里的 `petal.js?v=` 一起加 1。
 - **静态资源自托管**：`public/vendor/fonts/` 为 Google Sans Flex（可变字体，ASCII 子集）和 Material Symbols Rounded（可变字体，只含用到的图标，新增图标的方法见该目录的 README.txt）；中文、日文使用系统字体。
 - **日志**：`wrangler.toml` 中开启了 Workers Logs（`[observability]`）。请不要删除这一项，否则部署会把控制台中开启的日志关闭。
 - **预览图**：编辑 `docs/og-image.html` 后，用无头浏览器重新生成三种语言（文件路径需为绝对路径的 `file:///` 网址，才能带上 `?lang=`）：

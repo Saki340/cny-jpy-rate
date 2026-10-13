@@ -150,8 +150,8 @@ section { margin-bottom: 24px; }
  * the title and the language button. */
 .theme-group { flex: none; }
 .theme-group.is-compact petal-filled-button {
-  --md-filled-button-leading-space: 10px;
-  --md-filled-button-trailing-space: 10px;
+  /* The size's padding (16px) is not a token; a 24px icon + 8px each side = 40px. */
+  padding-inline: 8px;
 }
 .theme-group.is-compact .theme-label {
   position: absolute;
@@ -869,3 +869,11 @@ petal-menu-item[hidden], petal-menu-group[hidden], petal-icon-button[hidden] { d
  * sticky bar must not be above it. */
 petal-top-app-bar { z-index: 1; }
 petal-dialog { width: 560px; }
+/* Pull to refresh: the flower in the site's colours (petal's defaults are pink and yellow). */
+petal-pull-to-refresh {
+  --md-pull-to-refresh-petal-1-color: var(--md-sys-color-primary);
+  --md-pull-to-refresh-petal-2-color: var(--md-sys-color-tertiary);
+  --md-pull-to-refresh-petal-3-color: var(--md-sys-color-secondary);
+  --md-pull-to-refresh-petal-4-color: var(--md-sys-color-inverse-primary);
+  --md-pull-to-refresh-center-color: var(--md-sys-color-tertiary-container);
+}

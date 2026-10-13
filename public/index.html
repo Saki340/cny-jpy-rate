@@ -75,15 +75,15 @@
          this visit only. Labels on wide screens, icons on narrow ones (the
          label stays for screen readers). -->
     <petal-button-group slot="actions" class="theme-group" id="theme-group" connected single-select aria-label="主题" data-i18n-attr="aria-label:theme.label">
-      <petal-filled-button toggle data-value="light"><petal-icon slot="icon" aria-hidden="true">light_mode</petal-icon><span class="theme-label" data-i18n="theme.light">浅色</span></petal-filled-button>
-      <petal-filled-button toggle data-value="dark"><petal-icon slot="icon" aria-hidden="true">dark_mode</petal-icon><span class="theme-label" data-i18n="theme.dark">深色</span></petal-filled-button>
+      <petal-filled-button toggle data-value="light"><petal-icon slot="icon" aria-hidden="true">&#xe518;</petal-icon><span class="theme-label" data-i18n="theme.light">浅色</span></petal-filled-button>
+      <petal-filled-button toggle data-value="dark"><petal-icon slot="icon" aria-hidden="true">&#xe51c;</petal-icon><span class="theme-label" data-i18n="theme.dark">深色</span></petal-filled-button>
     </petal-button-group>
     <!-- Language: icon button + Expressive menu (two groups). -->
-    <petal-icon-button slot="actions" id="lang-btn" aria-label="语言" data-i18n-attr="aria-label:lang.label"><petal-icon aria-hidden="true">translate</petal-icon></petal-icon-button>
+    <petal-icon-button slot="actions" id="lang-btn" aria-label="语言" data-i18n-attr="aria-label:lang.label"><petal-icon aria-hidden="true">&#xe8e2;</petal-icon></petal-icon-button>
     <!-- GitHub: from 600dp; on phones it stays in the More menu (no room). The
          mark is the GitHub octicon (Material Symbols has no brand icons). -->
     <petal-icon-button slot="actions" class="github-btn" id="github-btn" href="https://github.com/Saki340/cny-jpy-rate" target="_blank" rel="noopener noreferrer" aria-label="GitHub 源码" data-i18n-attr="aria-label:more.github"><petal-icon aria-hidden="true"><svg class="github-mark" viewBox="0 0 16 16"><path fill="currentColor" d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"/></svg></petal-icon></petal-icon-button>
-    <petal-icon-button slot="actions" id="more-btn" aria-label="更多选项" data-i18n-attr="aria-label:more.label"><petal-icon aria-hidden="true">more_vert</petal-icon></petal-icon-button>
+    <petal-icon-button slot="actions" id="more-btn" aria-label="更多选项" data-i18n-attr="aria-label:more.label"><petal-icon aria-hidden="true">&#xe5d4;</petal-icon></petal-icon-button>
   </petal-top-app-bar>
   <petal-tooltip for="lang-btn" data-i18n="lang.label">语言</petal-tooltip>
   <petal-tooltip for="github-btn" data-i18n="more.github">GitHub 源码</petal-tooltip>
@@ -104,19 +104,19 @@
   <!-- More: actions. Items that do not apply are hidden, and so is a group left empty. -->
   <petal-menu id="more-menu" anchor="more-btn" positioning="popover" aria-label="更多选项" data-i18n-attr="aria-label:more.label">
     <petal-menu-group>
-      <petal-menu-item id="more-shortcuts"><petal-icon slot="start" aria-hidden="true">keyboard</petal-icon><div slot="headline" data-i18n="more.shortcuts">键盘快捷键</div></petal-menu-item>
-      <petal-menu-item id="more-install" hidden><petal-icon slot="start" aria-hidden="true">add_to_home_screen</petal-icon><div slot="headline" data-i18n="more.install">添加到桌面</div></petal-menu-item>
+      <petal-menu-item id="more-shortcuts"><petal-icon slot="start" aria-hidden="true">&#xe312;</petal-icon><div slot="headline" data-i18n="more.shortcuts">键盘快捷键</div></petal-menu-item>
+      <petal-menu-item id="more-install" hidden><petal-icon slot="start" aria-hidden="true">&#xf2b9;</petal-icon><div slot="headline" data-i18n="more.install">添加到桌面</div></petal-menu-item>
     </petal-menu-group>
     <petal-menu-group>
-      <petal-menu-item id="more-about"><petal-icon slot="start" aria-hidden="true">info</petal-icon><div slot="headline" data-i18n="more.about">数据来源与说明</div></petal-menu-item>
-      <petal-menu-item id="more-github" href="https://github.com/Saki340/cny-jpy-rate" target="_blank" rel="noopener noreferrer"><petal-icon slot="start" aria-hidden="true">code</petal-icon><div slot="headline" data-i18n="more.github">GitHub 源码</div></petal-menu-item>
+      <petal-menu-item id="more-about"><petal-icon slot="start" aria-hidden="true">&#xe88e;</petal-icon><div slot="headline" data-i18n="more.about">数据来源与说明</div></petal-menu-item>
+      <petal-menu-item id="more-github" href="https://github.com/Saki340/cny-jpy-rate" target="_blank" rel="noopener noreferrer"><petal-icon slot="start" aria-hidden="true">&#xe86f;</petal-icon><div slot="headline" data-i18n="more.github">GitHub 源码</div></petal-menu-item>
     </petal-menu-group>
   </petal-menu>
 
   <main class="page page-width">
     <!-- Shown while offline; app.js fills in which day's data is on screen. -->
     <div class="offline-banner" id="offline-banner" role="status" aria-live="polite">
-      <div class="offline-banner-inner"><div class="offline-pill"><petal-icon aria-hidden="true">cloud_off</petal-icon><span id="offline-text"></span></div></div>
+      <div class="offline-banner-inner"><div class="offline-pill"><petal-icon aria-hidden="true">&#xe2c1;</petal-icon><span id="offline-text"></span></div></div>
     </div>
 
     <!-- Two panes on wide screens (M3 supporting-pane layout, app.js layoutPanes()):
@@ -141,7 +141,7 @@
         </div>
         <p class="meta-text" id="board-note" data-i18n="board.note">欧洲央行每个工作日公布一次参考汇率，周末和节假日沿用上一个工作日的数据。</p>
         <div class="card-actions">
-          <petal-filled-button id="swap-btn"><petal-icon slot="icon" class="swap-icon" aria-hidden="true">swap_horiz</petal-icon><span data-i18n="swap">切换兑换方向</span></petal-filled-button>
+          <petal-filled-button id="swap-btn"><petal-icon slot="icon" class="swap-icon" aria-hidden="true">&#xe8d4;</petal-icon><span data-i18n="swap">切换兑换方向</span></petal-filled-button>
         </div>
       </petal-filled-card>
     </section>
@@ -156,7 +156,7 @@
                The label ("金额（JPY）") is set by app.js; supporting / error text too. -->
           <petal-outlined-text-field id="amount" label="JPY" value="100" inputmode="decimal" autocomplete="off">
             <!-- Trailing icon: save this amount to the saved amounts (opens the same dialog, prefilled). -->
-            <petal-icon-button slot="trailing-icon" id="save-amount-btn" aria-label="存为常用金额" data-i18n-attr="aria-label:calc.save"><petal-icon aria-hidden="true">bookmark_add</petal-icon></petal-icon-button>
+            <petal-icon-button slot="trailing-icon" id="save-amount-btn" aria-label="存为常用金额" data-i18n-attr="aria-label:calc.save"><petal-icon aria-hidden="true">&#xe598;</petal-icon></petal-icon-button>
           </petal-outlined-text-field>
           <petal-tooltip for="save-amount-btn" data-i18n="calc.save">存为常用金额</petal-tooltip>
           <!-- Phone number pads have no operator keys; these appear while typing on touch screens. -->
@@ -172,9 +172,9 @@
           <span class="result-label" id="calc-result-label">CNY</span>
           <div class="calc-result-row">
             <output class="calc-result" id="calc-result" title="点击复制" data-i18n-attr="title:calc.copyHint"><span class="calc-visible" aria-hidden="true"><span class="skeleton">0.000</span></span><span class="sr-only"></span></output>
-            <petal-icon-button id="copy-btn" aria-label="复制换算结果" data-i18n-attr="aria-label:calc.copy"><petal-icon aria-hidden="true">content_copy</petal-icon></petal-icon-button>
+            <petal-icon-button id="copy-btn" aria-label="复制换算结果" data-i18n-attr="aria-label:calc.copy"><petal-icon aria-hidden="true">&#xe14d;</petal-icon></petal-icon-button>
             <petal-tooltip for="copy-btn" data-i18n="calc.copy">复制换算结果</petal-tooltip>
-            <petal-icon-button id="share-btn" aria-label="分享换算结果" data-i18n-attr="aria-label:calc.share"><petal-icon aria-hidden="true">share</petal-icon></petal-icon-button>
+            <petal-icon-button id="share-btn" aria-label="分享换算结果" data-i18n-attr="aria-label:calc.share"><petal-icon aria-hidden="true">&#xe80d;</petal-icon></petal-icon-button>
             <petal-tooltip for="share-btn" data-i18n="calc.share">分享换算结果</petal-tooltip>
           </div>
         </div>
@@ -184,7 +184,7 @@
     <section class="sec-side sec-saved" aria-labelledby="saved-heading">
       <div class="section-heading">
         <h2 id="saved-heading" data-i18n="section.saved">常用金额</h2>
-        <petal-text-button class="section-action" id="saved-add"><petal-icon slot="icon" aria-hidden="true">add</petal-icon><span data-i18n="saved.add">添加</span></petal-text-button>
+        <petal-text-button class="section-action" id="saved-add"><petal-icon slot="icon" aria-hidden="true">&#xe145;</petal-icon><span data-i18n="saved.add">添加</span></petal-text-button>
       </div>
       <!-- Saved amounts (localStorage), converted at the latest rate on every visit. -->
       <petal-filled-card class="surface-card saved-empty" id="saved-empty">
@@ -245,7 +245,7 @@
       <petal-filled-card class="surface-card mc-panel">
         <p class="mc-note" id="mc-note" data-i18n="mc.note">用万事达卡在海外刷卡时，入账按万事达的结算汇率计算，其中含有汇率差价，通常和本页的中间价略有不同；发卡行还可能另收货币转换费。实际金额请以万事达官方换算器和发卡行账单为准。</p>
         <div class="mc-actions">
-          <petal-filled-tonal-button href="https://www.mastercard.com/us/en/personal/get-support/currency-exchange-rate-converter.html" target="_blank" rel="noopener noreferrer"><petal-icon slot="icon" aria-hidden="true">open_in_new</petal-icon><span data-i18n="mc.open">打开万事达官方换算器</span></petal-filled-tonal-button>
+          <petal-filled-tonal-button href="https://www.mastercard.com/us/en/personal/get-support/currency-exchange-rate-converter.html" target="_blank" rel="noopener noreferrer"><petal-icon slot="icon" aria-hidden="true">&#xe89e;</petal-icon><span data-i18n="mc.open">打开万事达官方换算器</span></petal-filled-tonal-button>
         </div>
       </petal-filled-card>
     </section>
@@ -268,8 +268,8 @@
         <p class="install-note" id="install-browser-note" data-i18n="install.otherBrowser" hidden>在手机上安装建议使用 Chrome。用其他浏览器安装时，系统可能会提示「这是为旧版 Android 设计的应用」。</p>
         <div class="install-actions">
           <petal-text-button id="install-dismiss" data-i18n="install.dismiss">不用了</petal-text-button>
-          <petal-filled-tonal-button id="install-chrome" href="/" hidden><petal-icon slot="icon" aria-hidden="true">open_in_new</petal-icon><span data-i18n="install.chrome">用 Chrome 打开</span></petal-filled-tonal-button>
-          <petal-filled-button id="install-btn"><petal-icon slot="icon" aria-hidden="true">add_to_home_screen</petal-icon><span data-i18n="install.button">安装</span></petal-filled-button>
+          <petal-filled-tonal-button id="install-chrome" href="/" hidden><petal-icon slot="icon" aria-hidden="true">&#xe89e;</petal-icon><span data-i18n="install.chrome">用 Chrome 打开</span></petal-filled-tonal-button>
+          <petal-filled-button id="install-btn"><petal-icon slot="icon" aria-hidden="true">&#xf2b9;</petal-icon><span data-i18n="install.button">安装</span></petal-filled-button>
         </div>
       </petal-filled-card>
     </section>

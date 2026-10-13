@@ -176,6 +176,11 @@ async function exitLoading(container) {
   await Promise.race([exit, new Promise((resolve) => setTimeout(resolve, 250))]);
 }
 
+// Material Symbols code points (the page's font is a subset; petal-icon shows
+// the glyph, and the icon names never become page text that search engines
+// would index, like "sync_alt").
+const ICON = { check: "\ue668", copy: "\ue14d", up: "\ue5d8", down: "\ue5db", flat: "\ue15b", edit: "\uf097" };
+
 // Messages go through one <petal-snackbar>. With an action it stays 10 s
 // (SnackbarDuration.Long) and onAction runs when the action is pressed.
 async function notify(message, { action, onAction } = {}) {
@@ -522,10 +527,10 @@ async function copyResult() {
   if (!ok) return;
   const btn = el("copy-btn");
   const icon = btn.querySelector("petal-icon");
-  icon.textContent = "check";
+  icon.textContent = ICON.check;
   pop(btn, 1.15);
   clearTimeout(copyResetTimer);
-  copyResetTimer = setTimeout(() => { icon.textContent = "content_copy"; }, 1600);
+  copyResetTimer = setTimeout(() => { icon.textContent = ICON.copy; }, 1600);
 }
 
 /* ---------- share ---------- */
@@ -782,7 +787,7 @@ function renderChange({ flash = false } = {}) {
   const prev = state.direction === "cny2jpy" ? state.prevCnyToJpy : 1 / state.prevCnyToJpy;
   const change = (now - prev) / prev;
   const dir = change > 0 ? "up" : change < 0 ? "down" : "flat";
-  const icon = { up: "arrow_upward", down: "arrow_downward", flat: "remove" }[dir];
+  const icon = { up: ICON.up, down: ICON.down, flat: ICON.flat }[dir];
   const wasEmpty = !box.firstElementChild;
   box.innerHTML =
     `<span class="change-chip is-${dir}"><petal-icon aria-hidden="true">${icon}</petal-icon>${pctFmt(change).replace(/^[+−±]/, "")}</span>` +
@@ -1362,7 +1367,7 @@ function renderSaved() {
       (item.name ? `<div slot="supporting-text">${esc(amountText)}</div>` : "") +
       `<div slot="end" class="saved-end">` +
       `<span class="saved-result"><span class="sr-only">≈</span><span class="saved-result-value">${value === null ? "--" : esc(fmt(value, 2))}</span> <span class="saved-result-cur">${to}</span></span>` +
-      `<petal-icon-button id="edit-${esc(item.id)}" data-edit="${esc(item.id)}" aria-label="${editLabel}"><petal-icon aria-hidden="true">edit</petal-icon></petal-icon-button>` +
+      `<petal-icon-button id="edit-${esc(item.id)}" data-edit="${esc(item.id)}" aria-label="${editLabel}"><petal-icon aria-hidden="true">${ICON.edit}</petal-icon></petal-icon-button>` +
       `</div></petal-list-item>`;
   }).join("");
   el("saved-tooltips").innerHTML = saved.map((item) => {

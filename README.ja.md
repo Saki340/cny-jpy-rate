@@ -32,7 +32,7 @@
 
 - **実行環境**：[Cloudflare Workers](https://developers.cloudflare.com/workers/)（Static Assets がフロントエンドを配信し、`worker.js` が `/api/*` を処理）
 - **フロントエンド**：素の HTML / CSS / JavaScript。ビルド手順なし、npm 依存なし。チャートは手書きの SVG
-- **UI**：自前で実装した [Material 3 Expressive](https://m3.material.io) コンポーネント（`public/m3/`）。UI ライブラリには依存しません。配色・文字サイズ・形状・モーションなどのデザイントークンは `tools/m3-tokens.py` で [Jetpack Compose Material 3](https://github.com/androidx/androidx/tree/androidx-main/compose/material3) のソースから生成し、各コンポーネントのサイズもそのコンポーネントトークンから取っています
+- **UI**：[petal-elements](https://github.com/Saki340/petal-elements)（[Material 3 Expressive](https://m3.material.io) の Lit Web コンポーネント）を `tools/build-petal.mjs` で `public/vendor/petal.js` にまとめて利用。サイト自体にビルド手順はありません。配色・文字サイズ・形状・モーションなどのデザイントークンは `tools/m3-tokens.py` で [Jetpack Compose Material 3](https://github.com/androidx/androidx/tree/androidx-main/compose/material3) のソースから生成し、各コンポーネントのサイズもそのコンポーネントトークンから取っています
 
 ## プロジェクト構成
 
@@ -48,8 +48,7 @@ cny-jpy-rate/
 │   ├── style.css
 │   ├── m3/
 │   │   ├── tokens.css   # M3 システムデザイントークン（tools/m3-tokens.py で生成）
-│   │   ├── m3.css       # M3 コンポーネントのスタイル
-│   │   └── m3.js        # M3 コンポーネントの動作（メニュー、ボタングループ、ツールチップ、スナックバー、リップル）
+│   ├── vendor/petal.js  # petal-elements のバンドル（tools/build-petal.mjs で生成）
 │   ├── expressive.js    # M3 シェイプライブラリ（装飾図形、読み込みインジケーター）
 │   ├── manifest*.webmanifest  # Web App マニフェスト（中国語 / -ja / -en。インストール後の名前が言語に合わせて変わる）
 │   ├── sw.js            # Service Worker：ネットワーク優先、オフライン時はキャッシュを使用

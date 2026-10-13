@@ -51,23 +51,7 @@ const ExpressiveShapes = (() => {
     return `polygon(${pts.join(",")})`;
   }
 
-  // Loading indicator: soft burst -> cookie 9 -> pentagon -> pill -> sunny ->
-  // cookie 4 -> oval -> back, each step on the "expressive default spatial"
-  // spring (overshoot included), as in Compose's LoadingIndicator.
-  function installLoadingKeyframes() {
-    const order = ["softBurst", "cookie9", "pentagon", "pill", "sunny", "cookie4", "oval", "softBurst"];
-    const easing = getComputedStyle(document.documentElement)
-      .getPropertyValue("--md-sys-motion-spring-default-spatial").trim() || "ease";
-    const frames = order.map((name, i) => {
-      const pct = ((i / (order.length - 1)) * 100).toFixed(3);
-      return `${pct}% { clip-path: ${polygon(name, i * 51)}; animation-timing-function: ${easing}; }`;
-    });
-    const style = document.createElement("style");
-    style.textContent = `@keyframes ex-loading-morph { ${frames.join(" ")} }`;
-    document.head.append(style);
-  }
-
-  return { polygon, installLoadingKeyframes };
+  return { polygon };
 })();
 
 // Decorative shape in the rate card: each call (direction swap, theme change)
@@ -85,7 +69,6 @@ function morphDecoShape() {
 }
 
 (function initExpressive() {
-  ExpressiveShapes.installLoadingKeyframes();
   // iOS Safari only applies :active (used for the press shape morph) when the
   // page has a touch listener.
   document.addEventListener("touchstart", () => {}, { passive: true });
