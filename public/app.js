@@ -185,11 +185,10 @@ const ICON = { check: "\ue668", copy: "\ue14d", up: "\ue5d8", down: "\ue5db", fl
 // (SnackbarDuration.Long) and onAction runs when the action is pressed.
 async function notify(message, { action, onAction } = {}) {
   const bar = el("snackbar");
-  bar.close();
   bar.textContent = message;
   bar.action = action || "";
   bar.duration = action ? "long" : "short";
-  if (await bar.show() === "action") onAction?.();
+  if (await bar.show() === "action") onAction?.(); // "replace": a later message took over
 }
 
 // The amount field's floating label ("金额（JPY）").
@@ -210,20 +209,14 @@ function bindGroup(group) {
 }
 
 // A <petal-menu> of menuitemradio items: menu.value is the checked item's
-// data-value; clicking another item fires "change".
+// data-value (petal checks the chosen item, unchecks the others and fires
+// "change" by itself).
 function bindRadioMenu(menu) {
   const items = () => [...menu.querySelectorAll('[type="menuitemradio"]')];
   Object.defineProperty(menu, "value", {
     get: () => items().find((i) => i.checked)?.dataset.value,
     set: (v) => { for (const i of items()) i.checked = i.dataset.value === String(v); },
   });
-  for (const item of items()) {
-    item.addEventListener("click", () => {
-      if (item.checked) return;
-      menu.value = item.dataset.value;
-      menu.dispatchEvent(new Event("change"));
-    });
-  }
   return menu;
 }
 
@@ -324,13 +317,9 @@ function syncThemeColor() {
   const color = getComputedStyle(document.documentElement).getPropertyValue(token).trim();
   if (color) document.querySelectorAll('meta[name="theme-color"]').forEach((meta) => { meta.content = color; });
 }
-// The bar updates itself in the next frame (its listener comes later than
-// this one), so look two frames on.
-el("scroller").addEventListener("scroll", () => {
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    if ((el("app-bar").collapsedFraction >= 1) !== barScrolled) syncThemeColor();
-  }));
-}, { passive: true });
+el("app-bar").addEventListener("collapse-change", () => {
+  if ((el("app-bar").collapsedFraction >= 1) !== barScrolled) syncThemeColor();
+});
 
 function applyTheme(mode) {
   document.documentElement.classList.remove("theme-dark", "theme-light", "theme-auto");
@@ -366,12 +355,13 @@ function switchTheme(mode) {
 
 function initTheme() {
   const group = bindGroup(el("theme-group"));
-  // Icons instead of labels on phones (see style.css): the icon goes into the
-  // button's content there, and is taken out of every slot on wide screens.
+  // Icons instead of labels on phones: the label is taken out of the slots
+  // (the button keeps its aria-label), and on wide screens the icon is.
   const narrow = window.matchMedia("(max-width: 600px)");
   const sync = () => {
     group.classList.toggle("is-compact", narrow.matches);
-    for (const icon of group.querySelectorAll("petal-icon")) icon.slot = narrow.matches ? "" : "none";
+    for (const icon of group.querySelectorAll("petal-icon")) icon.slot = narrow.matches ? "icon" : "none";
+    for (const label of group.querySelectorAll(".theme-label")) label.slot = narrow.matches ? "none" : "";
   };
   narrow.addEventListener("change", sync);
   sync();

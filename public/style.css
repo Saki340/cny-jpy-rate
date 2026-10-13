@@ -89,12 +89,10 @@ petal-outlined-text-field:not(:defined), petal-icon-button:not(:defined) { visib
 /* ---------- base ---------- */
 
 * { box-sizing: border-box; }
-html, body { height: 100%; }
-/* The page scrolls inside #scroller (petal-pull-to-refresh), not the window. */
-#scroller { height: 100%; scroll-padding-top: 72px; }
+html { scroll-padding-top: 72px; }
 body {
   margin: 0;
-  overflow: hidden;
+  min-height: 100vh;
   background-color: var(--md-sys-color-surface);
   color: var(--md-sys-color-on-surface);
   font-family: var(--font);
@@ -129,6 +127,7 @@ petal-top-app-bar, .section-heading h2, .rate-line, .calc-result, .chart-tooltip
 .page-width { width: min(100% - 2 * var(--gutter), var(--page-width)); margin-inline: auto; }
 /* The bar is full width; its content lines up with the page content (the
  * title sits 16px into the row). */
+.app-title petal-icon { --md-icon-size: 1em; vertical-align: -0.12em; margin-inline: 0.12em; }
 petal-top-app-bar::part(container) {
   padding-inline: max(0px, calc((100% - min(100% - 2 * var(--gutter) + 32px, var(--page-width) + 32px)) / 2));
 }
@@ -150,16 +149,9 @@ section { margin-bottom: 24px; }
  * the title and the language button. */
 .theme-group { flex: none; }
 .theme-group.is-compact petal-filled-button {
-  /* The size's padding (16px) is not a token; a 24px icon + 8px each side = 40px. */
-  padding-inline: 8px;
-}
-.theme-group.is-compact .theme-label {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
+  /* Icon only (app.js takes the label out of the slots): 24px icon + 8px each side. */
+  --md-button-small-leading-space: 8px;
+  --md-button-small-trailing-space: 8px;
 }
 /* GitHub in the app bar from 600dp; below that it is in the More menu. */
 .github-mark { width: 20px; height: 20px; }
@@ -445,7 +437,7 @@ petal-filled-card.surface-card {
 .range-tabs { width: 100%; margin-bottom: 14px; }
 /* On the coloured chart card, unselected buttons use the lightest (darkest in
  * dark mode) surface so they stand out from the card. */
-.chart-card petal-filled-button:not([selected]) { --_container-color: var(--md-sys-color-surface-container-lowest); }
+.chart-card petal-filled-button:not([selected]) { --md-filled-button-unselected-container-color: var(--md-sys-color-surface-container-lowest); }
 .range-tabs petal-filled-button { flex: 1 1 0; }
 .chart-readout {
   display: flex;
@@ -639,7 +631,7 @@ petal-list.saved-list[hidden], .saved-empty[hidden] { display: none; }
 .saved-result-cur { color: var(--md-sys-color-on-surface-variant); font-size: var(--md-sys-typescale-body-small-size); }
 .saved-cur-group { width: 100%; }
 .saved-cur-group petal-filled-button { flex: 1 1 0; }
-.saved-cur-group petal-filled-button:not([selected]) { --_container-color: var(--md-sys-color-surface-container-highest); }
+.saved-cur-group petal-filled-button:not([selected]) { --md-filled-button-unselected-container-color: var(--md-sys-color-surface-container-highest); }
 #saved-form { display: flex; flex-direction: column; gap: 16px; margin: 0; padding-top: 8px; }
 .dialog-start { margin-inline-end: auto; }
 
@@ -860,14 +852,8 @@ html.js .page section:not(.in-view) { animation-play-state: paused; }
   .chart-pulse { display: none; }
 }
 
-/* ---------- petal overrides ---------- */
+/* ---------- petal ---------- */
 
-/* petal hosts set their own display, which beats the UA's [hidden] rule. */
-petal-filled-button[hidden], petal-filled-tonal-button[hidden], petal-text-button[hidden],
-petal-menu-item[hidden], petal-menu-group[hidden], petal-icon-button[hidden] { display: none !important; }
-/* petal-dialog's scrim is a z-index: 1 layer (not the top layer), so the
- * sticky bar must not be above it. */
-petal-top-app-bar { z-index: 1; }
 petal-dialog { width: 560px; }
 /* Pull to refresh: the flower in the site's colours (petal's defaults are pink and yellow). */
 petal-pull-to-refresh {

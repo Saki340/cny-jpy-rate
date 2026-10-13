@@ -38,14 +38,14 @@ JPY ⇄ CNY 汇率板。单个 Cloudflare Worker + 静态资源，无构建步�
 
 - 整体必须是 Material Design 3（Expressive）风格。**数值不要凭记忆或看图估**：查 Compose 源码 `compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/` 下的 `tokens/*Tokens.kt`（Google 从设计规范生成）和组件的 `*Defaults`（如 `MenuDefaults`、`ButtonGroupDefaults`）。注意 `*Defaults` 有时会覆盖令牌（例如文字按钮的颜色是 Primary，`TextButtonTokens.LabelColor` 是错的，源码里有 TODO），以组件实际用的为准。
 - 系统令牌用 `--md-sys-*`（`tokens.css`）：颜色是完整颜色值，直接 `var(--md-sys-color-primary)`；半透明用 `color-mix(in srgb, var(--x) 12%, transparent)`。项目自定义颜色（`--app-color-*`）在 `style.css` 顶部同时定义浅色和深色两套。
-- 组件来自 petal-elements，数值已按 Compose 令牌实现；站点只用 `--md-<组件>-*` 令牌调色（见 `style.css`），不要重写组件内部样式。个别地方不得不用私有变量（切换按钮底色 `--_container-color`）或补丁（`[hidden]`、顶栏 `z-index`），都集中在 `style.css` 末尾「petal overrides」，petal 修复后可删。
+- 组件来自 petal-elements，数值已按 Compose 令牌实现；站点只用 `--md-<组件>-*` 令牌调色（见 `style.css`），不要重写组件内部样式。切换按钮底色用公开令牌（`--md-filled-button-unselected-container-color`），不要覆盖私有变量或给组件内部打补丁；petal 的问题记下来反馈，不要在站点里绕。
 - 动效：Compose 的弹簧（刚度 / 阻尼比）被采样成 CSS `linear()`，即 `--md-sys-motion-spring-{fast,default,slow}-{spatial,effects}` 及 `-duration`。位置/尺寸/形状用 spatial（有回弹），颜色/透明度用 effects（无回弹）；**跟随指针移动的东西（悬浮提示、光标）用 `--follow`（不回弹）**。JS 里的 Web Animations 用 `app.js` 的 `SPRING_*`（从 CSS 令牌读取），自绘动画用 `springCurve()`。
 - 主题：`<html>` 上的 `theme-light|dark|auto`。每次访问都从 `theme-auto`（跟随系统）开始，顶栏开关只有浅色 / 深色两项：跟随系统时显示系统当前的深浅色并随系统变化，用户点选后只在本次访问有效，**不保存**（旧的 `theme-pref` 会被删除）。
-- 组件用法（`app.js`）：`bindGroup(el)`（`<petal-button-group connected single-select>`，用 `data-value` 做 `value`，`change` 事件）、`bindRadioMenu(menu)` + `bindMenuButton(button, menu, before)`（`petal-menu` 用 `menuitemradio` / `checked`，菜单用 `positioning="popover"`）、`notify(text, { action, onAction })`（唯一的 `<petal-snackbar>`）、`petal-dialog` 用 `show()` / `close()`；文本框 `label` / `supportingText` / `error` / `errorText` 都是属性；提示用 `<petal-tooltip for="按钮id">`；列表是 `<petal-list segmented>`；小标签是 `petal-assist-chip`。页面在 `#scroller`（`petal-pull-to-refresh`）里滚动，不是窗口滚动。
+- 组件用法（`app.js`）：`bindGroup(el)`（`<petal-button-group connected single-select>`，用 `data-value` 做 `value`，`change` 事件）、`bindRadioMenu(menu)` + `bindMenuButton(button, menu, before)`（`petal-menu` 用 `menuitemradio` / `checked`，菜单用 `positioning="popover"`）、`notify(text, { action, onAction })`（唯一的 `<petal-snackbar>`）、`petal-dialog` 用 `show()` / `close()`（`hidden` 属性可直接用于 petal 组件）；文本框 `label` / `supportingText` / `error` / `errorText` 都是属性；提示用 `<petal-tooltip for="按钮id">`；列表是 `<petal-list segmented>`；小标签是 `petal-assist-chip`。页面仍是窗口滚动：`#scroller`（`petal-pull-to-refresh scroll-target="page"`）包住整页，`--md-pull-to-refresh-top-offset: 64px` 让指示器从顶栏下方出现。
 
 ## 页面细节
 
-- **顶部应用栏**：`<petal-top-app-bar size="medium" scroll-target="scroller">`（`AppBarMediumFlexibleTokens`），标题 `headline="JPY ⇄ CNY"` 和 `subtitle`；页面里另有一个 `sr-only` 的 `<h1>`（组件内的标题不是 h1）。折叠比例用 `collapsedFraction`，完全折叠（≥1）时地址栏颜色切换为 surface-container（`syncThemeColor()`）。
+- **顶部应用栏**：`<petal-top-app-bar size="medium" scroll-target="scroller">`（`AppBarMediumFlexibleTokens`），标题用 `headline` / `collapsed-headline` 两个插槽（带图标，各放一份），`heading-level="1"`，`collapsed-subtitle=""`（折叠行不显示副标题）。折叠比例用 `collapsedFraction` 和 `collapse-change` 事件，完全折叠（≥1）时地址栏颜色切换为 surface-container（`syncThemeColor()`）。
 - **「更多」菜单**（`#more-menu`，`initMoreMenu()`）：动作项是普通 `petal-menu-item`，点击在 `click` 里按 `id` 处理；打开前隐藏不适用的项（`bindMenuButton` 的 `before`），空组自动隐藏。主题按钮组保留在顶栏，不要收进菜单。GitHub 按钮（`#github-btn`，GitHub octicon 的 SVG，Material Symbols 没有品牌图标）600dp 起显示在顶栏，更窄时改在菜单里显示 `#more-github`。
 - **宽屏布局**（M3 自适应，数值来自 Compose `WindowSizeClass` / `PaneScaffoldDirective`）：600dp 起页边距 24dp；840dp 起分为主区（今日汇率、走势）和辅助区（360dp，1200dp 起 412dp；计算器、常用金额、万事达、安装），间距 24dp，内容最宽 1280px。区块由 `layoutPanes()` 在两栏之间移动（DOM 顺序 = 显示顺序），新增区块时加 `sec-side` 类即可进辅助区。
 - **卡片圆角**：页面上所有色块（卡片和常用金额列表的外角）统一为 medium 12dp，即 Compose `FilledCardTokens.ContainerShape`。
@@ -55,7 +55,7 @@ JPY ⇄ CNY 汇率板。单个 Cloudflare Worker + 静态资源，无构建步�
 - **区块入场**：`html.js` 下各 section 滚动到可见才播放入场动画。
 - **形状**：由 `ExpressiveShapes.polygon(name)` 生成同点数的 `polygon()`，可直接用 clip-path 过渡变形；新形状加在 `radius` 表里。
 - **字号**：一律用 M3 字号角色（`--md-sys-typescale-*`，关键数字和标题用 `*-emphasized`），不要再写自定义的字号 / 字重。今日汇率：手机 headline-medium、600dp 起 display-small、1200dp 起 display-medium；计算结果：headline-large（手机与窄栏 headline-medium）。
-- **下拉刷新**：`#scroller`（`petal-pull-to-refresh`，仅触屏、在最顶部时）派发 `refresh`，`pullRefresh()` 完成后设 `refreshing = false`；花瓣颜色用 `--md-pull-to-refresh-*` 改成站点配色。
+- **下拉刷新**：`#scroller`（仅触屏、在最顶部时）派发 `refresh`，`pullRefresh()` 完成后设 `refreshing = false`；花瓣颜色用 `--md-pull-to-refresh-*` 改成站点配色。
 - **字体**：Google Sans Flex 是唯一的拉丁字体（数字用 tabular-nums）；显示文字和关键数字用 `font-variation-settings: "ROND" 100`。子集只含 ASCII 和 · − ± ⇄，新增符号需重新下载子集。
 - 所有装饰性动画都受 `prefers-reduced-motion` 控制（`style.css` 末尾）。
 
