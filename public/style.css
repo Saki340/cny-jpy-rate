@@ -127,7 +127,25 @@ petal-top-app-bar, .section-heading h2, .rate-line, .calc-result, .chart-tooltip
 .page-width { width: min(100% - 2 * var(--gutter), var(--page-width)); margin-inline: auto; }
 /* The bar is full width; its content lines up with the page content (the
  * title sits 16px into the row). */
-.app-title petal-icon { --md-icon-size: 1em; vertical-align: -0.12em; margin-inline: 0.12em; }
+/* Title like before: headline-medium emphasized when expanded, title-large when collapsed. */
+.app-title[slot="headline"] {
+  font-size: var(--md-sys-typescale-headline-medium-emphasized-size);
+  font-weight: var(--md-sys-typescale-headline-medium-emphasized-weight);
+  line-height: var(--md-sys-typescale-headline-medium-emphasized-line-height);
+  letter-spacing: var(--md-sys-typescale-headline-medium-emphasized-tracking);
+}
+.app-title[slot="collapsed-headline"] {
+  font-size: var(--md-sys-typescale-title-large-size);
+  font-weight: var(--md-sys-typescale-title-large-weight);
+  line-height: var(--md-sys-typescale-title-large-line-height);
+  letter-spacing: var(--md-sys-typescale-title-large-tracking);
+}
+.app-title petal-icon { --md-icon-size: .9em; margin: 0 .2em; vertical-align: -.1em; }
+/* Spacing as before: 12dp between the icon buttons, 8dp after the theme group,
+ * 4dp at the end. */
+petal-top-app-bar > petal-icon-button[slot="actions"] { margin-inline: 6px; }
+petal-top-app-bar > #more-btn { margin-inline-end: 4px; }
+petal-top-app-bar > .theme-group { margin-inline-end: 2px; }
 petal-top-app-bar::part(container) {
   padding-inline: max(0px, calc((100% - min(100% - 2 * var(--gutter) + 32px, var(--page-width) + 32px)) / 2));
 }
@@ -148,6 +166,11 @@ section { margin-bottom: 24px; }
  * .is-compact from app.js), where three languages' labels would not fit beside
  * the title and the language button. */
 .theme-group { flex: none; }
+.theme-group:not(.is-compact) petal-filled-button {
+  padding-inline: 12px;
+  --md-button-small-leading-space: 14px;
+  --md-button-small-trailing-space: 14px;
+}
 .theme-group.is-compact petal-filled-button {
   /* Icon only (app.js takes the label out of the slots): 24px icon + 8px each side. */
   --md-button-small-leading-space: 8px;
