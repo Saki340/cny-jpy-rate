@@ -166,21 +166,33 @@
   /* stiffness 800, damping ratio 0.6 */
   --md-sys-motion-spring-fast-spatial: linear(0, 0.0205, 0.075, 0.1537, 0.2481, 0.3509, 0.4562, 0.5594, 0.6567, 0.7458, 0.8248, 0.8931, 0.9503, 0.9966, 1.0326, 1.0593, 1.0777, 1.0889, 1.0941, 1.0944, 1.0909, 1.0846, 1.0764, 1.0671, 1.0572, 1.0472, 1.0377, 1.0287, 1.0207, 1.0136, 1.0076, 1.0027, 0.9987, 0.9957, 0.9935, 0.9921, 0.9913, 0.991, 0.9912, 0.9916, 0.9923, 0.9931, 0.994, 0.995, 0.9959, 0.9968, 0.9976, 0.9983, 1);
   --md-sys-motion-spring-fast-spatial-duration: 359ms;
+  --md-sys-motion-spring-fast-spatial-damping: 0.6;
+  --md-sys-motion-spring-fast-spatial-stiffness: 800;
   /* stiffness 3800, damping ratio 1 */
   --md-sys-motion-spring-fast-effects: linear(0, 0.0161, 0.057, 0.1134, 0.1788, 0.2483, 0.3185, 0.3871, 0.4524, 0.5136, 0.5701, 0.6216, 0.6683, 0.7101, 0.7475, 0.7806, 0.8099, 0.8356, 0.8581, 0.8778, 0.8949, 0.9098, 0.9226, 0.9338, 0.9434, 0.9516, 0.9587, 0.9648, 0.97, 0.9745, 0.9783, 0.9816, 0.9844, 0.9868, 0.9888, 0.9905, 0.992, 0.9932, 0.9943, 0.9951, 0.9959, 0.9965, 0.9971, 0.9975, 0.9979, 0.9982, 0.9985, 0.9988, 1);
   --md-sys-motion-spring-fast-effects-duration: 149ms;
+  --md-sys-motion-spring-fast-effects-damping: 1;
+  --md-sys-motion-spring-fast-effects-stiffness: 3800;
   /* stiffness 380, damping ratio 0.8 */
   --md-sys-motion-spring-default-spatial: linear(0, 0.0141, 0.0514, 0.1051, 0.1698, 0.241, 0.3152, 0.3897, 0.4623, 0.5316, 0.5966, 0.6564, 0.7108, 0.7597, 0.803, 0.8411, 0.874, 0.9023, 0.9262, 0.9463, 0.9629, 0.9764, 0.9872, 0.9957, 1.0023, 1.0071, 1.0106, 1.0129, 1.0144, 1.015, 1.0151, 1.0148, 1.0142, 1.0133, 1.0123, 1.0112, 1.0101, 1.0089, 1.0078, 1.0068, 1.0058, 1.005, 1.0042, 1.0034, 1.0028, 1.0023, 1.0018, 1.0014, 1);
   --md-sys-motion-spring-default-spatial-duration: 434ms;
+  --md-sys-motion-spring-default-spatial-damping: 0.8;
+  --md-sys-motion-spring-default-spatial-stiffness: 380;
   /* stiffness 1600, damping ratio 1 */
   --md-sys-motion-spring-default-effects: linear(0, 0.0162, 0.0571, 0.1137, 0.1793, 0.2489, 0.3192, 0.3879, 0.4533, 0.5145, 0.571, 0.6225, 0.6691, 0.711, 0.7483, 0.7814, 0.8106, 0.8363, 0.8587, 0.8783, 0.8954, 0.9102, 0.9231, 0.9342, 0.9437, 0.9519, 0.959, 0.9651, 0.9703, 0.9747, 0.9785, 0.9818, 0.9845, 0.9869, 0.9889, 0.9906, 0.992, 0.9933, 0.9943, 0.9952, 0.9959, 0.9966, 0.9971, 0.9976, 0.9979, 0.9983, 0.9985, 0.9988, 1);
   --md-sys-motion-spring-default-effects-duration: 230ms;
+  --md-sys-motion-spring-default-effects-damping: 1;
+  --md-sys-motion-spring-default-effects-stiffness: 1600;
   /* stiffness 200, damping ratio 0.8 */
   --md-sys-motion-spring-slow-spatial: linear(0, 0.0142, 0.0515, 0.1054, 0.1702, 0.2415, 0.3158, 0.3904, 0.4631, 0.5324, 0.5974, 0.6572, 0.7116, 0.7605, 0.8038, 0.8417, 0.8746, 0.9028, 0.9267, 0.9467, 0.9633, 0.9767, 0.9875, 0.9959, 1.0024, 1.0073, 1.0107, 1.013, 1.0144, 1.0151, 1.0151, 1.0148, 1.0141, 1.0133, 1.0122, 1.0111, 1.01, 1.0089, 1.0078, 1.0068, 1.0058, 1.0049, 1.0041, 1.0034, 1.0028, 1.0022, 1.0018, 1.0013, 1);
   --md-sys-motion-spring-slow-spatial-duration: 599ms;
+  --md-sys-motion-spring-slow-spatial-damping: 0.8;
+  --md-sys-motion-spring-slow-spatial-stiffness: 200;
   /* stiffness 800, damping ratio 1 */
   --md-sys-motion-spring-slow-effects: linear(0, 0.0162, 0.0574, 0.1142, 0.1799, 0.2497, 0.3202, 0.3889, 0.4544, 0.5157, 0.5722, 0.6237, 0.6703, 0.7121, 0.7494, 0.7824, 0.8116, 0.8372, 0.8596, 0.8791, 0.8961, 0.9109, 0.9237, 0.9347, 0.9442, 0.9524, 0.9594, 0.9654, 0.9706, 0.975, 0.9788, 0.982, 0.9847, 0.987, 0.989, 0.9907, 0.9921, 0.9934, 0.9944, 0.9953, 0.996, 0.9966, 0.9972, 0.9976, 0.998, 0.9983, 0.9986, 0.9988, 1);
   --md-sys-motion-spring-slow-effects-duration: 326ms;
+  --md-sys-motion-spring-slow-effects-damping: 1;
+  --md-sys-motion-spring-slow-effects-stiffness: 800;
 
   /* Elevation shadows (Compose draws these natively; values from the M3 web spec). */
   --md-sys-elevation-level0: none;

@@ -162,6 +162,10 @@ for speed in ("Fast", "Default", "Slow"):
         motion_lines.append(f"  /* stiffness {k:g}, damping ratio {z:g} */")
         motion_lines.append(f"  {prefix}: {linear_easing(x, duration)};")
         motion_lines.append(f"  {prefix}-duration: {round(duration * 1000)}ms;")
+        # The physical parameters too: petal's button group animates widths
+        # with the real spring (it overshoots), not with the sampled curve.
+        motion_lines.append(f"  {prefix}-damping: {z:g};")
+        motion_lines.append(f"  {prefix}-stiffness: {k:g};")
 
 source_list = "\n".join(f" *   {name}" for name in sources)
 copyright_lines = "\n".join(f" * {line}" for line in sorted(copyrights))
