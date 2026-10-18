@@ -852,6 +852,10 @@ kbd {
 .page section {
   animation: rise-in var(--md-sys-motion-spring-slow-spatial-duration) var(--md-sys-motion-spring-slow-spatial) both;
 }
+/* The sections start 16px low (rise-in). A reload restores the scroll position
+ * relative to an anchor element, and while one of them is still displaced that
+ * put the page 16px down, cutting off the title. */
+.page section { overflow-anchor: none; }
 .pane > section:nth-of-type(1) { animation-delay: 60ms; }
 .pane > section:nth-of-type(2) { animation-delay: 120ms; }
 .pane > section:nth-of-type(3) { animation-delay: 180ms; }
