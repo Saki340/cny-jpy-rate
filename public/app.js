@@ -99,11 +99,30 @@ function sourceLink(key) {
 
 // Odometer: every digit is a column 0–9 that rolls to its value. When only
 // some digits change (a new daily fix), just those columns roll, passing
-// through the digits in between. When the format changes (direction swap),
-// the columns are rebuilt and roll up from 0, left to right.
+// through the digits in between. When the format changes (more digits, a
+// direction swap), the columns are rebuilt: each new column starts from the
+// digit that stood in the same place before (lined up on the decimal point:
+// units under units, first decimal under first decimal), new places from 0.
 // The animated columns are hidden from screen readers; a visually hidden copy
-// of the text (.sr-only) is what they read.
-function odometer(node, text, animate = true) {
+// of the text (.sr-only) is what they read, unless `label: false` (the caller
+// keeps its own copy, as the calculator does).
+
+// Place of each digit relative to the decimal point: …, -2 tens, -1 units,
+// 0 first decimal, 1 second decimal, …; separators get null.
+function digitPlaces(text) {
+  const chars = [...text];
+  const isDigit = (c) => c >= "0" && c <= "9";
+  let point = chars.indexOf(".");
+  if (point < 0) point = chars.length;
+  const places = chars.map(() => null);
+  let k = 0;
+  for (let i = point - 1; i >= 0; i--) if (isDigit(chars[i])) places[i] = -(++k);
+  k = 0;
+  for (let i = point + 1; i < chars.length; i++) if (isDigit(chars[i])) places[i] = k++;
+  return places;
+}
+function odometer(node, text, animate = true, { label = true } = {}) {
+  const before = node.dataset.text || "";
   node.dataset.text = text;
   if (!animate || !motionOK()) {
     node.textContent = text;
@@ -116,13 +135,17 @@ function odometer(node, text, animate = true) {
     chars.every((c, i) => isDigit(c) === cols[i].classList.contains("odo-digit"));
   if (!sameShape) {
     const strip = [...Array(10).keys()].map((d) => `<span>${d}</span>`).join("");
-    node.innerHTML = `<span class="sr-only"></span>` + chars.map((c, i) => isDigit(c)
-      ? `<span class="odo odo-digit" style="--i:${i}" aria-hidden="true"><span class="odo-ghost">${c}</span><span class="odo-strip" style="--d:0">${strip}</span></span>`
+    const old = new Map();
+    const oldChars = [...before];
+    digitPlaces(before).forEach((p, i) => { if (p !== null) old.set(p, oldChars[i]); });
+    const places = digitPlaces(text);
+    node.innerHTML = (label ? `<span class="sr-only"></span>` : "") + chars.map((c, i) => isDigit(c)
+      ? `<span class="odo odo-digit" style="--i:${i}" aria-hidden="true"><span class="odo-ghost">${c}</span><span class="odo-strip" style="--d:${old.get(places[i]) || 0}">${strip}</span></span>`
       : `<span class="odo odo-sym" style="--i:${i}" aria-hidden="true">${esc(c)}</span>`).join("");
     cols = [...node.children].filter((c) => c.classList.contains("odo"));
     void node.offsetWidth; // start every column at 0 before rolling
   }
-  node.querySelector(":scope > .sr-only").textContent = text;
+  if (label) node.querySelector(":scope > .sr-only").textContent = text;
   chars.forEach((c, i) => {
     const col = cols[i];
     if (isDigit(c)) {
@@ -132,24 +155,6 @@ function odometer(node, text, animate = true) {
       col.textContent = c;
     }
   });
-}
-
-// Count a number from its previous value to `to` (used by the calculator).
-function tweenNumber(node, from, to, format, duration) {
-  cancelAnimationFrame(Number(node.dataset.raf || 0));
-  if (!motionOK() || !isFinite(from) || from === to || !(duration > 0)) {
-    node.textContent = format(to);
-    return;
-  }
-  const start = performance.now();
-  const ease = (t) => 1 - Math.pow(1 - t, 3);
-  const step = (now) => {
-    // A frame's timestamp can be slightly earlier than `start`.
-    const t = Math.min(Math.max((now - start) / duration, 0), 1);
-    node.textContent = format(from + (to - from) * ease(t));
-    if (t < 1) node.dataset.raf = String(requestAnimationFrame(step));
-  };
-  node.dataset.raf = String(requestAnimationFrame(step));
 }
 
 function fadeIn(node, duration = 250) {
@@ -679,7 +684,7 @@ async function loadRate({ refresh = false } = {}) {
     if (!refresh) await exitLoading(el("rate-value"));
     renderRateLine(false);
     renderChange({ flash: refresh });
-    runCalculator(refresh ? 600 : 700);
+    runCalculator();
     renderRank();
     renderSaved();
     if (!refresh) scheduleRefresh();
@@ -785,21 +790,20 @@ function toggleDirection() {
   renderRateLine(true);
   renderChange();
   renderRank();
-  runCalculator(450);
+  runCalculator();
   renderChart({ morph: true });
 }
 
-function runCalculator(duration = 220, { fromInput = false } = {}) {
+function runCalculator(animate = true) {
   const amount = readAmount();
   const rate = currentMidRate();
   if (!rate) return;
   const value = amount * rate;
   const node = el("calc-result");
-  // The counting animation runs in an aria-hidden span; screen readers get
-  // only the final value, not every intermediate frame.
-  tweenNumber(node.querySelector(".calc-visible"), state.calcShown, value, (v) => fmt(v, 3), duration);
+  // The rolling digits (same odometer as today's rate) are in an aria-hidden
+  // span; screen readers and copying get the plain value in .sr-only.
+  odometer(node.querySelector(".calc-visible"), fmt(value, 3), animate, { label: false });
   node.querySelector(".sr-only").textContent = fmt(value, 3);
-  if (fromInput && value !== state.calcShown) pop(node, 1.03);
   state.calcShown = value;
   renderDate(); // "rate on a date" converts the same amount
 }
@@ -1220,7 +1224,7 @@ function settleAmount() {
   const value = evaluateAmount(input.value);
   if (value !== null && isExpression(input.value)) {
     input.value = String(Number(value.toFixed(6)));
-    runCalculator(220, { fromInput: true });
+    runCalculator();
   }
   readAmount({ strict: true });
 }
@@ -1236,7 +1240,7 @@ function insertIntoAmount(text) {
 
 function initAmountField() {
   const input = el("amount");
-  input.addEventListener("input", () => runCalculator(220, { fromInput: true }));
+  input.addEventListener("input", () => runCalculator());
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter") { e.preventDefault(); settleAmount(); }
   });
@@ -1354,7 +1358,7 @@ function renderSaved() {
 function useSaved(item) {
   if (currentPair()[0] !== item.cur) toggleDirection();
   el("amount").value = String(item.amount);
-  runCalculator(450, { fromInput: true });
+  runCalculator();
   el("calc-heading").scrollIntoView({ behavior: motionOK() ? "smooth" : "auto", block: "start" });
 }
 
@@ -1634,7 +1638,7 @@ function initLanguage() {
     if (state.cnyToJpy) {
       renderRateLine(false);
       renderChange();
-      runCalculator(0);
+      runCalculator(false);
       renderRank();
     } else {
       const [from, to] = currentPair();

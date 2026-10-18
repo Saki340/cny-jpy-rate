@@ -129,6 +129,9 @@ All of these are mid-market rates, without any bank's or payment provider's spre
 
 ## Changelog
 
+### 2026-10-19
+- The converter result now uses the same rolling digits as today's rate; when the number of digits changes they stay lined up on the decimal point, and only the digits that change roll.
+
 ### 2026-10-18
 - The interface components are now petal-elements; the look and features are unchanged. They are bundled into vendor/petal.js and loaded directly, so the page itself still has no build step.
 - Pressing a button shows a ripple spreading from the press point; the connected button groups (theme, chart range, currency) widen with a spring bounce while pressed; menus scale open from the corner of their button.

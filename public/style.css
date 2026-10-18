@@ -322,7 +322,7 @@ petal-filled-card.surface-card {
   text-align: center;
   transform: translateY(calc(var(--d) * -1.2em));
   transition: transform var(--md-sys-motion-spring-slow-spatial-duration) var(--md-sys-motion-spring-default-spatial);
-  transition-delay: calc(var(--i, 0) * 40ms);
+  transition-delay: calc(var(--i, 0) * var(--odo-stagger, 40ms));
 }
 .odo-strip > span { height: 1.2em; line-height: 1.2em; }
 
@@ -441,7 +441,7 @@ petal-filled-card.surface-card {
 .result-label { color: var(--card-on-variant); font-size: 13px; }
 .calc-result-row { display: flex; align-items: center; gap: 0; min-width: 0; }
 /* The result takes all the free width so the buttons stay pinned at the end
- * of the row; otherwise they would shift with every frame of the number tween. */
+ * of the row; otherwise they would shift as the number changes length. */
 .calc-result {
   display: block;
   flex: 1 1 auto;
@@ -454,6 +454,7 @@ petal-filled-card.surface-card {
   letter-spacing: var(--md-sys-typescale-headline-large-emphasized-tracking);
   overflow-wrap: anywhere;
   cursor: pointer;
+  --odo-stagger: 20ms; /* follows typing, so a shorter wave than today's rate */
   -webkit-tap-highlight-color: transparent;
 }
 
