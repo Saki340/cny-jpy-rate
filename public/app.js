@@ -216,12 +216,6 @@ function bindRadioMenu(menu) {
     get: () => items().find((i) => i.checked)?.dataset.value,
     set: (v) => { for (const i of items()) i.checked = i.dataset.value === String(v); },
   });
-  // petal unchecks the other radio items of the same <petal-menu-group> only;
-  // these items are one choice across two groups.
-  menu.addEventListener("change", (e) => {
-    const chosen = e.target.closest?.('[type="menuitemradio"]');
-    if (chosen?.checked) for (const i of items()) if (i !== chosen) i.checked = false;
-  });
   return menu;
 }
 

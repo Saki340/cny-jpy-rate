@@ -58,10 +58,10 @@
      vendor/petal.js by tools/build-petal.mjs; colours come from m3/tokens.css. -->
 <link rel="preload" href="vendor/fonts/google-sans-flex-ascii.woff2?v=3" as="font" type="font/woff2" crossorigin />
 <link rel="preload" href="vendor/fonts/material-symbols-rounded.woff2?v=4" as="font" type="font/woff2" crossorigin />
-<link rel="modulepreload" href="vendor/petal.js?v=10" />
+<link rel="modulepreload" href="vendor/petal.js?v=11" />
 <link rel="stylesheet" href="m3/tokens.css" />
 <link rel="stylesheet" href="style.css" />
-<script type="module" src="vendor/petal.js?v=10"></script>
+<script type="module" src="vendor/petal.js?v=11"></script>
 </head>
 <body>
   <!-- The page scrolls as usual (scroll-target="page"); the pull indicator
@@ -92,7 +92,7 @@
   <petal-tooltip for="github-btn" data-i18n="more.github">GitHub 源码</petal-tooltip>
   <petal-tooltip for="more-btn" data-i18n="more.label">更多选项</petal-tooltip>
 
-  <petal-menu id="lang-menu" no-inactive-shape anchor="lang-btn" positioning="popover" aria-label="语言" data-i18n-attr="aria-label:lang.label">
+  <petal-menu id="lang-menu" single-radio no-inactive-shape anchor="lang-btn" positioning="popover" aria-label="语言" data-i18n-attr="aria-label:lang.label">
     <petal-menu-group>
       <petal-menu-item type="menuitemradio" data-value="auto"><div slot="headline" data-i18n="lang.auto">跟随设备语言</div></petal-menu-item>
     </petal-menu-group>
