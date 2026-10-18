@@ -89,11 +89,20 @@ petal-menu-item[lang="zh-CN"] { --md-menu-item-label-text-font: "Google Sans Fle
  * jumps when the components arrive. */
 petal-menu:not(:defined), petal-tooltip:not(:defined), petal-dialog:not(:defined), petal-snackbar:not(:defined) { display: none; }
 petal-top-app-bar:not(:defined) { display: block; height: 136px; }
-petal-top-app-bar:not(:defined), petal-button-group:not(:defined), petal-filled-card:not(:defined),
+petal-top-app-bar:not(:defined), petal-button-group:not(:defined),
 petal-outlined-text-field:not(:defined), petal-icon-button:not(:defined), petal-filled-button:not(:defined),
 petal-filled-tonal-button:not(:defined), petal-text-button:not(:defined), petal-assist-chip:not(:defined),
 petal-icon:not(:defined), petal-list:not(:defined), petal-divider:not(:defined),
 petal-loading-indicator:not(:defined), petal-linear-progress:not(:defined) { visibility: hidden; }
+/* The cards show as plain coloured blocks of their real size (the colours are
+ * the same --card-bg as the finished card), so the page has its shape at once. */
+petal-filled-card.surface-card:not(:defined) {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--card-bg, var(--md-sys-color-surface-container-highest));
+  border-radius: var(--md-sys-shape-corner-medium);
+}
+petal-filled-card.surface-card:not(:defined) > * { visibility: hidden; }
 
 /* ---------- base ---------- */
 
