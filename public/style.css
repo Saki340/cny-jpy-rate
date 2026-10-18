@@ -82,9 +82,18 @@
 /* Language names in the menu each use their own script's fonts. */
 petal-menu-item[lang="ja"] { --md-menu-item-label-text-font: "Google Sans Flex", "Hiragino Sans", "Yu Gothic UI", "Yu Gothic", Meiryo, "Noto Sans JP", sans-serif; }
 petal-menu-item[lang="zh-CN"] { --md-menu-item-label-text-font: "Google Sans Flex", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif; }
-/* Components are not drawn until petal.js has defined them (no unstyled flash). */
+/* Until petal.js has defined the components (a module: it runs after the page
+ * is parsed), their light-DOM content would show as plain text. Popups
+ * (menus, tooltips, dialogs, snackbar) are not drawn at all; the rest keeps
+ * its place but is invisible, and the app bar keeps its height so nothing
+ * jumps when the components arrive. */
+petal-menu:not(:defined), petal-tooltip:not(:defined), petal-dialog:not(:defined), petal-snackbar:not(:defined) { display: none; }
+petal-top-app-bar:not(:defined) { display: block; height: 136px; }
 petal-top-app-bar:not(:defined), petal-button-group:not(:defined), petal-filled-card:not(:defined),
-petal-outlined-text-field:not(:defined), petal-icon-button:not(:defined) { visibility: hidden; }
+petal-outlined-text-field:not(:defined), petal-icon-button:not(:defined), petal-filled-button:not(:defined),
+petal-filled-tonal-button:not(:defined), petal-text-button:not(:defined), petal-assist-chip:not(:defined),
+petal-icon:not(:defined), petal-list:not(:defined), petal-divider:not(:defined),
+petal-loading-indicator:not(:defined), petal-linear-progress:not(:defined) { visibility: hidden; }
 
 /* ---------- base ---------- */
 
