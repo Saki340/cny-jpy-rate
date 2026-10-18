@@ -129,6 +129,15 @@ All of these are mid-market rates, without any bank's or payment provider's spre
 
 ## Changelog
 
+### 2026-10-18
+- The interface components are now petal-elements; the look and features are unchanged. They are bundled into vendor/petal.js and loaded directly, so the page itself still has no build step.
+- Pressing a button shows a ripple spreading from the press point; the connected button groups (theme, chart range, currency) widen with a spring bounce while pressed; menus scale open from the corner of their button.
+- The light / dark switch now reveals the new theme with a circle that has a soft edge.
+- The date field shows a yyyy/mm/dd format hint and a calendar icon.
+- Fixed the page loading 16px down after a refresh, which cut off part of the title.
+- Smoother loading: no more stray plain text in the top-left corner before the components load, and cards are first shown as blocks of the same colour.
+- Development: added tools/build-petal.mjs, which bundles the components from a local petal-elements checkout with esbuild; tokens.css now has the springs' damping and stiffness.
+
 ### 2026-10-11
 - Added a "Save this amount" button to the right of the converter's amount field, to add the current amount to your saved amounts in one tap.
 - Upstream data-source failures are now logged, making it easier to tell which source broke.
