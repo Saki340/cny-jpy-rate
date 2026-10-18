@@ -130,6 +130,7 @@ All of these are mid-market rates, without any bank's or payment provider's spre
 ## Changelog
 
 ### 2026-10-19
+- Added a "Clear" button to the converter's amount field (shown while it has content): empties the field in one tap, ready for the next amount.
 - The converter result now uses the same rolling digits as today's rate; when the number of digits changes they stay lined up on the decimal point, and only the digits that change roll.
 
 ### 2026-10-18

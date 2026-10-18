@@ -24,7 +24,7 @@
   font-style: normal;
   font-weight: 400 700;
   font-display: block;
-  src: url(vendor/fonts/material-symbols-rounded.woff2?v=4) format("woff2");
+  src: url(vendor/fonts/material-symbols-rounded.woff2?v=5) format("woff2");
 }
 
 /* ---------- app colours ----------
@@ -244,6 +244,18 @@ petal-filled-card.surface-card {
   --md-outlined-text-field-hover-trailing-icon-color: var(--card-on);
   --md-outlined-text-field-focus-trailing-icon-color: var(--card-on);
   display: flex;
+}
+/* Two trailing icons in the amount field (clear, save). The field gives the
+ * trailing slot a box of --md-outlined-text-field-trailing-icon-size; widened
+ * by one icon button (40dp), the save button stays where a single trailing
+ * icon sits (centred 24dp from the end) and clear sits one button to its left. */
+#amount { --md-outlined-text-field-trailing-icon-size: 64px; }
+.amount-actions {
+  inset: 0 -8px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  font-size: 24px;
 }
 .surface-card petal-icon-button {
   --md-icon-button-icon-color: var(--card-on);

@@ -1215,6 +1215,7 @@ function readAmount({ strict = false } = {}) {
   field.errorText = error ? t("amount.invalid") : "";
   field.supportingText = !error && value !== null && isExpression(text) ? t("amount.preview", { v: fmt(value, 3) }) : "";
   if (value !== null) lastAmount = value;
+  el("clear-amount-btn").hidden = !text;
   return lastAmount;
 }
 
@@ -1378,6 +1379,15 @@ function openSavedDialog(item = null) {
   savedDialog.show().then(() => el("saved-name").focus());
 }
 
+// The amount field's clear button: empty field (the result shows 0), focus
+// back in the field to type the next amount.
+function clearAmount() {
+  const input = el("amount");
+  input.value = "";
+  runCalculator();
+  input.focus();
+}
+
 // The converter's "save" button: the amount being converted, prefilled in the
 // add dialog (the visitor only adds a name).
 function saveCurrentAmount() {
@@ -1450,6 +1460,7 @@ function initSaved() {
   bindGroup(el("saved-cur"));
   el("saved-add").addEventListener("click", () => openSavedDialog());
   el("save-amount-btn").addEventListener("click", saveCurrentAmount);
+  el("clear-amount-btn").addEventListener("click", clearAmount);
   el("saved-list").addEventListener("click", (e) => {
     const edit = e.target.closest("[data-edit]");
     const use = e.target.closest("[data-use]");

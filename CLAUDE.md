@@ -26,7 +26,7 @@ JPY ⇄ CNY 汇率板。单个 Cloudflare Worker + 静态资源，无构建步�
 - 键盘快捷键（`initShortcuts()`）：`/` `S` `1`–`4` `D` `?`；输入框中、对话框或菜单打开时不响应；说明对话框只在宽屏、有鼠标的设备上提供入口。
 - 记住上次的换算方向（`direction-pref`，只在点切换时保存；分享链接的 `?from=` 优先但不保存）。
 - 浏览器地址栏颜色（两个 `theme-color`，分浅色/深色）跟随顶部应用栏：滚动后为 surface-container（`syncThemeColor()`）。
-- 常用金额（`saved-amounts`，localStorage，最多 10 个；计算器金额框右侧的「存为常用金额」按钮 `saveCurrentAmount()` 打开同一个添加对话框，算式未完成、已存过同币种同金额或已满时只提示不打开）；今日汇率在近一年的位置（`renderRank()`，单独取 365 天数据）：只陈述统计（较高 / 中间 / 较低水平），**不要写「划算」「建议换钱」之类的判断**，避免被视为投资建议。
+- 常用金额（`saved-amounts`，localStorage，最多 10 个；计算器金额框右侧有两个尾部图标（`.amount-actions` 包在一个插槽里，`--md-outlined-text-field-trailing-icon-size: 64px` 留出位置）：「清除」`clearAmount()`（有内容时才显示）和「存为常用金额」按钮 `saveCurrentAmount()`，后者打开同一个添加对话框，算式未完成、已存过同币种同金额或已满时只提示不打开）；今日汇率在近一年的位置（`renderRank()`，单独取 365 天数据）：只陈述统计（较高 / 中间 / 较低水平），**不要写「划算」「建议换钱」之类的判断**，避免被视为投资建议。
 - 页脚有数据来源（含「Source: ECB statistics」和交叉汇率说明，欧洲央行的再利用条件）、隐私说明和商标声明；改动相关功能时同步更新。
 - 里程表数字的滚动列设了 `user-select: none`，复制时取 `.sr-only` 里的纯文本；不要去掉，否则复制出来是 0–9 一串。
 - `public/vendor/fonts/` — 自托管的字体（Google Sans Flex ASCII 子集、Material Symbols Rounded 子集）。**图标字体只含页面用到的图标，新增图标要按 `vendor/fonts/README.txt` 重新下载子集**，否则显示成英文单词。字体文件缓存一周（`public/_headers`），网址带 `?v=`：**换了字体文件就要把 `style.css` 和 `index.html` 预加载里的 `?v=` 一起加 1**。

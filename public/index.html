@@ -57,7 +57,7 @@
      petal-elements (Material 3 Expressive web components), bundled into
      vendor/petal.js by tools/build-petal.mjs; colours come from m3/tokens.css. -->
 <link rel="preload" href="vendor/fonts/google-sans-flex-ascii.woff2?v=3" as="font" type="font/woff2" crossorigin />
-<link rel="preload" href="vendor/fonts/material-symbols-rounded.woff2?v=4" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="vendor/fonts/material-symbols-rounded.woff2?v=5" as="font" type="font/woff2" crossorigin />
 <link rel="modulepreload" href="vendor/petal.js?v=11" />
 <link rel="stylesheet" href="m3/tokens.css" />
 <link rel="stylesheet" href="style.css" />
@@ -157,9 +157,15 @@
           <!-- Accepts simple expressions ("1980*3"); see evaluateAmount() in app.js.
                The label ("金额（JPY）") is set by app.js; supporting / error text too. -->
           <petal-outlined-text-field id="amount" label="JPY" value="100" inputmode="decimal" enterkeyhint="done" spellcheck="false" autocomplete="off">
-            <!-- Trailing icon: save this amount to the saved amounts (opens the same dialog, prefilled). -->
-            <petal-icon-button slot="trailing-icon" id="save-amount-btn" aria-label="存为常用金额" data-i18n-attr="aria-label:calc.save"><petal-icon aria-hidden="true">&#xe598;</petal-icon></petal-icon-button>
+            <!-- Trailing icons: clear (only while there is something to clear) and
+                 save this amount to the saved amounts (opens the same dialog,
+                 prefilled). The slot takes one element, so both sit in a row. -->
+            <span slot="trailing-icon" class="amount-actions">
+              <petal-icon-button id="clear-amount-btn" aria-label="清除" data-i18n-attr="aria-label:calc.clear"><petal-icon aria-hidden="true">&#xe5cd;</petal-icon></petal-icon-button>
+              <petal-icon-button id="save-amount-btn" aria-label="存为常用金额" data-i18n-attr="aria-label:calc.save"><petal-icon aria-hidden="true">&#xe598;</petal-icon></petal-icon-button>
+            </span>
           </petal-outlined-text-field>
+          <petal-tooltip for="clear-amount-btn" data-i18n="calc.clear">清除</petal-tooltip>
           <petal-tooltip for="save-amount-btn" data-i18n="calc.save">存为常用金额</petal-tooltip>
           <!-- Phone number pads have no operator keys; these appear while typing on touch screens. -->
           <div class="calc-keys" role="toolbar" aria-label="运算符" data-i18n-attr="aria-label:keys.label">
