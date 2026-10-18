@@ -42,9 +42,15 @@ const components = [
   "tooltip/tooltip.js",
 ];
 
+// Not a component: the circle that reveals a new theme (View Transitions),
+// exposed as window.transitionTheme for app.js (a classic script).
+const theme = path.join(petal, "theme/theme-transition.js").replaceAll("\\", "/");
+
 const result = await esbuild.build({
   stdin: {
-    contents: components.map((c) => `import ${JSON.stringify(path.join(petal, c).replaceAll("\\", "/"))};`).join("\n"),
+    contents: `import {transitionTheme} from ${JSON.stringify(theme)};
+globalThis.transitionTheme = transitionTheme;
+` + components.map((c) => `import ${JSON.stringify(path.join(petal, c).replaceAll("\\", "/"))};`).join("\n"),
     resolveDir: petal,
   },
   bundle: true,

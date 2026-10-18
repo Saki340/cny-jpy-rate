@@ -209,13 +209,18 @@ function bindGroup(group) {
 }
 
 // A <petal-menu> of menuitemradio items: menu.value is the checked item's
-// data-value (petal checks the chosen item, unchecks the others and fires
-// "change" by itself).
+// data-value (petal checks the chosen item and fires "change" by itself).
 function bindRadioMenu(menu) {
   const items = () => [...menu.querySelectorAll('[type="menuitemradio"]')];
   Object.defineProperty(menu, "value", {
     get: () => items().find((i) => i.checked)?.dataset.value,
     set: (v) => { for (const i of items()) i.checked = i.dataset.value === String(v); },
+  });
+  // petal unchecks the other radio items of the same <petal-menu-group> only;
+  // these items are one choice across two groups.
+  menu.addEventListener("change", (e) => {
+    const chosen = e.target.closest?.('[type="menuitemradio"]');
+    if (chosen?.checked) for (const i of items()) if (i !== chosen) i.checked = false;
   });
   return menu;
 }
@@ -332,25 +337,12 @@ function showSystemTheme() {
   if (document.documentElement.classList.contains("theme-auto")) el("theme-group").value = darkScheme.matches ? "dark" : "light";
 }
 
-// The new theme spreads out as a circle from where the user clicked
-// (View Transitions API; browsers without it just switch instantly).
-let themeOrigin = null;
-
-function switchTheme(mode) {
+// The new theme spreads out as a circle from the button that was pressed
+// (petal's transitionTheme(), View Transitions; without them, or with
+// reduced motion, the theme just changes).
+function switchTheme(mode, origin) {
   if (typeof morphDecoShape === "function" && motionOK()) morphDecoShape();
-  if (!document.startViewTransition || !motionOK()) {
-    applyTheme(mode);
-    return;
-  }
-  const { x, y } = themeOrigin || { x: window.innerWidth - 80, y: 32 };
-  const radius = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
-  const transition = document.startViewTransition(() => applyTheme(mode));
-  transition.ready.then(() => {
-    document.documentElement.animate(
-      { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`] },
-      { ...SPRING_SLOW_SPATIAL, pseudoElement: "::view-transition-new(root)" },
-    );
-  }).catch(() => { /* transition skipped */ });
+  transitionTheme(() => applyTheme(mode), origin);
 }
 
 function initTheme() {
@@ -368,8 +360,7 @@ function initTheme() {
   try { localStorage.removeItem("theme-pref"); } catch { /* ignore */ } // the old saved choice
   applyTheme("auto");
   showSystemTheme();
-  group.addEventListener("pointerdown", (e) => { themeOrigin = { x: e.clientX, y: e.clientY }; });
-  group.addEventListener("change", () => switchTheme(group.value));
+  group.addEventListener("change", (e) => switchTheme(group.value, e.target));
   darkScheme.addEventListener("change", () => {
     showSystemTheme();
     syncThemeColor();

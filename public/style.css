@@ -859,11 +859,6 @@ kbd {
 html.js .page section:not(.in-view) { animation-play-state: paused; }
 @keyframes rise-in { from { opacity: 0; transform: translateY(16px); } }
 
-/* Theme switch: the default cross-fade is replaced by a circle that grows
- * from the click point (animated from app.js). */
-::view-transition-old(root),
-::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
-
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 1ms !important;
