@@ -1286,16 +1286,10 @@ function renderRank() {
   el("rank-pct").textContent = t("rank.pct", { p: pct });
   el("rank-low").textContent = t("rank.low", { v: pointFmt(Math.min(...values)) });
   el("rank-high").textContent = t("rank.high", { v: pointFmt(Math.max(...values)) });
-  const meter = el("rank-meter");
-  meter.setAttribute("aria-valuenow", String(pct));
-  meter.setAttribute("aria-valuetext", `${el("rank-verdict").textContent}, ${el("rank-pct").textContent}`);
+  el("rank-meter").value = pct;
   if (box.hidden) {
     box.hidden = false;
     fadeIn(box, 300);
-    // Grow from 0 on first appearance.
-    requestAnimationFrame(() => requestAnimationFrame(() => box.style.setProperty("--rank-p", pct / 100)));
-  } else {
-    box.style.setProperty("--rank-p", pct / 100);
   }
 }
 

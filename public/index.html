@@ -58,10 +58,10 @@
      vendor/petal.js by tools/build-petal.mjs; colours come from m3/tokens.css. -->
 <link rel="preload" href="vendor/fonts/google-sans-flex-ascii.woff2?v=3" as="font" type="font/woff2" crossorigin />
 <link rel="preload" href="vendor/fonts/material-symbols-rounded.woff2?v=5" as="font" type="font/woff2" crossorigin />
-<link rel="modulepreload" href="vendor/petal.js?v=13" />
+<link rel="modulepreload" href="vendor/petal.js?v=14" />
 <link rel="stylesheet" href="m3/tokens.css" />
 <link rel="stylesheet" href="style.css" />
-<script type="module" src="vendor/petal.js?v=13"></script>
+<script type="module" src="vendor/petal.js?v=14"></script>
 </head>
 <body>
   <!-- The page scrolls as usual (scroll-target="page"); the pull indicator
@@ -138,7 +138,7 @@
         <!-- Where today's rate stands among the past year's days (app.js renderRank). -->
         <div class="rate-rank" id="rate-rank" hidden>
           <div class="rate-rank-head"><span class="rate-rank-verdict" id="rank-verdict"></span><span class="rate-rank-pct" id="rank-pct"></span></div>
-          <div class="rate-rank-meter" id="rank-meter" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="今日汇率在近一年中的位置" data-i18n-attr="aria-label:rank.label"><span class="rate-rank-active"></span><span class="rate-rank-track"></span></div>
+          <petal-linear-progress id="rank-meter" class="rate-rank-meter" max="100" value="0" aria-label="今日汇率在近一年中的位置" data-i18n-attr="aria-label:rank.label"></petal-linear-progress>
           <div class="rate-rank-ends" aria-hidden="true"><span id="rank-low"></span><span id="rank-high"></span></div>
         </div>
         <p class="meta-text" id="board-note" data-i18n="board.note">欧洲央行每个工作日公布一次参考汇率，周末和节假日沿用上一个工作日的数据。</p>

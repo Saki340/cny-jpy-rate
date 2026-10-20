@@ -371,20 +371,11 @@ petal-filled-card.surface-card {
 .change-label { color: var(--card-on); opacity: .75; }
 
 /* Where today's rate stands among the past year's days: a determinate
- * linear indicator (LinearProgressIndicatorTokens: active primary, 4dp gap
- * to the track, 4dp stop at the end; the thick 8dp Expressive variant). The
- * track is the card's own colour, since secondary-container would vanish on
- * the primary-container card. */
-@property --rank-p {
-  syntax: "<number>";
-  inherits: true;
-  initial-value: 0;
-}
+ * petal-linear-progress (Compose's LinearProgressIndicator: round caps, 4dp gap
+ * to the track, 4dp stop at the end), 8dp thick. */
 .rate-rank {
-  --rank-p: 0;
   margin: 0 0 14px;
   color: var(--card-on);
-  transition: --rank-p var(--md-sys-motion-spring-slow-spatial-duration) var(--md-sys-motion-spring-slow-spatial);
 }
 .rate-rank-head {
   display: flex;
@@ -400,29 +391,12 @@ petal-filled-card.surface-card {
   letter-spacing: var(--md-sys-typescale-title-small-emphasized-tracking);
 }
 .rate-rank-pct { color: var(--card-on-variant); font-size: var(--md-sys-typescale-body-small-size); }
-.rate-rank-meter { display: flex; gap: 4px; height: 8px; margin: 8px 0 4px; }
-.rate-rank-active {
-  flex: 0 0 auto;
-  width: max(8px, calc(var(--rank-p) * (100% - 12px)));
-  border-radius: 4px;
-  background-color: var(--md-sys-color-primary);
-}
-.rate-rank-track {
-  position: relative;
-  flex: 1 1 auto;
-  min-width: 8px;
-  border-radius: 4px;
-  background-color: color-mix(in srgb, var(--card-on) 16%, transparent);
-}
-.rate-rank-track::after { /* stop indicator */
-  content: "";
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background-color: var(--md-sys-color-primary);
+.rate-rank-meter {
+  width: 100%;
+  margin: 8px 0 4px;
+  --md-linear-progress-track-height: 8px;
+  /* secondary-container is invisible on the primary-container card: use the card's text colour. */
+  --md-linear-progress-track-color: color-mix(in srgb, var(--card-on) 16%, transparent);
 }
 .rate-rank-ends {
   display: flex;

@@ -7,12 +7,12 @@
 
 // Bumping the name drops older caches on activate (v1 still held the
 // removed mdui files; v2 the hand-written M3 components).
-const CACHE = "rate-board-v15";
+const CACHE = "rate-board-v16";
 
 // Cached when the worker installs, so the components are there even if the
 // first visit ends before the page has fetched them through the worker. The
 // URL must match the one in index.html exactly (including ?v=).
-const PRECACHE = ["/vendor/petal.js?v=13"];
+const PRECACHE = ["/vendor/petal.js?v=14"];
 
 // Pages are cached under their path plus ?lang= only, so share links
 // (?amount=…&from=…) do not each keep a copy of the page.
