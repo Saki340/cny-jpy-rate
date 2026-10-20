@@ -878,10 +878,3 @@ petal-pull-to-refresh {
   --md-pull-to-refresh-petal-4-color: var(--md-sys-color-inverse-primary);
   --md-pull-to-refresh-center-color: var(--md-sys-color-tertiary-container);
 }
-
-/* Two trailing icons in the amount field (clear, save). petal's trailing slot is
- * one icon wide, so the clear button is moved one button (40dp) to the left of
- * the save button, and the gap between the input and the icons is widened to keep
- * typed digits from running under it. The field keeps its 56dp height. */
-#amount { --md-outlined-text-field-icon-input-space: 56px; }
-#clear-amount-btn { translate: -40px 0; }
