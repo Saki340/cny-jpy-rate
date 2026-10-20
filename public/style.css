@@ -190,9 +190,9 @@ section { margin-bottom: 24px; }
   --md-button-small-trailing-space: 14px;
 }
 .theme-group.is-compact petal-filled-button {
-  /* Icon only (app.js takes the label out of the slots): 24px icon + 8px each side. */
-  --md-button-small-leading-space: 8px;
-  --md-button-small-trailing-space: 8px;
+  /* Icon only (app.js takes the label out of the slots): a 40px round button. */
+  --md-button-small-leading-space: 10px;
+  --md-button-small-trailing-space: 10px;
 }
 /* GitHub in the app bar from 600dp; below that it is in the More menu. */
 .github-mark { width: 20px; height: 20px; }
@@ -244,18 +244,6 @@ petal-filled-card.surface-card {
   --md-outlined-text-field-hover-trailing-icon-color: var(--card-on);
   --md-outlined-text-field-focus-trailing-icon-color: var(--card-on);
   display: flex;
-}
-/* Two trailing icons in the amount field (clear, save). The field gives the
- * trailing slot a box of --md-outlined-text-field-trailing-icon-size; widened
- * by one icon button (40dp), the save button stays where a single trailing
- * icon sits (centred 24dp from the end) and clear sits one button to its left. */
-#amount { --md-outlined-text-field-trailing-icon-size: 64px; }
-.amount-actions {
-  inset: 0 -8px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  font-size: 24px;
 }
 .surface-card petal-icon-button {
   --md-icon-button-icon-color: var(--card-on);
@@ -890,3 +878,10 @@ petal-pull-to-refresh {
   --md-pull-to-refresh-petal-4-color: var(--md-sys-color-inverse-primary);
   --md-pull-to-refresh-center-color: var(--md-sys-color-tertiary-container);
 }
+
+/* Two trailing icons in the amount field (clear, save). petal's trailing slot is
+ * one icon wide, so the clear button is moved one button (40dp) to the left of
+ * the save button, and the gap between the input and the icons is widened to keep
+ * typed digits from running under it. The field keeps its 56dp height. */
+#amount { --md-outlined-text-field-icon-input-space: 56px; }
+#clear-amount-btn { translate: -40px 0; }
