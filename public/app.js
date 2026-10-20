@@ -1286,11 +1286,41 @@ function renderRank() {
   el("rank-pct").textContent = t("rank.pct", { p: pct });
   el("rank-low").textContent = t("rank.low", { v: pointFmt(Math.min(...values)) });
   el("rank-high").textContent = t("rank.high", { v: pointFmt(Math.max(...values)) });
-  el("rank-meter").value = pct;
-  if (box.hidden) {
+  const first = box.hidden;
+  if (first) {
     box.hidden = false;
     fadeIn(box, 300);
   }
+  moveRankMeter(pct, first ? 0 : undefined);
+}
+
+// petal-linear-progress shows the value it is given (like Compose's
+// LinearProgressIndicator); the slow spatial spring is done here, from the
+// value on screen, so a change in mid-flight (a second swap) turns smoothly.
+let rankShown = 0;
+let rankFrame = 0;
+function moveRankMeter(to, from = rankShown) {
+  const meter = el("rank-meter");
+  cancelAnimationFrame(rankFrame);
+  if (!motionOK() || from === to) {
+    rankShown = to;
+    meter.value = to;
+    return;
+  }
+  const css = getComputedStyle(document.documentElement);
+  const k = parseFloat(css.getPropertyValue("--md-sys-motion-spring-slow-spatial-stiffness")) || 200;
+  const z = parseFloat(css.getPropertyValue("--md-sys-motion-spring-slow-spatial-damping")) || 0.8;
+  const ease = springCurve(k, z);
+  const start = performance.now();
+  const tick = (now) => {
+    const p = Math.min((now - start) / SPRING_SLOW_SPATIAL.duration, 1);
+    rankShown = from + (to - from) * ease(p);
+    meter.value = Math.min(100, Math.max(0, rankShown)); // the spring may overshoot
+    if (p < 1) rankFrame = requestAnimationFrame(tick);
+    else { rankShown = to; meter.value = to; }
+  };
+  meter.value = from;
+  rankFrame = requestAnimationFrame(tick);
 }
 
 /* ---------- saved amounts ---------- */
