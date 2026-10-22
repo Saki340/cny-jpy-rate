@@ -21,7 +21,7 @@ JPY ⇄ CNY 汇率板。单个 Cloudflare Worker + 静态资源，无构建步�
 - 提示信息统一用 `notify()`（`app.js`，驱动页面里唯一的 `<petal-snackbar>`，带 `action` 时 10 秒）。
 - 分享链接参数 `?amount=…&from=JPY|CNY`（`readShareParams()`），读取后从地址栏移除；manifest 的 shortcuts 也用 `?from=`。
 - 金额框是文本框，支持简单算式（`evaluateAmount()`，手写递归下降解析，不要用 `eval`）；换算用 `readAmount()` / `lastAmount`（算式写到一半时保留上一个可计算的值），不要直接读输入框。
-- 按日期查汇率：`/api/day?date=`（2005-01-03 起，周末节假日由 Frankfurter 返回之前最近的工作日，过去的日期缓存 30 天）；前端 `lookupDate()` / `renderDate()`。
+- 按日期查汇率：`/api/day?date=`（2005-01-03 起，周末节假日由 Frankfurter 返回之前最近的工作日，过去的日期缓存 30 天）；前端 `lookupDate()` / `renderDate()`。日期用 `<petal-date-picker-dialog id="date-dialog">` 选择（`max` 在打开时设为今天），`#date-input` 是只读文本框，只显示所选日期（`showPickedDate()`）；对话框的标题、按钮用 `data-i18n-attr`，朗读和错误文字（`messages`）与 `locale` 在 `localizeDatePicker()` 里随语言切换，键名 `dp.*`。
 - 走势图的 30 日均线（`movingAverage()`，按日历日、用近一年数据补足窗口），只作统计展示。
 - 键盘快捷键（`initShortcuts()`）：`/` `S` `1`–`4` `D` `?`；输入框中、对话框或菜单打开时不响应；说明对话框只在宽屏、有鼠标的设备上提供入口。
 - 记住上次的换算方向（`direction-pref`，只在点切换时保存；分享链接的 `?from=` 优先但不保存）。

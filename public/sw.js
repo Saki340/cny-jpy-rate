@@ -12,7 +12,7 @@ const CACHE = "rate-board-v18";
 // Cached when the worker installs, so the components are there even if the
 // first visit ends before the page has fetched them through the worker. The
 // URL must match the one in index.html exactly (including ?v=).
-const PRECACHE = ["/vendor/petal.js?v=16"];
+const PRECACHE = ["/vendor/petal.js?v=17"];
 
 // Pages are cached under their path plus ?lang= only, so share links
 // (?amount=…&from=…) do not each keep a copy of the page.

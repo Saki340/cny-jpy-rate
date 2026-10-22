@@ -25,6 +25,7 @@ const components = [
   "buttongroup/button-group.js",
   "card/filled-card.js",
   "chips/assist-chip.js",
+  "datepicker/date-picker-dialog.js",
   "dialog/dialog.js",
   "divider/divider.js",
   "icon/icon.js",

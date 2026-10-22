@@ -242,7 +242,7 @@ function bindMenuButton(button, menu, before) {
 }
 
 // Is a dialog or a menu open? (Shortcuts stay quiet then.)
-const overlayOpen = () => [...document.querySelectorAll("petal-dialog, petal-menu")].some((n) => n.open);
+const overlayOpen = () => [...document.querySelectorAll("petal-dialog, petal-date-picker-dialog, petal-menu")].some((n) => n.open);
 
 /* ---------- scroll-triggered entrance ---------- */
 
@@ -1466,10 +1466,7 @@ function initSaved() {
   el("saved-form").addEventListener("submit", (e) => { e.preventDefault(); submitSaved(); });
   el("saved-cancel").addEventListener("click", () => savedDialog.close());
   el("saved-save").addEventListener("click", submitSaved);
-  // No submit button in the form (the buttons are in the dialog's action row).
-  for (const id of ["saved-name", "saved-amount"]) {
-    el(id).addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); submitSaved(); } });
-  }
+  // Enter in either field submits the form (petal text fields submit implicitly).
   el("saved-delete").addEventListener("click", deleteSaved);
   el("saved-amount").addEventListener("input", () => setSavedError(""));
   // Another tab changed the list.
@@ -1498,7 +1495,8 @@ function setDateMessage(text) {
 }
 
 async function lookupDate() {
-  const value = el("date-input").value;
+  const value = el("date-dialog").value;
+  showPickedDate();
   const token = ++dayReq;
   if (!value) {
     dayData = null;
@@ -1543,10 +1541,45 @@ function renderDate() {
     `<p class="meta-text">${esc(note)}</p>`;
 }
 
+// The read-only field shows the date confirmed in the dialog, in the page's
+// language; the field, its icon and D open the dialog.
+const DATE_PICKER_MESSAGES = [
+  "switchToInputMode", "switchToCalendarMode", "previousMonth", "nextMonth",
+  "switchToYearSelection", "switchToDaySelection", "navigateToYear", "today", "noSelection",
+  "headlineDescription", "inputHeadlineDescription", "invalidPattern", "invalidYearRange", "invalidNotAllowed",
+];
+
+function showPickedDate() {
+  const value = el("date-dialog").value;
+  el("date-input").value = value
+    ? new Intl.DateTimeFormat(locale(), { dateStyle: "medium", timeZone: "UTC" }).format(new Date(value))
+    : "";
+}
+
+function localizeDatePicker() {
+  const dialog = el("date-dialog");
+  dialog.locale = locale();
+  dialog.messages = Object.fromEntries(DATE_PICKER_MESSAGES.map((k) => [k, t(`dp.${k}`)]));
+  showPickedDate();
+}
+
+function openDatePicker() {
+  const dialog = el("date-dialog");
+  dialog.max = localToday();
+  dialog.show();
+}
+
 function initDateLookup() {
   const input = el("date-input");
-  input.max = localToday();
-  input.addEventListener("change", lookupDate);
+  localizeDatePicker();
+  el("date-dialog").addEventListener("change", lookupDate);
+  input.addEventListener("click", openDatePicker);
+  input.addEventListener("keydown", (e) => {
+    if ((e.key === "Enter" || e.key === " " || e.key === "ArrowDown") && !e.isComposing) {
+      e.preventDefault();
+      openDatePicker();
+    }
+  });
 }
 
 /* ---------- keyboard shortcuts ---------- */
@@ -1579,7 +1612,7 @@ function initShortcuts() {
       }
     } else if (e.key === "d" || e.key === "D") {
       e.preventDefault();
-      el("date-input").focus();
+      openDatePicker();
     } else if (e.key === "?") {
       e.preventDefault();
       help.show();
@@ -1656,6 +1689,7 @@ function initLanguage() {
     readAmount();
     renderSaved();
     renderDate();
+    localizeDatePicker();
   });
 }
 
